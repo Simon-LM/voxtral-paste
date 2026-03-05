@@ -7,7 +7,7 @@ cd "$(dirname "$0")"
 echo "=== Audio recording ==="
 echo "Press Ctrl+C to stop..."
 
-rec -c 1 -r 16000 local_audio.wav &
+setsid rec -c 1 -r 16000 local_audio.wav &
 REC_PID=$!
 
 stop_recording() {
