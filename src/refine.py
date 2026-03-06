@@ -23,8 +23,8 @@ load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 _API_URL = "https://api.mistral.ai/v1/chat/completions"
 _CONTEXT_FILE = Path(__file__).resolve().parent.parent / "context.txt"
 
-_THRESHOLD_SHORT = int(os.environ.get("REFINE_MODEL_THRESHOLD_SHORT", "80"))
-_THRESHOLD_LONG = int(os.environ.get("REFINE_MODEL_THRESHOLD_LONG", "200"))
+_THRESHOLD_SHORT = int(os.environ.get("REFINE_MODEL_THRESHOLD_SHORT", "100"))
+_THRESHOLD_LONG = int(os.environ.get("REFINE_MODEL_THRESHOLD_LONG", "240"))
 _MODEL_SHORT = os.environ.get("REFINE_MODEL_SHORT", "devstral-small-latest")
 _MODEL_SHORT_FALLBACK = os.environ.get("REFINE_MODEL_SHORT_FALLBACK", "mistral-small-latest")
 _MODEL_MEDIUM = os.environ.get("REFINE_MODEL_MEDIUM", "magistral-small-latest")
