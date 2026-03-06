@@ -2,6 +2,18 @@
 
 cd "$(dirname "$0")"
 
+# ─── Configuration ───────────────────────────────────────────────────────────
+
+# Load .env if present (for AUDIO_TEMPO and other variables)
+if [ -f .env ]; then
+    # shellcheck disable=SC1091
+    set -a; source .env; set +a
+fi
+
+# Speed multiplier applied to the recorded audio before transcription.
+# Lower values reduce transcription errors (1.0 = no change, 1.5 = default).
+AUDIO_TEMPO="${AUDIO_TEMPO:-1.5}"
+
 # ─── Recording ───────────────────────────────────────────────────────────────
 
 echo "=== Audio recording ==="
@@ -28,8 +40,8 @@ if [ ! -f "local_audio.wav" ]; then
     exit 1
 fi
 
-echo "⚡ Speeding up audio x1.5..."
-sox local_audio.wav local_audio_fast.wav tempo 1.5
+echo "⚡ Adjusting audio speed (tempo ×${AUDIO_TEMPO})..."
+sox local_audio.wav local_audio_fast.wav tempo "$AUDIO_TEMPO"
 
 echo "✂️ Removing long silences..."
 ffmpeg -y -i local_audio_fast.wav \

@@ -24,7 +24,7 @@ One API key. No complex UI. Just speak → paste.
 2. Recording starts immediately
 3. You speak
 4. You stop the recording (**Ctrl+C**)
-5. The audio is processed locally (speed up × 1.5, silence removal, MP3 conversion)
+5. The audio is processed locally (tempo adjustment × 1.5 by default, configurable via `AUDIO_TEMPO`, silence removal, MP3 conversion)
 6. **Step 1 — Transcription:** the audio is sent to **Mistral Voxtral** for speech-to-text
 7. **Step 2 — Refinement:** the raw transcription is passed to a **Mistral chat model** which:
    - removes hesitations, filler words and repetitions
