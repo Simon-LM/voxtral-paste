@@ -1,0 +1,13 @@
+{
+	"venvPath": ".",
+	"venv": ".venv",
+	"include": ["src", "tests"],
+	"typeCheckingMode": "basic",
+	"reportPrivateUsage": "none",
+	"reportUnknownParameterType": "none",
+	"reportMissingParameterType": "none",
+	"reportUnknownMemberType": "none",
+	"reportUnknownArgumentType": "none",
+	"reportUnknownVariableType": "none",
+	"reportUntypedFunctionDecorator": "none"
+}
