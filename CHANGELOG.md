@@ -13,6 +13,36 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ---
 
+## [1.2.1] — 2026-03-06
+
+### Fixed
+
+- API error body (first 200 chars) now logged to stderr on 429 / 500 / 503, replacing the generic "unavailable, switching..." message — makes rate limiting and server errors easier to diagnose
+
+---
+
+## [1.2.0] — 2026-03-06
+
+### Added
+
+- 3 distinct system prompt templates by tier (SHORT / MEDIUM / LONG)
+- XML tags: `<transcription>` wraps user input in the user message; `<context>` wraps domain context in the system prompt
+- Prose quality instruction for LONG tier (> 200 words): "well-structured written prose — fluid and precise, while staying true to the speaker's voice and register"
+- Deployment section in CONTRIBUTING.md (rsync usage, chmod warning)
+- Updating section in README
+
+### Fixed
+
+- Language rule strengthened: `CRITICAL: Never translate. Detect the language of the transcription and reply in that exact same language.`
+- Context block moved to end of each prompt (after all instructions) to avoid the "Lost in the Middle" attention drop
+
+### Changed
+
+- Installation guide in README: `git clone` directly to `~/.local/bin/voxtral-paste/`, explicit `chmod +x` step
+- `.markdownlint.json` added to suppress MD013 / MD024 false positives in CHANGELOG and CONTRIBUTING
+
+---
+
 ## [1.1.0] — 2026-03-06
 
 ### Added

@@ -170,7 +170,8 @@ def refine(raw_text: str) -> str:
         except requests.HTTPError as e:
             status = e.response.status_code if e.response is not None else "?"
             if status in (429, 500, 503):
-                print(f"⚠️  {model} unavailable ({status}), switching...", file=sys.stderr)
+                detail = e.response.text[:200] if e.response is not None else ""
+                print(f"⚠️  {model} unavailable ({status}): {detail}", file=sys.stderr)
                 continue
             raise
         except requests.RequestException:
