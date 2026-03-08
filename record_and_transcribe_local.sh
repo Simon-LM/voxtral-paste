@@ -99,3 +99,13 @@ if [ "${ENABLE_HISTORY:-false}" = "true" ] && [ -n "$final_text" ]; then
         echo "🔄 History context update running in background..."
     fi
 fi
+
+# ─── Quick commands ───────────────────────────────────────────────────────────
+echo ""
+echo "💡 Useful files:"
+echo "   ${EDITOR:-nano} context.txt   → edit personal context"
+echo "   ${EDITOR:-nano} .env          → edit settings"
+if [ "${ENABLE_HISTORY:-false}" = "true" ]; then
+    echo "   cat history.txt               → view history"
+    echo "   ${EDITOR:-nano} history.txt   → edit history"
+fi
