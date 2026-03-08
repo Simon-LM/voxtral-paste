@@ -33,7 +33,9 @@ One API key. No complex UI. Just speak → paste.
 8. The refined text is automatically copied to:
    - the standard clipboard (Ctrl+V)
    - the primary selection (middle-click paste on Linux)
-9. You paste it anywhere (chat, form, editor, terminal, etc.)
+9. _(Optional)_ If `ENABLE_HISTORY=true` and the text is ≥ 90 words: key facts are extracted
+   **in the background** and added to `history.txt` — the clipboard is always populated first
+10. You paste it anywhere (chat, form, editor, terminal, etc.)
 
 ---
 
@@ -43,14 +45,41 @@ The refinement step automatically selects the right model based on the length of
 
 | Transcription length | Primary model             | Fallback                |
 | -------------------- | ------------------------- | ----------------------- |
-| < 100 words          | `devstral-small-latest`   | `mistral-small-latest`  |
-| 100 – 240 words      | `magistral-small-latest`  | `mistral-medium-latest` |
+| < 90 words           | `devstral-small-latest`   | `mistral-small-latest`  |
+| 90 – 240 words       | `magistral-small-latest`  | `mistral-medium-latest` |
 | > 240 words          | `magistral-medium-latest` | `mistral-large-latest`  |
 
 If a model is unavailable (rate limit, timeout), the next one is tried automatically.
 If all models fail, the raw Voxtral transcription is returned — the tool never crashes.
 
 The threshold and models are fully configurable via `.env`.
+
+---
+
+## History context (optional)
+
+Voxtral Paste can automatically build a `history.txt` file by extracting key facts from
+your longer transcriptions. Enable it with `ENABLE_HISTORY=true` in your `.env`.
+
+**What is stored:**
+
+- Ongoing projects, tools, recurring topics, decisions — general context to help the AI
+  understand your work over time
+- Each bullet carries a `[YYYY-MM-DD HH:MM:SS]` timestamp, added by the application (not the AI)
+- On each update the model consolidates the list: duplicates are removed, stale facts are
+  dropped and new ones are merged within the `HISTORY_MAX_BULLETS` limit (default: 60)
+
+**What is NOT stored:**
+
+- Short dictations (< `REFINE_MODEL_THRESHOLD_SHORT` words, default 90)
+- Passwords, credentials or any text not sent to the refinement step
+
+**Clipboard-first:** the history update runs in the background **after** the clipboard is
+populated. It never delays your paste.
+
+`history.txt` stays on your machine — it is listed in `.gitignore` and never committed.
+See `history.example.txt` for an example and `.env.example` for all configurable
+parameters (`HISTORY_MAX_BULLETS`, `HISTORY_EXTRACTION_MODEL`).
 
 ---
 

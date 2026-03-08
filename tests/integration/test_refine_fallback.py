@@ -3,6 +3,7 @@
 All HTTP calls are mocked — no real network requests are made.
 """
 
+import re
 import sys
 from unittest.mock import MagicMock
 
@@ -117,6 +118,101 @@ class TestRefineAllModelsFail:
         )
         result = refine.refine(raw)
         assert result == raw
+
+
+class TestHistoryExtraction:
+    """Tests for _extract_and_update_history — invoked directly, never via refine()."""
+
+    @staticmethod
+    def _load(monkeypatch):
+        monkeypatch.setenv("MISTRAL_API_KEY", "test-key")
+        if "src.refine" in sys.modules:
+            del sys.modules["src.refine"]
+        import src.refine as refine
+        return refine
+
+    def test_new_bullets_get_timestamp(self, monkeypatch, tmp_path):
+        """Bullets without a date prefix receive today's date from Python code."""
+        refine = self._load(monkeypatch)
+        monkeypatch.setattr(refine, "_HISTORY_FILE", tmp_path / "history.txt")
+        monkeypatch.setattr(requests, "post", MagicMock(return_value=_ok_response("- User works on FastAPI")))
+        refine._extract_and_update_history("Some text.", "test-key")
+        content = (tmp_path / "history.txt").read_text()
+        assert re.search(r"- \[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\] User works on FastAPI", content)
+
+    def test_history_content_written_to_file(self, monkeypatch, tmp_path):
+        """History extraction writes multiple bullet points to file."""
+        refine = self._load(monkeypatch)
+        monkeypatch.setattr(refine, "_HISTORY_FILE", tmp_path / "history.txt")
+        monkeypatch.setattr(requests, "post", MagicMock(return_value=_ok_response("- Project A\n- Project B")))
+        refine._extract_and_update_history("Some text.", "test-key")
+        content = (tmp_path / "history.txt").read_text()
+        assert re.search(r"- \[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\] Project A", content)
+        assert re.search(r"- \[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\] Project B", content)
+
+    def test_existing_history_passed_to_model(self, monkeypatch, tmp_path):
+        """Existing history.txt content is sent to the model for consolidation."""
+        refine = self._load(monkeypatch)
+        history_file = tmp_path / "history.txt"
+        history_file.write_text("- [2026-01-01] Existing fact\n", encoding="utf-8")
+        monkeypatch.setattr(refine, "_HISTORY_FILE", history_file)
+        mock_post = MagicMock(return_value=_ok_response("- [2026-01-01] Existing fact\n- New fact"))
+        monkeypatch.setattr(requests, "post", mock_post)
+        refine._extract_and_update_history("New text.", "test-key")
+        user_content = mock_post.call_args.kwargs["json"]["messages"][1]["content"]
+        assert "Existing fact" in user_content
+        assert "New text." in user_content
+
+    def test_history_grows_across_calls(self, monkeypatch, tmp_path):
+        """Second extraction sees existing history and returns consolidated result."""
+        refine = self._load(monkeypatch)
+        monkeypatch.setattr(refine, "_HISTORY_FILE", tmp_path / "history.txt")
+        mock_post = MagicMock(side_effect=[
+            _ok_response("- First bullet"),
+            _ok_response("- [2026-03-08] First bullet\n- Second bullet"),
+        ])
+        monkeypatch.setattr(requests, "post", mock_post)
+        refine._extract_and_update_history("First text.", "test-key")
+        refine._extract_and_update_history("Second text.", "test-key")
+        content = (tmp_path / "history.txt").read_text()
+        assert "First bullet" in content
+        assert re.search(r"- \[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\] Second bullet", content)
+
+    def test_existing_timestamps_not_doubled(self, monkeypatch, tmp_path):
+        """Bullets already carrying [YYYY-MM-DD HH:MM:SS] are preserved without double-stamping."""
+        refine = self._load(monkeypatch)
+        history_file = tmp_path / "history.txt"
+        history_file.write_text("- [2026-01-01] Old fact\n", encoding="utf-8")
+        monkeypatch.setattr(refine, "_HISTORY_FILE", history_file)
+        monkeypatch.setattr(requests, "post", MagicMock(return_value=_ok_response("- [2026-01-01] Old fact\n- New fact")))
+        refine._extract_and_update_history("New text.", "test-key")
+        content = (tmp_path / "history.txt").read_text()
+        assert "- [2026-01-01] Old fact" in content
+        assert not re.search(r"\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\].*\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\]", content)
+        assert re.search(r"- \[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\] New fact", content)
+
+    def test_extraction_raises_on_api_failure(self, monkeypatch, tmp_path):
+        """_extract_and_update_history raises on API error — caller handles it."""
+        refine = self._load(monkeypatch)
+        monkeypatch.setattr(refine, "_HISTORY_FILE", tmp_path / "history.txt")
+        monkeypatch.setattr(requests, "post", MagicMock(return_value=_error_response(429)))
+        with pytest.raises(requests.HTTPError):
+            refine._extract_and_update_history("Some text.", "test-key")
+        assert not (tmp_path / "history.txt").exists()
+
+    def test_refine_does_not_trigger_extraction(self, monkeypatch, tmp_path):
+        """refine() is pure: it never calls history extraction (clipboard not delayed)."""
+        monkeypatch.setenv("ENABLE_HISTORY", "true")
+        monkeypatch.setenv("MISTRAL_API_KEY", "test-key")
+        if "src.refine" in sys.modules:
+            del sys.modules["src.refine"]
+        import src.refine as refine
+        monkeypatch.setattr(refine, "_HISTORY_FILE", tmp_path / "history.txt")
+        mock_post = MagicMock(return_value=_ok_response("Clean text."))
+        monkeypatch.setattr(requests, "post", mock_post)
+        refine.refine(" ".join(["word"] * 50))
+        assert mock_post.call_count == 1
+        assert not (tmp_path / "history.txt").exists()
 
 
 class TestRefineNonRetryableError:

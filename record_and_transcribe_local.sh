@@ -89,3 +89,13 @@ if [ -n "$final_text" ]; then
 else
     echo "⚠️  Could not copy to clipboard."
 fi
+
+# ─── History context update (background, after clipboard) ─────────────────────
+if [ "${ENABLE_HISTORY:-false}" = "true" ] && [ -n "$final_text" ]; then
+    word_count=$(printf '%s' "$final_text" | wc -w)
+    threshold="${REFINE_MODEL_THRESHOLD_SHORT:-90}"
+    if [ "$word_count" -ge "$threshold" ]; then
+        printf '%s' "$final_text" | python3 src/refine.py --update-history 2>/dev/tty &
+        echo "🔄 History context update running in background..."
+    fi
+fi

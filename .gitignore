@@ -4,6 +4,9 @@
 # Personal launcher (use launch_voxtral.example.sh as template)
 launch_voxtral.sh
 
+# Auto-generated history context (personal, stays local)
+history.txt
+
 # Audio files (temporary, generated at runtime)
 *.wav
 *.mp3

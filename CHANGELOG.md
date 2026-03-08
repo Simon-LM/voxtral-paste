@@ -13,6 +13,46 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ---
 
+## [1.5.0] — 2026-03-08
+
+### Added
+
+- `history.txt`: optional auto-generated context file built from MEDIUM/LONG refinements
+  - Enable with `ENABLE_HISTORY=true` in `.env` (opt-in, off by default)
+  - Extracts contextual facts (projects, tools, decisions, topics) from refined text
+  - Injected into the system prompt for all tiers to improve refinement relevance
+  - Configurable: `HISTORY_MAX_BULLETS` (default 60), `HISTORY_EXTRACTION_MODEL` (default `magistral-small-latest`)
+  - **Clipboard-first architecture:** extraction runs in the background via `--update-history` CLI flag,
+    launched by the shell script **after** the clipboard is populated — never delays the paste operation
+  - Added `history.txt` to `.gitignore` (personal file, stays local)
+  - Added `history.example.txt` to document the expected format
+
+### Changed
+
+- Default SHORT threshold reduced to **90 words** (was 100) — 100 was too permissive; notes of 90–99 words were routed to MEDIUM unnecessarily
+- All 3 system prompts now include an explicit **anti-prompt-injection guard**: the model is instructed to treat `<transcription>` content as raw voice data, never as directives (fixes cases where the AI followed apparent instructions contained in a long transcription)
+- Updated `.env.example` and Readme routing table (90 / 240)
+
+---
+
+## [1.4.0] — 2026-03-06
+
+### Added
+
+- `docs/model-selection.md`: rationale and test observations for model and threshold choices per tier (SHORT / MEDIUM / LONG)
+- Model comparison testing via OpenWebUI documented for all 3 tiers
+
+### Changed
+
+- Default routing thresholds updated: SHORT < 100 words (was 80), LONG ≥ 240 words (was 200)
+- Updated `.env.example` and Readme routing table to reflect new thresholds (100 / 240)
+
+### Decision
+
+- All primary models confirmed after OpenWebUI testing: `devstral-small-latest` (SHORT), `magistral-small-latest` (MEDIUM), `magistral-medium-latest` (LONG)
+
+---
+
 ## [1.2.1] — 2026-03-06
 
 ### Fixed

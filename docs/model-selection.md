@@ -14,11 +14,10 @@ used in Voxtral Paste. It will be updated as further testing is done.
 | `REFINE_MODEL_THRESHOLD_SHORT` | 80            | **100**       | v1.4.0     |
 | `REFINE_MODEL_THRESHOLD_LONG`  | 200           | **240**       | v1.4.0     |
 
-**Rationale for 100 (was 80):**
-80 words felt too short to trigger the MEDIUM tier for notes that were clearly more
-than a quick command (e.g. a 85-word bug note would stay in SHORT and receive only
-minimal cleanup). 100 words is the minimum useful boundary where a reformulation
-pass genuinely adds value over a simple cleanup.
+**Rationale for 90 (was 80, briefly 100 in v1.4.0):**
+80 words was a first step up. Testing at 100 showed it was slightly too permissive:
+notes of 90–99 words were being routed to MEDIUM when they were clearly SHORT in nature.
+90 words is the calibrated boundary that matches actual usage patterns.
 
 **Rationale for 240 (was 200):**
 200 words was considered slightly conservative for the MEDIUM tier. 240 words (~1 min 45 s
