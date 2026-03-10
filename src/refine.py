@@ -192,27 +192,35 @@ def _select_models(word_count: int) -> Tuple[str, str]:
 _TRANSIENT_HTTP_CODES = (429, 500, 502, 503)
 
 
-def _refine_timing(word_count: int) -> Tuple[int, float]:
-    """Return (timeout_s, retry_delay_s) based on text word count."""
+def _refine_timing(word_count: int, *, background: bool = False) -> Tuple[int, float]:
+    """Return (timeout_s, retry_delay_s) based on text word count.
+
+    Pass background=True for fire-and-forget calls (e.g. history update):
+    timeout is doubled since the user is not blocked.
+    """
     if word_count < 30:
-        return 3, 1.0
-    if word_count < 90:
-        return 5, 1.0
-    if word_count < 180:
-        return 8, 2.0
-    if word_count < 240:
-        return 12, 2.0
-    if word_count < 400:
-        return 18, 3.0
-    if word_count < 600:
-        return 25, 3.0
-    if word_count < 1_000:
-        return 35, 4.0
-    if word_count < 2_000:
-        return 55, 5.0
-    if word_count < 4_000:
-        return 90, 8.0
-    return 150, 10.0
+        t, d = 3, 1.0
+    elif word_count < 90:
+        t, d = 6, 1.0
+    elif word_count < 180:
+        t, d = 10, 2.0
+    elif word_count < 240:
+        t, d = 14, 2.0
+    elif word_count < 400:
+        t, d = 20, 3.0
+    elif word_count < 600:
+        t, d = 28, 3.0
+    elif word_count < 1_000:
+        t, d = 40, 4.0
+    elif word_count < 2_000:
+        t, d = 60, 5.0
+    elif word_count < 4_000:
+        t, d = 100, 8.0
+    else:
+        t, d = 180, 10.0
+    if background:
+        t *= 2
+    return t, d
 
 
 def _call_model(model: str, messages: List[Dict[str, str]], api_key: str, *, timeout: int, retry_delay: float) -> str:
@@ -278,7 +286,7 @@ def _extract_and_update_history(refined_text: str, api_key: str) -> None:
         {"role": "user", "content": user_content},
     ]
     wc = len(refined_text.split())
-    timeout, retry_delay = _refine_timing(wc)
+    timeout, retry_delay = _refine_timing(wc, background=True)
     raw_bullets = None
     for model in (_HISTORY_EXTRACTION_MODEL, _HISTORY_EXTRACTION_FALLBACK_MODEL):
         try:

@@ -215,6 +215,28 @@ class TestHistoryExtraction:
             refine._extract_and_update_history("Some text.", "test-key")
         assert not (tmp_path / "history.txt").exists()
 
+    def test_history_extraction_uses_doubled_timeout(self, monkeypatch, tmp_path):
+        """_extract_and_update_history passes a doubled timeout to requests.post.
+
+        The history update runs in background (user is not blocked), so it uses
+        background=True which doubles the timeout vs a normal refine() call for
+        the same word count.
+        """
+        refine = self._load(monkeypatch)
+        monkeypatch.setattr(refine, "_HISTORY_FILE", tmp_path / "history.txt")
+        mock_post = MagicMock(return_value=_ok_response("- A bullet"))
+        monkeypatch.setattr(requests, "post", mock_post)
+
+        # 124 words → foreground tier = 10s, background (×2) = 20s
+        text = " ".join(["word"] * 124)
+        refine._extract_and_update_history(text, "test-key")
+
+        actual_timeout = mock_post.call_args.kwargs["timeout"]
+        fg_timeout, _ = refine._refine_timing(124, background=False)
+        assert actual_timeout == fg_timeout * 2, (
+            f"Expected doubled timeout {fg_timeout * 2}s, got {actual_timeout}s"
+        )
+
     def test_refine_does_not_trigger_extraction(self, monkeypatch, tmp_path):
         """refine() is pure: it never calls history extraction (clipboard not delayed)."""
         monkeypatch.setenv("ENABLE_HISTORY", "true")
