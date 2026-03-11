@@ -14,6 +14,7 @@ import requests
 def _get_refine(monkeypatch):
     monkeypatch.setenv("MISTRAL_API_KEY", "test-key")
     monkeypatch.setenv("REFINE_REQUEST_RETRIES", "0")
+    monkeypatch.setenv("REFINE_COMPARE_MODELS", "false")
     if "src.refine" in sys.modules:
         del sys.modules["src.refine"]
     import src.refine as refine
@@ -128,6 +129,7 @@ class TestHistoryExtraction:
     def _load(monkeypatch):
         monkeypatch.setenv("MISTRAL_API_KEY", "test-key")
         monkeypatch.setenv("REFINE_REQUEST_RETRIES", "0")
+        monkeypatch.setenv("REFINE_COMPARE_MODELS", "false")
         if "src.refine" in sys.modules:
             del sys.modules["src.refine"]
         import src.refine as refine
@@ -253,6 +255,7 @@ class TestHistoryExtraction:
         monkeypatch.setattr(refine, "_MODEL_LONG", "magistral-medium-latest")
         monkeypatch.setattr(refine, "_MODEL_LONG_FALLBACK", "mistral-large-latest")
         monkeypatch.setattr(refine, "_THRESHOLD_LONG", 100)  # 202 words > 100 → LONG tier
+        monkeypatch.setattr(refine, "_COMPARE_MODELS", False)  # disable compare: call_args must be primary
 
         mock_post = MagicMock(return_value=_ok_response("Refined."))
         monkeypatch.setattr(requests, "post", mock_post)
@@ -271,6 +274,7 @@ class TestHistoryExtraction:
         """refine() is pure: it never calls history extraction (clipboard not delayed)."""
         monkeypatch.setenv("ENABLE_HISTORY", "true")
         monkeypatch.setenv("MISTRAL_API_KEY", "test-key")
+        monkeypatch.setenv("REFINE_COMPARE_MODELS", "false")
         if "src.refine" in sys.modules:
             del sys.modules["src.refine"]
         import src.refine as refine
@@ -358,10 +362,10 @@ class TestCompareModels:
         assert refine.refine("test input") == "Primary only."
 
     def test_compare_mode_off_by_default(self, monkeypatch):
-        """Without REFINE_COMPARE_MODELS, only the primary is called."""
+        """Without REFINE_COMPARE_MODELS=true, only the primary is called."""
         monkeypatch.setenv("MISTRAL_API_KEY", "test-key")
         monkeypatch.setenv("REFINE_REQUEST_RETRIES", "0")
-        monkeypatch.delenv("REFINE_COMPARE_MODELS", raising=False)
+        monkeypatch.setenv("REFINE_COMPARE_MODELS", "false")
         if "src.refine" in sys.modules:
             del sys.modules["src.refine"]
         import src.refine as refine

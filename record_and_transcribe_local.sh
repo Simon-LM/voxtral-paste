@@ -1,6 +1,7 @@
 #!/bin/bash
 
-cd "$(dirname "$0")"SCRIPT_NAME="$(basename "$0")"
+cd "$(dirname "$0")"
+SCRIPT_NAME="$(basename "$0")"
 
 # ─── Mode ────────────────────────────────────────────────────────────────────────────────
 RETRY_MODE=false
@@ -73,13 +74,13 @@ fi
 # ─── Step 2: Text refinement (Mistral chat) ──────────────────────────────────
 
 if [ "${ENABLE_REFINE:-true}" = "true" ]; then
-    # In compare mode, show the raw Voxtral output first (3-way display)
+    # In compare mode, use a temp file so the fallback result is shown AFTER
+    # the primary, not during Python execution.
     if [ "${REFINE_COMPARE_MODELS:-false}" = "true" ]; then
-        echo ""
-        echo "📝 Raw Voxtral:"
-        echo "────────────────────────────────────────────────────────────────────"
-        echo "$raw_transcription"
-        echo "────────────────────────────────────────────────────────────────────"
+        VOXTRAL_COMPARE_FILE=$(mktemp)
+        export VOXTRAL_COMPARE_FILE
+        VOXTRAL_MODELS_FILE=$(mktemp)
+        export VOXTRAL_MODELS_FILE
     fi
     refined_text=$(printf '%s' "$raw_transcription" | python3 src/refine.py 2>/dev/tty)
     # Graceful degradation: if refinement fails, fall back to raw transcription
@@ -99,20 +100,42 @@ if [ -n "$final_text" ]; then
     echo "   - Middle-click  → primary selection"
     echo ""
     if [ "${REFINE_COMPARE_MODELS:-false}" = "true" ] && [ "${ENABLE_REFINE:-true}" = "true" ]; then
-        echo "📝 Primary — copied to clipboard:"
+        _primary_label="Primary"
+        _fallback_label="Fallback"
+        if [ -n "${VOXTRAL_MODELS_FILE:-}" ] && [ -s "$VOXTRAL_MODELS_FILE" ]; then
+            _primary_label="Primary ($(sed -n '1p' "$VOXTRAL_MODELS_FILE"))"
+            _fallback_label="Fallback ($(sed -n '2p' "$VOXTRAL_MODELS_FILE"))"
+            rm -f "$VOXTRAL_MODELS_FILE"
+        fi
+        echo "📝 [1] Raw Voxtral:"
+        echo "────────────────────────────────────────────────────────────────────"
+        echo "$raw_transcription"
+        echo "────────────────────────────────────────────────────────────────────"
+        echo ""
+        echo "📝 [2] ${_primary_label} — copied to clipboard:"
     else
         echo "📝 Result:"
     fi
     echo "────────────────────────────────────────────────────────────────────"
     echo "$final_text"
     echo "────────────────────────────────────────────────────────────────────"
+    if [ -n "${VOXTRAL_COMPARE_FILE:-}" ] && [ -s "$VOXTRAL_COMPARE_FILE" ]; then
+        echo ""
+        echo "📝 [3] ${_fallback_label}:"
+        echo "────────────────────────────────────────────────────────────────────"
+        cat "$VOXTRAL_COMPARE_FILE"
+        echo "────────────────────────────────────────────────────────────────────"
+        rm -f "$VOXTRAL_COMPARE_FILE"
+    fi
 else
     echo "⚠️  Could not copy to clipboard."
 fi
 
 # ─── History context update (background, after clipboard) ─────────────────────
 if [ "${ENABLE_HISTORY:-false}" = "true" ] && [ -n "$final_text" ]; then
-    word_count=$(printf '%s' "$final_text" | wc -w)
+    # Use raw_transcription word count (recording length) as the trigger,
+    # not the refined output — the AI often compresses text significantly.
+    word_count=$(printf '%s' "$raw_transcription" | wc -w)
     threshold="${REFINE_MODEL_THRESHOLD_SHORT:-90}"
     if [ "$word_count" -ge "$threshold" ]; then
         printf '%s' "$final_text" | python3 src/refine.py --update-history 2>/dev/tty &

@@ -97,9 +97,10 @@ Set `REFINE_COMPARE_MODELS=true` in `.env` to run both the primary and fallback 
 transcription and display their outputs in the terminal.
 
 - The **primary result is copied to clipboard immediately** — behaviour is unchanged.
-- The fallback result appears in the terminal for visual comparison.
-- When combined with `ENABLE_REFINE=true`, the raw Voxtral output is also shown first,
-  giving a **3-way view**: raw → primary (clipboard) → fallback.
+- The terminal shows a **3-way view** in order:
+  1. `[1] Raw Voxtral` — unmodified speech-to-text output
+  2. `[2] Primary (model-name) — copied to clipboard` — exact model name shown
+  3. `[3] Fallback (model-name)` — exact model name shown
 
 This mode is useful for evaluating model quality and tuning your routing configuration.
 

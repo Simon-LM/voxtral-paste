@@ -402,12 +402,21 @@ def refine(raw_text: str) -> str:
     if _COMPARE_MODELS and succeeded_model == primary:
         try:
             timeout_fb = _effective_timeout(base_timeout, fallback)
-            print(f"\n🔀 Fallback ({fallback}, timeout {timeout_fb}s)...", file=sys.stderr)
+            print(f"🔀 Comparing fallback ({fallback}, timeout {timeout_fb}s)...", file=sys.stderr)
             compare_result = _call_model(fallback, messages, api_key, timeout=timeout_fb, retry_delay=retry_delay)
-            sep = "─" * 68
-            print(f"{sep}\n{compare_result}\n{sep}", file=sys.stderr)
+            compare_file = os.environ.get("VOXTRAL_COMPARE_FILE")
+            if compare_file:
+                Path(compare_file).write_text(compare_result, encoding="utf-8")
+            else:
+                sep = "─" * 68
+                print(f"{sep}\n{compare_result}\n{sep}", file=sys.stderr)
         except Exception as exc:  # noqa: BLE001
             print(f"⚠️  Fallback compare failed: {exc}", file=sys.stderr)
+
+    # Write model names so the shell can label the [2]/[3] display blocks.
+    models_file = os.environ.get("VOXTRAL_MODELS_FILE")
+    if models_file and succeeded_model:
+        Path(models_file).write_text(f"{succeeded_model}\n{fallback}", encoding="utf-8")
 
     return result
 
