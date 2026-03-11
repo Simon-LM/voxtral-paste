@@ -1,7 +1,12 @@
 #!/bin/bash
 
-cd "$(dirname "$0")"
+cd "$(dirname "$0")"SCRIPT_NAME="$(basename "$0")"
 
+# ─── Mode ────────────────────────────────────────────────────────────────────────────────
+RETRY_MODE=false
+if [[ "${1:-}" == "--retry" || "${1:-}" == "-r" ]]; then
+    RETRY_MODE=true
+fi
 # ─── Configuration ───────────────────────────────────────────────────────────
 
 # Load .env if present (for AUDIO_TEMPO and other variables)
@@ -14,40 +19,46 @@ fi
 # Lower values reduce transcription errors (1.0 = no change, 1.5 = default).
 AUDIO_TEMPO="${AUDIO_TEMPO:-1.5}"
 
-# ─── Recording ───────────────────────────────────────────────────────────────
+# ─── Recording / Audio processing ───────────────────────────────────────────
 
-echo "=== Audio recording ==="
-echo "Press Ctrl+C to stop..."
+if [ "$RETRY_MODE" = "false" ]; then
+    echo "=== Audio recording ==="
+    echo "Press Ctrl+C to stop..."
 
-setsid rec -c 1 -r 16000 local_audio.wav &
-REC_PID=$!
+    setsid rec -c 1 -r 16000 local_audio.wav &
+    REC_PID=$!
 
-stop_recording() {
-    echo ""
-    echo "⏹️ Stopping recording..."
-    kill -INT "$REC_PID" 2>/dev/null
-    wait "$REC_PID" 2>/dev/null
-    echo "✅ Recording stopped."
-}
+    stop_recording() {
+        echo ""
+        echo "⏹️ Stopping recording..."
+        kill -INT "$REC_PID" 2>/dev/null
+        wait "$REC_PID" 2>/dev/null
+        echo "✅ Recording stopped."
+    }
 
-trap stop_recording SIGINT
-wait "$REC_PID"
+    trap stop_recording SIGINT
+    wait "$REC_PID"
 
-# ─── Audio processing ────────────────────────────────────────────────────────
+    if [ ! -f "local_audio.wav" ]; then
+        echo "❌ No audio file recorded."
+        exit 1
+    fi
 
-if [ ! -f "local_audio.wav" ]; then
-    echo "❌ No audio file recorded."
-    exit 1
-fi
+    echo "⚡ Processing audio (silence removal + ×${AUDIO_TEMPO} speed + MP3)..."
+    ffmpeg -y -i local_audio.wav \
+        -af "silenceremove=stop_periods=-1:stop_duration=1.2:stop_threshold=-35dB,atempo=${AUDIO_TEMPO}" \
+        -codec:a libmp3lame -b:a 64k local_audio.mp3 2>/dev/null
 
-echo "⚡ Processing audio (silence removal + ×${AUDIO_TEMPO} speed + MP3)..."
-ffmpeg -y -i local_audio.wav \
-    -af "silenceremove=stop_periods=-1:stop_duration=1.2:stop_threshold=-35dB,atempo=${AUDIO_TEMPO}" \
-    -codec:a libmp3lame -b:a 64k local_audio.mp3 2>/dev/null
-
-if [ ! -f "local_audio.mp3" ]; then
-    echo "❌ Audio conversion failed."
-    exit 1
+    if [ ! -f "local_audio.mp3" ]; then
+        echo "❌ Audio conversion failed."
+        exit 1
+    fi
+else
+    echo "🔁 Retry mode — reusing existing local_audio.mp3..."
+    if [ ! -f "local_audio.mp3" ]; then
+        echo "❌ No local_audio.mp3 found. Run without --retry to record first."
+        exit 1
+    fi
 fi
 
 # ─── Step 1: Speech-to-text (Voxtral) ───────────────────────────────────────
@@ -61,10 +72,21 @@ fi
 
 # ─── Step 2: Text refinement (Mistral chat) ──────────────────────────────────
 
-refined_text=$(printf '%s' "$raw_transcription" | python3 src/refine.py 2>/dev/tty)
-
-# Graceful degradation: if refinement fails, fall back to raw transcription
-final_text="${refined_text:-$raw_transcription}"
+if [ "${ENABLE_REFINE:-true}" = "true" ]; then
+    # In compare mode, show the raw Voxtral output first (3-way display)
+    if [ "${REFINE_COMPARE_MODELS:-false}" = "true" ]; then
+        echo ""
+        echo "📝 Raw Voxtral:"
+        echo "────────────────────────────────────────────────────────────────────"
+        echo "$raw_transcription"
+        echo "────────────────────────────────────────────────────────────────────"
+    fi
+    refined_text=$(printf '%s' "$raw_transcription" | python3 src/refine.py 2>/dev/tty)
+    # Graceful degradation: if refinement fails, fall back to raw transcription
+    final_text="${refined_text:-$raw_transcription}"
+else
+    final_text="$raw_transcription"
+fi
 
 # ─── Clipboard copy ──────────────────────────────────────────────────────────
 
@@ -76,7 +98,11 @@ if [ -n "$final_text" ]; then
     echo "   - Ctrl+V        → standard clipboard"
     echo "   - Middle-click  → primary selection"
     echo ""
-    echo "📝 Result:"
+    if [ "${REFINE_COMPARE_MODELS:-false}" = "true" ] && [ "${ENABLE_REFINE:-true}" = "true" ]; then
+        echo "📝 Primary — copied to clipboard:"
+    else
+        echo "📝 Result:"
+    fi
     echo "────────────────────────────────────────────────────────────────────"
     echo "$final_text"
     echo "────────────────────────────────────────────────────────────────────"
@@ -95,6 +121,9 @@ if [ "${ENABLE_HISTORY:-false}" = "true" ] && [ -n "$final_text" ]; then
 fi
 
 # ─── Quick commands ───────────────────────────────────────────────────────────
+echo ""
+echo "💡 Retry:"
+echo "   ./$SCRIPT_NAME --retry   → re-run on existing audio (skip recording)"
 echo ""
 echo "💡 Useful files:"
 echo "   ${EDITOR:-nano} context.txt   → edit personal context"

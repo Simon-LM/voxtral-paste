@@ -48,6 +48,11 @@ _HISTORY_MAX_BULLETS = int(os.environ.get("HISTORY_MAX_BULLETS", "60"))
 _HISTORY_EXTRACTION_MODEL = os.environ.get("HISTORY_EXTRACTION_MODEL", "mistral-small-latest")
 _HISTORY_EXTRACTION_FALLBACK_MODEL = os.environ.get("HISTORY_EXTRACTION_FALLBACK_MODEL", "devstral-small-latest")
 
+# When true, the fallback model also runs after the primary and its result is
+# printed to stderr for side-by-side comparison. The primary result is still
+# returned and copied to clipboard — this option only adds a display.
+_COMPARE_MODELS = os.environ.get("REFINE_COMPARE_MODELS", "false").lower() in ("true", "1", "yes")
+
 # Speed factors relative to a baseline standard model.
 # Reasoning models (magistral-*) generate a chain-of-thought before answering,
 # making them 2.5–3× slower than standard models for identical word counts.
@@ -364,6 +369,7 @@ def refine(raw_text: str) -> str:
     base_timeout, retry_delay = _refine_timing(word_count)
     result = raw_text
     succeeded = False
+    succeeded_model = None
     for model in (primary, fallback):
         try:
             timeout = _effective_timeout(base_timeout, model)
@@ -373,6 +379,7 @@ def refine(raw_text: str) -> str:
                 print(f"⚠️  {primary} unavailable — switching to fallback: {model}", file=sys.stderr)
             result = _call_model(model, messages, api_key, timeout=timeout, retry_delay=retry_delay)
             succeeded = True
+            succeeded_model = model
             break
         except requests.HTTPError as e:
             status = e.response.status_code if e.response is not None else "?"
@@ -389,6 +396,18 @@ def refine(raw_text: str) -> str:
 
     if not succeeded:
         print("⚠️  All models unavailable — returning raw transcription.", file=sys.stderr)
+
+    # Compare mode: run the fallback independently and print its output to stderr.
+    # The primary result is returned unchanged — clipboard behaviour is unaffected.
+    if _COMPARE_MODELS and succeeded_model == primary:
+        try:
+            timeout_fb = _effective_timeout(base_timeout, fallback)
+            print(f"\n🔀 Fallback ({fallback}, timeout {timeout_fb}s)...", file=sys.stderr)
+            compare_result = _call_model(fallback, messages, api_key, timeout=timeout_fb, retry_delay=retry_delay)
+            sep = "─" * 68
+            print(f"{sep}\n{compare_result}\n{sep}", file=sys.stderr)
+        except Exception as exc:  # noqa: BLE001
+            print(f"⚠️  Fallback compare failed: {exc}", file=sys.stderr)
 
     return result
 

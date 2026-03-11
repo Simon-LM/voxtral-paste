@@ -26,7 +26,7 @@ One API key. No complex UI. Just speak → paste.
 4. You stop the recording (**Ctrl+C**)
 5. The audio is processed locally (tempo adjustment × 1.5 by default, configurable via `AUDIO_TEMPO`, silence removal, MP3 conversion)
 6. **Step 1 — Transcription:** the audio is sent to **Mistral Voxtral** for speech-to-text
-7. **Step 2 — Refinement:** the raw transcription is passed to a **Mistral chat model** which:
+7. **Step 2 — Refinement _(optional, on by default)_:** the raw transcription is passed to a **Mistral chat model** which:
    - removes hesitations, filler words and repetitions
    - corrects likely transcription errors using your personal context
    - rewrites the text cleanly, without altering your intent
@@ -80,6 +80,42 @@ populated. It never delays your paste.
 `history.txt` stays on your machine — it is listed in `.gitignore` and never committed.
 See `history.example.txt` for an example and `.env.example` for all configurable
 parameters (`HISTORY_MAX_BULLETS`, `HISTORY_EXTRACTION_MODEL`).
+
+---
+
+## Advanced options
+
+### Voxtral-only mode (no AI refinement)
+
+Set `ENABLE_REFINE=false` in `.env` to skip the refinement step entirely.
+The raw Voxtral transcription is copied to clipboard as-is — no Mistral chat call is made.
+Useful if you want maximum speed or are testing Voxtral output in isolation.
+
+### Side-by-side comparison
+
+Set `REFINE_COMPARE_MODELS=true` in `.env` to run both the primary and fallback model on every
+transcription and display their outputs in the terminal.
+
+- The **primary result is copied to clipboard immediately** — behaviour is unchanged.
+- The fallback result appears in the terminal for visual comparison.
+- When combined with `ENABLE_REFINE=true`, the raw Voxtral output is also shown first,
+  giving a **3-way view**: raw → primary (clipboard) → fallback.
+
+This mode is useful for evaluating model quality and tuning your routing configuration.
+
+### Retry without re-recording
+
+If a transcription fails or the result is unsatisfactory, you can replay the pipeline on the
+already-captured audio without going back to the microphone:
+
+```bash
+bash record_and_transcribe_local.sh --retry
+# or shorter:
+bash record_and_transcribe_local.sh -r
+```
+
+This skips the recording and audio processing steps and reuses the existing `local_audio.mp3`.
+The command is also printed at the end of each run as a reminder.
 
 ---
 

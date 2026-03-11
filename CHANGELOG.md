@@ -13,6 +13,24 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ---
 
+## [1.8.0] — 2026-03-11
+
+### Added
+
+- **Voxtral-only mode** (`ENABLE_REFINE=false`): skip AI refinement entirely — the raw
+  Voxtral transcription is copied to clipboard as-is, with no Mistral chat call
+- **Side-by-side comparison** (`REFINE_COMPARE_MODELS=true`): after the primary model
+  succeeds, the fallback also runs and its result is printed to the terminal; the primary
+  result is still copied to clipboard immediately and behaviour is unchanged; when active,
+  the raw Voxtral output is shown first (3-way display: raw → primary → fallback)
+- **Retry without re-recording** (`--retry` / `-r` flag): reuses the existing
+  `local_audio.mp3` and skips microphone capture and audio processing — useful when
+  Voxtral transcription failed or refinement produced an unexpected result
+- Both new env vars (`ENABLE_REFINE`, `REFINE_COMPARE_MODELS`) added to `.env.example`
+  and `.env`
+
+---
+
 ## [1.7.0] — 2026-03-11
 
 ### Added

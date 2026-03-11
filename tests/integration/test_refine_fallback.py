@@ -317,3 +317,80 @@ class TestRefineUserMessageFormat:
         assert user_msg.startswith("<transcription>")
         assert user_msg.endswith("</transcription>")
         assert "hello world" in user_msg
+
+
+class TestCompareModels:
+    """REFINE_COMPARE_MODELS=true runs the fallback after the primary succeeds.
+
+    The primary result is returned unchanged; the fallback is only printed to
+    stderr for display purposes.
+    """
+
+    def _load(self, monkeypatch, retries: int = 0):
+        monkeypatch.setenv("MISTRAL_API_KEY", "test-key")
+        monkeypatch.setenv("REFINE_REQUEST_RETRIES", str(retries))
+        monkeypatch.setenv("REFINE_COMPARE_MODELS", "true")
+        if "src.refine" in sys.modules:
+            del sys.modules["src.refine"]
+        import src.refine as refine
+        return refine
+
+    def test_compare_mode_calls_both_models(self, monkeypatch):
+        """When primary succeeds and REFINE_COMPARE_MODELS=true, fallback also runs."""
+        refine = self._load(monkeypatch)
+        mock_post = MagicMock(side_effect=[
+            _ok_response("Primary result."),
+            _ok_response("Fallback result."),
+        ])
+        monkeypatch.setattr(requests, "post", mock_post)
+        result = refine.refine("uh so this is a test")
+        assert result == "Primary result."
+        assert mock_post.call_count == 2
+
+    def test_compare_mode_returns_primary_not_fallback(self, monkeypatch):
+        """The return value is always the primary result, not the fallback."""
+        refine = self._load(monkeypatch)
+        mock_post = MagicMock(side_effect=[
+            _ok_response("Primary only."),
+            _ok_response("Fallback ignored."),
+        ])
+        monkeypatch.setattr(requests, "post", mock_post)
+        assert refine.refine("test input") == "Primary only."
+
+    def test_compare_mode_off_by_default(self, monkeypatch):
+        """Without REFINE_COMPARE_MODELS, only the primary is called."""
+        monkeypatch.setenv("MISTRAL_API_KEY", "test-key")
+        monkeypatch.setenv("REFINE_REQUEST_RETRIES", "0")
+        monkeypatch.delenv("REFINE_COMPARE_MODELS", raising=False)
+        if "src.refine" in sys.modules:
+            del sys.modules["src.refine"]
+        import src.refine as refine
+        mock_post = MagicMock(return_value=_ok_response("Result."))
+        monkeypatch.setattr(requests, "post", mock_post)
+        refine.refine("test input")
+        assert mock_post.call_count == 1
+
+    def test_compare_mode_fallback_failure_does_not_affect_result(self, monkeypatch):
+        """If fallback compare fails, the primary result is still returned cleanly."""
+        refine = self._load(monkeypatch)
+        mock_post = MagicMock(side_effect=[
+            _ok_response("Primary result."),
+            requests.Timeout("compare timed out"),
+        ])
+        monkeypatch.setattr(requests, "post", mock_post)
+        result = refine.refine("test input")
+        assert result == "Primary result."
+
+    def test_compare_mode_skipped_when_primary_fails(self, monkeypatch):
+        """If primary fails and fallback takes over, compare mode does not run again."""
+        refine = self._load(monkeypatch)
+        mock_post = MagicMock(side_effect=[
+            _error_response(429),
+            _ok_response("Fallback took over."),
+        ])
+        monkeypatch.setattr(requests, "post", mock_post)
+        result = refine.refine("test input")
+        # Only 2 calls: primary (failed) + fallback (succeeded as replacement).
+        # No 3rd call for compare because primary did not succeed.
+        assert result == "Fallback took over."
+        assert mock_post.call_count == 2
