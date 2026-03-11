@@ -216,25 +216,55 @@ class TestHistoryExtraction:
         assert not (tmp_path / "history.txt").exists()
 
     def test_history_extraction_uses_doubled_timeout(self, monkeypatch, tmp_path):
-        """_extract_and_update_history passes a doubled timeout to requests.post.
+        """_extract_and_update_history passes background-doubled + model-factored timeout.
 
-        The history update runs in background (user is not blocked), so it uses
-        background=True which doubles the timeout vs a normal refine() call for
-        the same word count.
+        The exact value depends on the configured history model, but must be
+        strictly greater than the foreground base timeout (proof that background
+        doubling was applied), and must equal base_bg × model_factor.
         """
         refine = self._load(monkeypatch)
         monkeypatch.setattr(refine, "_HISTORY_FILE", tmp_path / "history.txt")
         mock_post = MagicMock(return_value=_ok_response("- A bullet"))
         monkeypatch.setattr(requests, "post", mock_post)
 
-        # 124 words → foreground tier = 10s, background (×2) = 20s
         text = " ".join(["word"] * 124)
         refine._extract_and_update_history(text, "test-key")
 
         actual_timeout = mock_post.call_args.kwargs["timeout"]
         fg_timeout, _ = refine._refine_timing(124, background=False)
-        assert actual_timeout == fg_timeout * 2, (
-            f"Expected doubled timeout {fg_timeout * 2}s, got {actual_timeout}s"
+        bg_base, _ = refine._refine_timing(124, background=True)
+        history_model = refine._HISTORY_EXTRACTION_MODEL
+        expected_timeout = refine._effective_timeout(bg_base, history_model)
+        assert actual_timeout == expected_timeout, (
+            f"Expected {expected_timeout}s for model={history_model}, got {actual_timeout}s"
+        )
+        # At minimum the background doubling must be visible
+        assert actual_timeout >= fg_timeout * 2
+
+    def test_reasoning_model_timeout_multiplied(self, monkeypatch, tmp_path):
+        """refine() passes the model-speed-adjusted timeout to requests.post.
+
+        magistral-medium-latest has factor 3.0: base 14s × 3.0 = 42s.
+        This covers the real-world failure where 202 words got only 12s.
+        """
+        refine = self._load(monkeypatch)
+        monkeypatch.setattr(refine, "_HISTORY_FILE", tmp_path / "history.txt")
+        # Force LONG model to magistral-medium-latest for a 202-word input
+        monkeypatch.setattr(refine, "_MODEL_LONG", "magistral-medium-latest")
+        monkeypatch.setattr(refine, "_MODEL_LONG_FALLBACK", "mistral-large-latest")
+        monkeypatch.setattr(refine, "_THRESHOLD_LONG", 100)  # 202 words > 100 → LONG tier
+
+        mock_post = MagicMock(return_value=_ok_response("Refined."))
+        monkeypatch.setattr(requests, "post", mock_post)
+
+        text = " ".join(["word"] * 202)
+        refine.refine(text)
+
+        actual_timeout = mock_post.call_args.kwargs["timeout"]
+        base_timeout, _ = refine._refine_timing(202)
+        expected = refine._effective_timeout(base_timeout, "magistral-medium-latest")
+        assert actual_timeout == expected, (
+            f"Expected magistral-medium timeout {expected}s, got {actual_timeout}s"
         )
 
     def test_refine_does_not_trigger_extraction(self, monkeypatch, tmp_path):

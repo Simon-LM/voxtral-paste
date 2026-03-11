@@ -11,13 +11,14 @@ used in Voxtral Paste. It will be updated as further testing is done.
 
 | Parameter                      | Initial value | Current value | Changed in |
 | ------------------------------ | ------------- | ------------- | ---------- |
-| `REFINE_MODEL_THRESHOLD_SHORT` | 80            | **100**       | v1.4.0     |
+| `REFINE_MODEL_THRESHOLD_SHORT` | 80            | **80**        | v1.4.0     |
 | `REFINE_MODEL_THRESHOLD_LONG`  | 200           | **240**       | v1.4.0     |
 
-**Rationale for 90 (was 80, briefly 100 in v1.4.0):**
-80 words was a first step up. Testing at 100 showed it was slightly too permissive:
-notes of 90–99 words were being routed to MEDIUM when they were clearly SHORT in nature.
-90 words is the calibrated boundary that matches actual usage patterns.
+**Rationale for 80:**
+80 words matches actual usage patterns well: notes of 80–90 words are typically
+short messages better handled by a fast model. Testing at 100 (v1.4.0) was
+too permissive; 90 (v1.5.0) was briefly used but 80 was confirmed as the best
+boundary after further observation.
 
 **Rationale for 240 (was 200):**
 200 words was considered slightly conservative for the MEDIUM tier. 240 words (~1 min 45 s
@@ -27,48 +28,34 @@ LONG on genuine extended monologues).
 
 ---
 
-## Tier 1 — SHORT (< 100 words)
+## Tier 1 — SHORT (< 80 words)
 
 | Role     | Model                   |
 | -------- | ----------------------- |
-| Primary  | `devstral-small-latest` |
-| Fallback | `mistral-small-latest`  |
+| Primary  | `mistral-small-latest`  |
+| Fallback | `devstral-small-latest` |
 
-**Why devstral-small:**
-Initially questioned because devstral is code-oriented. Testing showed this is
-actually an advantage: short notes are frequently technical (endpoint names, variable
-names, shell commands, Python syntax). Devstral correctly preserves technical
-formatting — for example `/users/{ID}` in FastAPI path notation, where a
-general-purpose model substituted `<ID>` (incorrect HTML-style placeholder).
-
-Mistral Nemo (tested as stand-in for mistral-small) produced that substitution error;
-devstral-small did not. **devstral-small-latest confirmed as primary.**
-
-> Further testing needed: direct comparison devstral-small vs mistral-small-latest
-> on non-technical short notes (personal reminders, shopping lists, etc.).
+**Why mistral-small as default:**
+Devstral-small excels on technical short notes (code, paths, API names) but
+mistral-small is a safer default for general use (reminders, messages, mixed content).
+Devstral-small is still the recommended primary for developers — override via
+`REFINE_MODEL_SHORT=devstral-small-latest` in `.env`.
 
 ---
 
-## Tier 2 — MEDIUM (100–240 words)
+## Tier 2 — MEDIUM (80–240 words)
 
 | Role     | Model                    |
 | -------- | ------------------------ |
-| Primary  | `magistral-small-latest` |
-| Fallback | `mistral-medium-latest`  |
+| Primary  | `mistral-medium-latest`  |
+| Fallback | `magistral-small-latest` |
 
-**Why magistral-small over mistral-medium:**
-Both models were compared on the same transcription (~130 words, French,
-refactoring proposal). Key observations:
-
-- `mistral-medium-2508`: over-formalised the output, shifted first-person suggestions
-  ("je pense qu'on devrait") to assertive declarations ("je propose de"). Changed the
-  speaker's register and nuance.
-- `magistral-small-2509`: cleaned hesitations and repetitions faithfully, kept the
-  speaker's voice and uncertainty intact ("je pense qu'on devrait", "ça nous
-  permettrait").
-
-The prompt explicitly requires _"staying true to the speaker's voice and register"_.
-Magistral Small respected this constraint better. **magistral-small-latest confirmed.**
+**Why mistral-medium as default:**
+mistral-medium is fast, reliable and produces clean output without the chain-of-thought
+latency of magistral models. For medium texts (80–240 words) this is a good balance
+between quality and speed. Magistral-small remains available as fallback and as
+the recommended primary for users who prefer reasoning-model quality
+(`REFINE_MODEL_MEDIUM=magistral-small-latest`).
 
 ---
 
@@ -105,11 +92,12 @@ quality is still acceptable despite the "nous" drift.
 
 ## Summary table (current defaults)
 
-| Tier   | Words   | Primary                   | Fallback                | Status           |
-| ------ | ------- | ------------------------- | ----------------------- | ---------------- |
-| SHORT  | < 100   | `devstral-small-latest`   | `mistral-small-latest`  | Partially tested |
-| MEDIUM | 100–240 | `magistral-small-latest`  | `mistral-medium-latest` | Confirmed ✅     |
-| LONG   | > 240   | `magistral-medium-latest` | `mistral-large-latest`  | Confirmed ✅     |
+| Tier    | Words  | Primary                  | Fallback                  | Status       |
+| ------- | ------ | ------------------------ | ------------------------- | ------------ |
+| SHORT   | < 80   | `mistral-small-latest`   | `devstral-small-latest`   | ✅ Confirmed |
+| MEDIUM  | 80–240 | `mistral-medium-latest`  | `magistral-small-latest`  | ✅ Confirmed |
+| LONG    | > 240  | `mistral-medium-latest`  | `magistral-medium-latest` | ✅ Confirmed |
+| HISTORY | any    | `magistral-small-latest` | `mistral-medium-latest`   | ✅ Confirmed |
 
 All values are overridable via `.env` — see `.env.example` for the full list of
 configurable parameters.

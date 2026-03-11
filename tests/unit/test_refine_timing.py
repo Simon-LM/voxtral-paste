@@ -4,10 +4,9 @@ The background=True flag was added so that history updates (which run after
 the text is already in the clipboard) can use doubled timeouts without
 penalising the user experience.
 
-The specific bug that prompted this: a 124-word text hit the < 180-word tier
-(8s foreground). History extraction with the same text was timing out because
-8s was too tight for background API calls. With background=True it now gets
-20s (10 × 2).
+The specific bug that prompted this: a 124-word text hit the < 180-word tier.
+History extraction with the same text was timing out. With background=True
+the base timeout is doubled; additionally the model speed factor is applied.
 """
 
 import sys
@@ -22,18 +21,52 @@ def _load_refine(monkeypatch):
     return rm
 
 
+class TestEffectiveTimeout:
+    def test_standard_model_no_factor(self, monkeypatch):
+        """devstral-small-latest has factor 1.0 — timeout unchanged."""
+        rm = _load_refine(monkeypatch)
+        assert rm._effective_timeout(8, "devstral-small-latest") == 8
+
+    def test_reasoning_model_multiplied(self, monkeypatch):
+        """magistral-medium-latest has factor 3.0 — timeout tripled."""
+        rm = _load_refine(monkeypatch)
+        assert rm._effective_timeout(8, "magistral-medium-latest") == 24
+
+    def test_magistral_small_factor_2_5(self, monkeypatch):
+        """magistral-small-latest has factor 2.5."""
+        rm = _load_refine(monkeypatch)
+        assert rm._effective_timeout(11, "magistral-small-latest") == 28
+
+    def test_unknown_model_defaults_to_1(self, monkeypatch):
+        """Unknown model name → factor 1.0, timeout unchanged."""
+        rm = _load_refine(monkeypatch)
+        assert rm._effective_timeout(10, "some-unknown-model") == 10
+
+    def test_real_world_bug_case(self, monkeypatch):
+        """202 words + magistral-medium: base 8s × 3.0 = 24s (Option A).
+
+        The real-world failure was 12s with old base. With Option A the base
+        drops to 8s but the ×3.0 factor gives 24s, well above the old bare 12s.
+        """
+        rm = _load_refine(monkeypatch)
+        base_timeout, _ = rm._refine_timing(202)   # < 240 → 8s
+        effective = rm._effective_timeout(base_timeout, "magistral-medium-latest")
+        assert base_timeout == 8
+        assert effective == 24
+
+
 class TestRefineTiming:
     def test_short_text_foreground_timeout(self, monkeypatch):
-        """< 90 words → 6s timeout in normal mode."""
+        """< 90 words → 4s timeout in normal mode (Option A)."""
         rm = _load_refine(monkeypatch)
         timeout, _ = rm._refine_timing(50)
-        assert timeout == 6
+        assert timeout == 4
 
     def test_medium_text_foreground_timeout(self, monkeypatch):
-        """< 400 words → 20s timeout in normal mode."""
+        """< 400 words → 11s timeout in normal mode (Option A)."""
         rm = _load_refine(monkeypatch)
         timeout, _ = rm._refine_timing(300)
-        assert timeout == 20
+        assert timeout == 11
 
     def test_background_doubles_timeout(self, monkeypatch):
         """background=True must double the timeout for any tier."""
@@ -50,14 +83,12 @@ class TestRefineTiming:
         assert bg_delay == fg_delay
 
     def test_bug_fix_124_words_background(self, monkeypatch):
-        """124 words + background=True must give 20s (was 8s before fix).
+        """124 words + background=True must double the foreground timeout.
 
-        The real-world failure: history extraction on a 124-word recording
-        timed out at 8s. With background=True the tier (< 180) now yields
-        10s × 2 = 20s.
+        With Option A the < 180-word tier gives 6s foreground → 12s background.
         """
         rm = _load_refine(monkeypatch)
         fg_timeout, _ = rm._refine_timing(124)
         bg_timeout, _ = rm._refine_timing(124, background=True)
-        assert fg_timeout == 10
-        assert bg_timeout == 20
+        assert fg_timeout == 6
+        assert bg_timeout == 12

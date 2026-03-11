@@ -33,7 +33,7 @@ One API key. No complex UI. Just speak → paste.
 8. The refined text is automatically copied to:
    - the standard clipboard (Ctrl+V)
    - the primary selection (middle-click paste on Linux)
-9. _(Optional)_ If `ENABLE_HISTORY=true` and the text is ≥ 90 words: key facts are extracted
+9. _(Optional)_ If `ENABLE_HISTORY=true` and the text is ≥ 80 words: key facts are extracted
    **in the background** and added to `history.txt` — the clipboard is always populated first
 10. You paste it anywhere (chat, form, editor, terminal, etc.)
 
@@ -43,11 +43,11 @@ One API key. No complex UI. Just speak → paste.
 
 The refinement step automatically selects the right model based on the length of the transcription:
 
-| Transcription length | Primary model             | Fallback                |
-| -------------------- | ------------------------- | ----------------------- |
-| < 90 words           | `devstral-small-latest`   | `mistral-small-latest`  |
-| 90 – 240 words       | `magistral-small-latest`  | `mistral-medium-latest` |
-| > 240 words          | `magistral-medium-latest` | `mistral-large-latest`  |
+| Transcription length | Primary model           | Fallback                  |
+| -------------------- | ----------------------- | ------------------------- |
+| < 80 words           | `mistral-small-latest`  | `devstral-small-latest`   |
+| 80 – 240 words       | `mistral-medium-latest` | `magistral-small-latest`  |
+| > 240 words          | `mistral-medium-latest` | `magistral-medium-latest` |
 
 If a model is unavailable (rate limit, timeout), the next one is tried automatically.
 If all models fail, the raw Voxtral transcription is returned — the tool never crashes.
@@ -71,7 +71,7 @@ your longer transcriptions. Enable it with `ENABLE_HISTORY=true` in your `.env`.
 
 **What is NOT stored:**
 
-- Short dictations (< `REFINE_MODEL_THRESHOLD_SHORT` words, default 90)
+- Short dictations (< `REFINE_MODEL_THRESHOLD_SHORT` words, default 80)
 - Passwords, credentials or any text not sent to the refinement step
 
 **Clipboard-first:** the history update runs in the background **after** the clipboard is
@@ -117,7 +117,7 @@ Frequent terms: API, pipeline, transcription, pull request, backend, deployment.
 ### Requirements
 
 - Linux (tested on Ubuntu / MATE)
-- `sox`, `ffmpeg`, `lame` installed
+- `ffmpeg` (with `libmp3lame` support) installed
 - Python 3.10+
 - A [Mistral API key](https://console.mistral.ai/api-keys)
 

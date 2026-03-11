@@ -13,6 +13,75 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ---
 
+## [1.7.0] — 2026-03-11
+
+### Added
+
+- **Per-model speed factors** (`_MODEL_SPEED_FACTOR`): Magistral models (chain-of-thought
+  reasoning) receive a 2.5–3× timeout multiplier; `_effective_timeout(base, model)` applies
+  the factor at call time
+- `docs/resilience.md`: new "Per-model speed factors" and "History extraction timeout" sections
+
+### Changed
+
+- **Audio pipeline**: replaced separate `sox` + `ffmpeg` + `lame` commands (3 tools, 2 temp
+  files) with a single `ffmpeg` command — silence removal, tempo shift and MP3 encoding in one
+  pass; `sox` and `lame` are no longer required
+- **Timeout bases reduced (Option A)** to compensate for the multipliers: range is now 3–80 s
+  (was 3–180 s); column renamed "Base timeout" in `docs/resilience.md`
+- Default model routing updated in `.env.example`:
+  - SHORT: `mistral-small-latest` / `devstral-small-latest`
+  - MEDIUM: `mistral-medium-latest` / `magistral-small-latest`
+  - LONG: `mistral-medium-latest` / `magistral-medium-latest`
+  - HISTORY: `magistral-small-latest` / `mistral-medium-latest`
+
+---
+
+## [1.6.2] — 2026-03-11
+
+### Added
+
+- `background` parameter to `_refine_timing()`: passing `background=True` doubles the
+  base timeout — history extraction is a fire-and-forget task that should not constrain
+  foreground timeouts
+
+### Fixed
+
+- `_extract_and_update_history()` was using the same foreground timeout as `refine()`;
+  it now calls `_refine_timing(wc, background=True)` to get a doubled base timeout,
+  preventing spurious timeouts on background history updates
+
+---
+
+## [1.6.1] — 2026-03-11
+
+### Fixed
+
+- `requests.Timeout` (ReadTimeout) was not caught inside `_transcribe_single()`, so it
+  escaped the retry loop and propagated as an unhandled exception; it is now caught and
+  retried like other transient errors
+- First-tier Voxtral timeout raised from 2 s to 3 s — a 177 KB file reliably triggered
+  a ReadTimeoutError at 2 s under normal load
+
+---
+
+## [1.6.0] — 2026-03-10
+
+### Added
+
+- **Adaptive timeouts for Voxtral** (`_get_timeout`): 8 file-size tiers from 3 s (< 300 KB)
+  to 55 s (< 19.5 MB / ~60 min)
+- **Adaptive timeouts for Refine** (`_refine_timing`): 10 word-count tiers
+- **Retry loop** for transient HTTP errors (429 / 500 / 502 / 503) in both
+  `_transcribe_single()` and `refine()` / `_extract_and_update_history()`
+- **Audio splitting** for recordings ≥ 19.5 MB (~60 min): `_split_audio()` detects
+  silence boundaries and cuts at ~30 min intervals; each chunk is transcribed independently
+- `TRANSCRIBE_REQUEST_RETRIES` and `REFINE_REQUEST_RETRIES` env vars (default: 2 extra
+  attempts, i.e. 3 total)
+- `docs/resilience.md`: full documentation of timeout / retry / splitting logic
+
+---
+
 ## [1.5.0] — 2026-03-08
 
 ### Added

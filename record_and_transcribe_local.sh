@@ -40,16 +40,10 @@ if [ ! -f "local_audio.wav" ]; then
     exit 1
 fi
 
-echo "⚡ Adjusting audio speed (tempo ×${AUDIO_TEMPO})..."
-sox local_audio.wav local_audio_fast.wav tempo "$AUDIO_TEMPO"
-
-echo "✂️ Removing long silences..."
-ffmpeg -y -i local_audio_fast.wav \
-    -af silenceremove=stop_periods=-1:stop_duration=1.2:stop_threshold=-35dB \
-    local_audio_trim.wav 2>/dev/null
-
-echo "🎵 Converting to MP3..."
-lame -b 64 local_audio_trim.wav local_audio.mp3 2>/dev/null
+echo "⚡ Processing audio (silence removal + ×${AUDIO_TEMPO} speed + MP3)..."
+ffmpeg -y -i local_audio.wav \
+    -af "silenceremove=stop_periods=-1:stop_duration=1.2:stop_threshold=-35dB,atempo=${AUDIO_TEMPO}" \
+    -codec:a libmp3lame -b:a 64k local_audio.mp3 2>/dev/null
 
 if [ ! -f "local_audio.mp3" ]; then
     echo "❌ Audio conversion failed."

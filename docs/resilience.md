@@ -11,10 +11,10 @@ to handle transient API errors and large audio files gracefully.
 
 Two distinct components make HTTP calls to the Mistral API:
 
-| Component                                    | File                | Purpose                                        |
-| -------------------------------------------- | ------------------- | ---------------------------------------------- |
-| `transcribe()`                               | `src/transcribe.py` | Audio → raw text (Voxtral)                     |
-| `refine()` / `_extract_and_update_history()` | `src/refine.py`     | Raw text → refined text (Devstral / Magistral) |
+| Component                                    | File                | Purpose                                       |
+| -------------------------------------------- | ------------------- | --------------------------------------------- |
+| `transcribe()`                               | `src/transcribe.py` | Audio → raw text (Voxtral)                    |
+| `refine()` / `_extract_and_update_history()` | `src/refine.py`     | Raw text → refined text (Mistral / Magistral) |
 
 Each has its own adaptive timeout logic and shares the same retry mechanic.
 
@@ -35,7 +35,7 @@ Number of extra attempts is configurable (default: 2, i.e. 3 total attempts):
 
 ```dotenv
 TRANSCRIBE_REQUEST_RETRIES=2   # for Voxtral
-REFINE_REQUEST_RETRIES=2       # for Devstral / Magistral
+REFINE_REQUEST_RETRIES=2       # for Mistral / Magistral
 ```
 
 Set to `0` to disable retries entirely.
@@ -51,7 +51,7 @@ The timeout is computed in `_get_timeout(file_size)`:
 
 | File size | ≈ speech duration    | Timeout             |
 | --------- | -------------------- | ------------------- |
-| < 300 KB  | ≈ 80 words / ~37 s   | 2 s                 |
+| < 300 KB  | ≈ 80 words / ~37 s   | 3 s                 |
 | < 800 KB  | ≈ 240 words / ~110 s | 3 s                 |
 | < 1.5 MB  | ≈ 500 words / ~4 min | 5 s                 |
 | < 4 MB    | ≈ 10 min             | 12 s                |
@@ -90,29 +90,59 @@ This avoids cutting in the middle of a sentence in the vast majority of cases.
 
 ## Refine — adaptive timeout by word count
 
-After transcription, the raw text is refined by Devstral or Magistral.
-The timeout (and retry delay) scale with the word count of the text,
+After transcription, the raw text is refined by a Mistral or Magistral model.
+The base timeout (and retry delay) scale with the word count of the text,
 computed by `_refine_timing(word_count)`:
 
-| Word count    | Timeout | Retry delay |
-| ------------- | ------- | ----------- |
-| < 30          | 3 s     | 1 s         |
-| 30 – 89       | 5 s     | 1 s         |
-| 90 – 179      | 8 s     | 2 s         |
-| 180 – 239     | 12 s    | 2 s         |
-| 240 – 399     | 18 s    | 3 s         |
-| 400 – 599     | 25 s    | 3 s         |
-| 600 – 999     | 35 s    | 4 s         |
-| 1 000 – 1 999 | 55 s    | 5 s         |
-| 2 000 – 3 999 | 90 s    | 8 s         |
-| ≥ 4 000       | 150 s   | 10 s        |
+| Word count    | Base timeout | Retry delay |
+| ------------- | ------------ | ----------- |
+| < 30          | 3 s          | 1 s         |
+| 30 – 89       | 4 s          | 1 s         |
+| 90 – 179      | 6 s          | 1.5 s       |
+| 180 – 239     | 8 s          | 2 s         |
+| 240 – 399     | 11 s         | 2 s         |
+| 400 – 599     | 15 s         | 2 s         |
+| 600 – 999     | 20 s         | 3 s         |
+| 1 000 – 1 999 | 30 s         | 4 s         |
+| 2 000 – 3 999 | 50 s         | 5 s         |
+| ≥ 4 000       | 80 s         | 8 s         |
 
-Magistral models (MEDIUM and LONG tiers) do chain-of-thought reasoning, which makes
-them intrinsically slower than Devstral. The higher timeouts in the upper tiers
-account for this.
+These are **base timeouts**. The effective timeout applied at runtime is
+`_effective_timeout(base, model)`, which multiplies the base by a per-model
+speed factor (see below).
 
-The same `_refine_timing()` function is also used for history extraction calls,
-using the word count of the refined text.
+---
+
+## Per-model speed factors
+
+Magistral models produce chain-of-thought reasoning before their final answer,
+making them intrinsically 2.5–3× slower than plain completion models.
+A per-model factor is applied to prevent premature timeouts:
+
+| Model                     | Factor | Notes                       |
+| ------------------------- | ------ | --------------------------- |
+| `devstral-small-latest`   | × 1.0  |                             |
+| `mistral-small-latest`    | × 1.0  |                             |
+| `mistral-medium-latest`   | × 1.2  | Slightly heavier than small |
+| `magistral-small-latest`  | × 2.5  | Chain-of-thought reasoning  |
+| `magistral-medium-latest` | × 3.0  | Chain-of-thought reasoning  |
+| `mistral-large-latest`    | × 1.5  |                             |
+
+Unknown models default to × 1.0.
+
+**Example:** 202 words → base = 8 s. With `magistral-medium-latest` (× 3.0)
+the effective timeout is **24 s**.
+
+---
+
+## History extraction timeout
+
+The same `_refine_timing()` function is used for history extraction calls,
+using the word count of the refined text. Because the call is made
+**in the background** (the clipboard is already populated at that point),
+the base timeout is **doubled** via `_refine_timing(wc, background=True)` —
+giving history extraction extra slack without ever delaying the paste operation.
+The per-model speed factor is applied on top of the doubled base.
 
 ---
 

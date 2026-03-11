@@ -48,6 +48,18 @@ _HISTORY_MAX_BULLETS = int(os.environ.get("HISTORY_MAX_BULLETS", "60"))
 _HISTORY_EXTRACTION_MODEL = os.environ.get("HISTORY_EXTRACTION_MODEL", "mistral-small-latest")
 _HISTORY_EXTRACTION_FALLBACK_MODEL = os.environ.get("HISTORY_EXTRACTION_FALLBACK_MODEL", "devstral-small-latest")
 
+# Speed factors relative to a baseline standard model.
+# Reasoning models (magistral-*) generate a chain-of-thought before answering,
+# making them 2.5–3× slower than standard models for identical word counts.
+_MODEL_SPEED_FACTOR: Dict[str, float] = {
+    "devstral-small-latest":   1.0,
+    "mistral-small-latest":    1.0,
+    "mistral-medium-latest":   1.2,
+    "magistral-small-latest":  2.5,
+    "magistral-medium-latest": 3.0,
+    "mistral-large-latest":    1.5,
+}
+
 _HISTORY_SECTION = "\n\n<history>\n{history}\n</history>"
 
 _SYSTEM_PROMPT_SHORT = """\
@@ -201,26 +213,32 @@ def _refine_timing(word_count: int, *, background: bool = False) -> Tuple[int, f
     if word_count < 30:
         t, d = 3, 1.0
     elif word_count < 90:
-        t, d = 6, 1.0
+        t, d = 4, 1.0
     elif word_count < 180:
-        t, d = 10, 2.0
+        t, d = 6, 1.5
     elif word_count < 240:
-        t, d = 14, 2.0
+        t, d = 8, 2.0
     elif word_count < 400:
-        t, d = 20, 3.0
+        t, d = 11, 2.0
     elif word_count < 600:
-        t, d = 28, 3.0
+        t, d = 15, 2.0
     elif word_count < 1_000:
-        t, d = 40, 4.0
+        t, d = 20, 3.0
     elif word_count < 2_000:
-        t, d = 60, 5.0
+        t, d = 30, 4.0
     elif word_count < 4_000:
-        t, d = 100, 8.0
+        t, d = 50, 5.0
     else:
-        t, d = 180, 10.0
+        t, d = 80, 8.0
     if background:
         t *= 2
     return t, d
+
+
+def _effective_timeout(base_timeout: int, model: str) -> int:
+    """Apply a per-model speed factor to the base word-count timeout."""
+    factor = _MODEL_SPEED_FACTOR.get(model, 1.0)
+    return max(base_timeout, round(base_timeout * factor))
 
 
 def _call_model(model: str, messages: List[Dict[str, str]], api_key: str, *, timeout: int, retry_delay: float) -> str:
@@ -286,10 +304,11 @@ def _extract_and_update_history(refined_text: str, api_key: str) -> None:
         {"role": "user", "content": user_content},
     ]
     wc = len(refined_text.split())
-    timeout, retry_delay = _refine_timing(wc, background=True)
+    base_timeout, retry_delay = _refine_timing(wc, background=True)
     raw_bullets = None
     for model in (_HISTORY_EXTRACTION_MODEL, _HISTORY_EXTRACTION_FALLBACK_MODEL):
         try:
+            timeout = _effective_timeout(base_timeout, model)
             raw_bullets = _call_model(model, messages, api_key, timeout=timeout, retry_delay=retry_delay)
             break
         except requests.HTTPError as exc:
@@ -342,11 +361,12 @@ def refine(raw_text: str) -> str:
         {"role": "user", "content": f"<transcription>\n{raw_text}\n</transcription>"},
     ]
 
-    timeout, retry_delay = _refine_timing(word_count)
+    base_timeout, retry_delay = _refine_timing(word_count)
     result = raw_text
     succeeded = False
     for model in (primary, fallback):
         try:
+            timeout = _effective_timeout(base_timeout, model)
             if model == primary:
                 print(f"✨ Refining via {model} ({word_count} words, timeout {timeout}s)...", file=sys.stderr)
             else:
