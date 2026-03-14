@@ -146,10 +146,19 @@ The command is also printed at the end of each run as a reminder.
 
 ---
 
-## Personal context
+### Personal context
 
-Edit `context.txt` to describe your domain, stack, and vocabulary.
-This file is injected into the refinement prompt so the AI understands your technical terms and corrects transcription errors accordingly.
+Use `context.example.txt` as a template, then create your local `context.txt`.
+This file is injected into the refinement prompt so the AI understands your
+technical terms and corrects transcription errors accordingly.
+
+```bash
+cp context.example.txt context.txt
+${EDITOR:-nano} context.txt
+```
+
+`context.txt` is personal and ignored by git (`.gitignore`), so updates do not
+overwrite your custom context.
 
 Example:
 
@@ -199,9 +208,11 @@ cp .env.example .env
 # Edit .env and set your MISTRAL_API_KEY
 
 # 4. Make the scripts executable
-chmod +x record_and_transcribe_local.sh launch_voxtral.sh
+chmod +x record_and_transcribe_local.sh launch_voxtral.sh voxrefiner-update.sh
 
-# 5. (Optional) Edit context.txt to describe your domain
+# 5. (Optional) Create and edit personal context
+cp context.example.txt context.txt
+# Edit context.txt to describe your domain
 
 # 6. Test it
 bash record_and_transcribe_local.sh
@@ -217,8 +228,15 @@ To update to a newer version:
 
 ```bash
 cd ~/.local/bin/vox-refiner
-git pull
-chmod +x record_and_transcribe_local.sh launch_voxtral.sh
+./voxrefiner-update.sh --check
+./voxrefiner-update.sh --apply
+```
+
+Manual fallback (if needed):
+
+```bash
+git pull --ff-only
+chmod +x record_and_transcribe_local.sh launch_voxtral.sh voxrefiner-update.sh
 ```
 
 ### Keyboard shortcut (recommended)

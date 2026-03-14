@@ -7,6 +7,9 @@ launch_voxtral.sh
 # Auto-generated history context (personal, stays local)
 history.txt
 
+# Personal context (copy from context.example.txt)
+context.txt
+
 # Audio files (temporary, generated at runtime)
 *.wav
 *.mp3

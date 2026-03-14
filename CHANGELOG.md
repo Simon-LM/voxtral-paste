@@ -11,6 +11,23 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Added
+
+- `voxrefiner-update.sh` with:
+  - `--check`: fetch remote refs/tags and report update status
+  - `--apply`: fast-forward-only update flow with tracked-tree safety checks
+- `context.example.txt` template for personal domain vocabulary/context
+
+### Changed
+
+- `context.txt` is now ignored by git and intended as a local file created from
+  `context.example.txt`
+- End-of-run quick commands now include update commands:
+  - `./voxrefiner-update.sh --check`
+  - `./voxrefiner-update.sh --apply`
+- README installation/update flow now documents the new context and update
+  workflow
+
 ---
 
 ## [1.8.4] — 2026-03-14
