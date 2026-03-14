@@ -78,9 +78,47 @@ ensure_clean_tracked_tree() {
     fi
 }
 
+collect_deleted_paths() {
+    {
+        git diff --name-only --diff-filter=D
+        git diff --cached --name-only --diff-filter=D
+    } | sort -u
+}
+
+auto_resolve_obsolete_deletions() {
+    local upstream path repaired
+    upstream="$1"
+    repaired=0
+
+    while IFS= read -r path; do
+        [ -z "$path" ] && continue
+
+        # If upstream no longer contains this path, a local deletion is obsolete.
+        if git cat-file -e "$upstream:$path" >/dev/null 2>&1; then
+            continue
+        fi
+
+        if git ls-files --error-unmatch "$path" >/dev/null 2>&1; then
+            git restore --staged --worktree -- "$path" >/dev/null 2>&1 || \
+                git restore --worktree -- "$path" >/dev/null 2>&1 || true
+            echo "Auto-resolved obsolete local deletion: $path"
+            repaired=1
+        fi
+    done < <(collect_deleted_paths)
+
+    if [ "$repaired" -eq 1 ]; then
+        echo "Obsolete deletions normalized; continuing update..."
+    fi
+}
+
 repair_exec_bits() {
-    chmod +x record_and_transcribe_local.sh
-    chmod +x vox-refiner-update.sh
+    if [ -f "record_and_transcribe_local.sh" ]; then
+        chmod +x record_and_transcribe_local.sh
+    fi
+
+    if [ -f "vox-refiner-update.sh" ]; then
+        chmod +x vox-refiner-update.sh
+    fi
 
     if [ -f "launch-vox-refiner.sh" ]; then
         chmod +x launch-vox-refiner.sh
@@ -98,9 +136,10 @@ run_check() {
 run_apply() {
     local upstream behind
 
-    ensure_clean_tracked_tree
     upstream="$(resolve_upstream)"
     fetch_remote "$upstream"
+    auto_resolve_obsolete_deletions "$upstream"
+    ensure_clean_tracked_tree
     behind="$(count_behind "$upstream")"
 
     if [ "$behind" -eq 0 ]; then

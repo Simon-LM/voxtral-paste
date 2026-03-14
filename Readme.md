@@ -239,6 +239,10 @@ cd ~/.local/bin/vox-refiner
 ./vox-refiner-update.sh --apply
 ```
 
+`vox-refiner-update.sh --apply` now auto-normalizes local deletions for files
+already removed upstream (legacy rename cleanup), so you do not need to
+manually restore those files before updating.
+
 Manual fallback (if needed):
 
 ```bash

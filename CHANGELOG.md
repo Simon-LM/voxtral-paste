@@ -13,6 +13,28 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ---
 
+## [1.9.1] — 2026-03-15
+
+### Fixed
+
+- `vox-refiner-update.sh --apply` now auto-normalizes local deletions for files
+  already removed upstream (legacy rename cleanup), instead of failing with
+  "Local tracked changes detected"
+- Updater post-update permission repair is now resilient when optional runtime
+  files are absent in minimal clones/tests
+
+### Added
+
+- Integration coverage for updater behavior when a tracked file is deleted both
+  locally and upstream before `--apply`
+
+### Changed
+
+- README update section now documents that obsolete local deletions are handled
+  automatically during `--apply`
+
+---
+
 ## [1.9.0] — 2026-03-14
 
 ### Added

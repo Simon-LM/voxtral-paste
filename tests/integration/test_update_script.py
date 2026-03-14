@@ -86,3 +86,32 @@ def test_apply_refuses_dirty_tracked_tree(tmp_path: Path):
 
     assert result.returncode != 0
     assert "Local tracked changes detected" in (result.stdout + result.stderr)
+
+
+def test_apply_auto_resolves_obsolete_local_deletion(tmp_path: Path):
+    repo_root = Path(__file__).resolve().parents[2]
+    remote, work = _setup_repo_pair(tmp_path)
+    _install_updater(work, repo_root)
+
+    legacy = work / "launch_vox-refiner.sh"
+    legacy.write_text("#!/bin/bash\necho legacy\n", encoding="utf-8")
+    _run(["git", "add", "launch_vox-refiner.sh"], cwd=work)
+    _run(["git", "commit", "-m", "add legacy launcher"], cwd=work)
+    _run(["git", "push"], cwd=work)
+
+    # Remove the legacy file on remote via a second clone (upstream cleanup).
+    other = tmp_path / "other"
+    _run(["git", "clone", str(remote), str(other)], cwd=tmp_path)
+    _run(["git", "checkout", "main"], cwd=other)
+    _run(["git", "rm", "launch_vox-refiner.sh"], cwd=other)
+    _run(["git", "commit", "-m", "remove legacy launcher"], cwd=other)
+    _run(["git", "push"], cwd=other)
+
+    # Local user also deleted this tracked file before update.
+    legacy.unlink()
+
+    result = _run(["bash", "./vox-refiner-update.sh", "--apply"], cwd=work)
+
+    assert result.returncode == 0
+    assert "Update applied successfully" in result.stdout
+    assert not legacy.exists()
