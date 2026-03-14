@@ -5,12 +5,12 @@
 <!-- markdownlint-disable-next-line MD033 -->
 <p align="center">
   <!-- markdownlint-disable-next-line MD033 -->
-  <img src="VoxRefiner.svg" alt="VoxRefiner logo" width="260" />
+  <img src="Logo/VoxRefiner_subtitile_Logo.svg" alt="VoxRefiner logo" width="360" />
 </p>
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-**VoxRefiner — Speak naturally. AI refines it. Just paste it anywhere.**
+**VoxRefiner — Speak naturally. AI refines it. Just paste.**
 
 ---
 
@@ -33,7 +33,7 @@ One API key. No complex UI. Just speak → paste.
 2. Recording starts immediately
 3. You speak
 4. You stop the recording (**Ctrl+C**)
-5. The audio is processed locally (tempo adjustment × 1.5 by default, configurable via `AUDIO_TEMPO`, silence removal, MP3 conversion)
+5. The recording is captured to a temporary WAV, sanity-checked, then processed locally (tempo adjustment × 1.5 by default, configurable via `AUDIO_TEMPO`, silence removal, MP3 conversion)
 6. **Step 1 — Transcription:** the audio is sent to **Mistral Voxtral** for speech-to-text
 7. **Step 2 — Refinement _(optional, on by default)_:** the raw transcription is passed to a **Mistral chat model** which:
    - removes hesitations, filler words and repetitions
@@ -93,6 +93,23 @@ parameters (`HISTORY_MAX_BULLETS`, `HISTORY_EXTRACTION_MODEL`).
 ---
 
 ## Advanced options
+
+### Recording safeguards
+
+To reduce failures caused by interrupted sessions or corrupted audio artifacts,
+the recorder now applies defensive checks before transcription:
+
+- Existing `local_audio.wav` / `local_audio.mp3` files are removed before a new recording.
+- Capture is written to a temporary file in `/tmp` and promoted to `local_audio.wav` only after validation.
+- A maximum WAV size guard rejects abnormally large/corrupted files before `ffmpeg`.
+
+You can override the WAV size limit with:
+
+```dotenv
+MAX_WAV_BYTES=100000000
+```
+
+Default is `100000000` bytes (100 MB).
 
 ### Voxtral-only mode (no AI refinement)
 

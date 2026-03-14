@@ -28,14 +28,14 @@ class TestEffectiveTimeout:
         assert rm._effective_timeout(8, "devstral-small-latest") == 8
 
     def test_reasoning_model_multiplied(self, monkeypatch):
-        """magistral-medium-latest has factor 3.0 — timeout tripled."""
+        """magistral-medium-latest has factor 4.5."""
         rm = _load_refine(monkeypatch)
-        assert rm._effective_timeout(8, "magistral-medium-latest") == 24
+        assert rm._effective_timeout(8, "magistral-medium-latest") == 36
 
     def test_magistral_small_factor_2_5(self, monkeypatch):
-        """magistral-small-latest has factor 2.5."""
+        """magistral-small-latest has factor 3.0."""
         rm = _load_refine(monkeypatch)
-        assert rm._effective_timeout(11, "magistral-small-latest") == 28
+        assert rm._effective_timeout(11, "magistral-small-latest") == 33
 
     def test_unknown_model_defaults_to_1(self, monkeypatch):
         """Unknown model name → factor 1.0, timeout unchanged."""
@@ -43,16 +43,16 @@ class TestEffectiveTimeout:
         assert rm._effective_timeout(10, "some-unknown-model") == 10
 
     def test_real_world_bug_case(self, monkeypatch):
-        """202 words + magistral-medium: base 8s × 3.0 = 24s (Option A).
+        """202 words + magistral-medium: base 8s × 4.5 = 36s.
 
-        The real-world failure was 12s with old base. With Option A the base
-        drops to 8s but the ×3.0 factor gives 24s, well above the old bare 12s.
+        The real-world failure was 12s with old base; current factors provide
+        significantly more headroom for reasoning models.
         """
         rm = _load_refine(monkeypatch)
         base_timeout, _ = rm._refine_timing(202)   # < 240 → 8s
         effective = rm._effective_timeout(base_timeout, "magistral-medium-latest")
         assert base_timeout == 8
-        assert effective == 24
+        assert effective == 36
 
 
 class TestRefineTiming:

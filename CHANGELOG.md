@@ -11,6 +11,26 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Added
+
+- New logo asset set under `Logo/`:
+  - `Logo/VoxRefiner_Logo.svg`
+  - `Logo/VoxRefiner_subtitile_Logo.svg`
+  - `Logo/VoxRefiner_old.svg` (archived previous variant)
+
+### Changed
+
+- README logo reference now uses `Logo/VoxRefiner_subtitile_Logo.svg` and updated
+  hero sizing/tagline copy.
+- Recording pipeline hardening in `record_and_transcribe_local.sh`:
+  - clean audio artifacts (`local_audio.wav`, `local_audio.mp3`) before new recording
+  - record to temporary WAV and promote only after validation
+  - reject abnormally large WAV files via configurable `MAX_WAV_BYTES`
+
+### Removed
+
+- Legacy root logo file `VoxRefiner.svg` removed (replaced by assets in `Logo/`).
+
 ---
 
 ## [1.8.2] — 2026-03-13

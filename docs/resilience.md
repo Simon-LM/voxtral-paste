@@ -18,6 +18,27 @@ Two distinct components make HTTP calls to the Mistral API:
 
 Each has its own adaptive timeout logic and shares the same retry mechanic.
 
+Before any API call is made, the shell recording pipeline now also includes
+defensive guards against stale or corrupted local audio artifacts.
+
+---
+
+## Recording-stage safeguards (shell)
+
+The recorder (`record_and_transcribe_local.sh`) hardens the pre-transcription
+path to prevent invalid local files from reaching `ffmpeg` or the API:
+
+1. **Clean start**: `local_audio.wav` and `local_audio.mp3` are deleted before
+   each non-retry recording.
+2. **Temporary capture**: microphone input is written to a temporary WAV in `/tmp`
+   and only moved to `local_audio.wav` after checks pass.
+3. **Size sanity check**: the WAV is rejected if it exceeds `MAX_WAV_BYTES`
+   (default `100000000`, i.e. 100 MB), which protects against corrupted files
+   reporting unrealistic sizes.
+
+This keeps retry mode unchanged (`--retry` still reuses `local_audio.mp3`) while
+reducing failures after interrupted or abnormal recording sessions.
+
 ---
 
 ## Retry behaviour (both components)

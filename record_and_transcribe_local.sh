@@ -23,10 +23,17 @@ AUDIO_TEMPO="${AUDIO_TEMPO:-1.5}"
 # ─── Recording / Audio processing ───────────────────────────────────────────
 
 if [ "$RETRY_MODE" = "false" ]; then
+    # Always start from clean audio artifacts to avoid reusing corrupted files
+    # after an interrupted/incorrect shutdown.
+    rm -f local_audio.wav local_audio.mp3
+
+    # Record into a temporary WAV and only promote it when sane.
+    TMP_WAV=$(mktemp /tmp/local_audio_XXXXXX.wav)
+
     echo "=== Audio recording ==="
     echo "Press Ctrl+C to stop..."
 
-    setsid rec -c 1 -r 16000 local_audio.wav &
+    setsid rec -c 1 -r 16000 "$TMP_WAV" &
     REC_PID=$!
 
     stop_recording() {
@@ -40,10 +47,22 @@ if [ "$RETRY_MODE" = "false" ]; then
     trap stop_recording SIGINT
     wait "$REC_PID"
 
-    if [ ! -f "local_audio.wav" ]; then
+    if [ ! -f "$TMP_WAV" ]; then
         echo "❌ No audio file recorded."
+        rm -f "$TMP_WAV"
         exit 1
     fi
+
+    # Defensive guard: corrupted WAVs can report absurd sizes and break ffmpeg.
+    MAX_WAV_BYTES="${MAX_WAV_BYTES:-100000000}"  # 100 MB
+    wav_size=$(stat -c%s "$TMP_WAV" 2>/dev/null || echo 0)
+    if [ "$wav_size" -gt "$MAX_WAV_BYTES" ]; then
+        echo "❌ Audio file is abnormally large (${wav_size} bytes)."
+        rm -f "$TMP_WAV"
+        exit 1
+    fi
+
+    mv "$TMP_WAV" local_audio.wav
 
     echo "⚡ Processing audio (silence removal + ×${AUDIO_TEMPO} speed + MP3)..."
     ffmpeg -y -i local_audio.wav \
