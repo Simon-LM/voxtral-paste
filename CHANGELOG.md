@@ -13,6 +13,19 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ---
 
+## [1.8.8] — 2026-03-14
+
+### Added
+
+- `vox-refiner.desktop.example` template to simplify desktop menu launcher setup
+
+### Changed
+
+- README keyboard shortcut section formatting fixed and expanded with
+  `.desktop` setup steps and validation commands
+
+---
+
 ## [1.8.7] — 2026-03-14
 
 ### Changed

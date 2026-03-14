@@ -276,6 +276,33 @@ Set the command to the full path of your launcher:
 
 3. Press your shortcut → speak → stop (Ctrl+C) → paste anywhere.
 
+### Desktop menu entry (.desktop, optional)
+
+If you want VoxRefiner to appear in your desktop app menu, use the template file:
+
+1. Copy the template to your local applications folder:
+
+```bash
+mkdir -p ~/.local/share/applications
+cp vox-refiner.desktop.example ~/.local/share/applications/vox-refiner.desktop
+```
+
+2. Edit `~/.local/share/applications/vox-refiner.desktop` and replace
+   `/home/your-username/` with your actual home path.
+
+3. Validate and enable it:
+
+```bash
+desktop-file-validate ~/.local/share/applications/vox-refiner.desktop
+chmod +x ~/.local/share/applications/vox-refiner.desktop
+```
+
+4. Refresh your desktop app cache (optional on some environments):
+
+```bash
+update-desktop-database ~/.local/share/applications 2>/dev/null || true
+```
+
 ---
 
 ## Philosophy
