@@ -13,6 +13,21 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ---
 
+## [1.9.2] — 2026-03-15
+
+### Fixed
+
+- History extraction fallback now handles network/request exceptions (including
+  read timeouts) and switches to the fallback model instead of aborting early.
+
+### Changed
+
+- Added a history-only timeout multiplier (`HISTORY_TIMEOUT_MULTIPLIER`, default
+  `1.5`) to increase timeout headroom for non-blocking background history updates.
+- Documented `HISTORY_TIMEOUT_MULTIPLIER` in `.env.example` and README.
+
+---
+
 ## [1.9.1] — 2026-03-15
 
 ### Fixed

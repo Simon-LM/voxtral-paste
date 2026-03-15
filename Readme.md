@@ -88,7 +88,7 @@ populated. It never delays your paste.
 
 `history.txt` stays on your machine — it is listed in `.gitignore` and never committed.
 See `history.example.txt` for an example and `.env.example` for all configurable
-parameters (`HISTORY_MAX_BULLETS`, `HISTORY_EXTRACTION_MODEL`).
+parameters (`HISTORY_MAX_BULLETS`, `HISTORY_EXTRACTION_MODEL`, `HISTORY_TIMEOUT_MULTIPLIER`).
 
 ---
 
@@ -225,7 +225,6 @@ cp vox-refiner.example.desktop ~/.local/share/applications/vox-refiner.desktop
 > **Important:** always use `git clone` or `rsync` to install — do not copy-paste the folder manually.
 > A manual copy strips the executable bit from `.sh` files, which silently breaks the keyboard shortcut.
 > If you did copy manually and the shortcut no longer works, run: `chmod +x ~/.local/bin/vox-refiner/*.sh`
-
 > **Venv note:** daily usage does **not** require `source .venv/bin/activate`.
 > The launcher and scripts use `./.venv/bin/python` directly.
 

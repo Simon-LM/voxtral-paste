@@ -47,6 +47,7 @@ _ENABLE_HISTORY = os.environ.get("ENABLE_HISTORY", "false").lower() in ("true", 
 _HISTORY_MAX_BULLETS = int(os.environ.get("HISTORY_MAX_BULLETS", "60"))
 _HISTORY_EXTRACTION_MODEL = os.environ.get("HISTORY_EXTRACTION_MODEL", "mistral-small-latest")
 _HISTORY_EXTRACTION_FALLBACK_MODEL = os.environ.get("HISTORY_EXTRACTION_FALLBACK_MODEL", "devstral-small-latest")
+_HISTORY_TIMEOUT_MULTIPLIER = float(os.environ.get("HISTORY_TIMEOUT_MULTIPLIER", "1.5"))
 
 # When true, the fallback model also runs after the primary and its result is
 # printed to stderr for side-by-side comparison. The primary result is still
@@ -357,12 +358,15 @@ def _extract_and_update_history(refined_text: str, api_key: str) -> None:
     for model in (_HISTORY_EXTRACTION_MODEL, _HISTORY_EXTRACTION_FALLBACK_MODEL):
         try:
             timeout = _effective_timeout(base_timeout, model)
+            timeout = max(timeout, round(timeout * _HISTORY_TIMEOUT_MULTIPLIER))
             raw_bullets = _call_model(model, messages, api_key, timeout=timeout, retry_delay=retry_delay)
             break
         except requests.HTTPError as exc:
             if exc.response is not None and exc.response.status_code in (401, 403):
                 raise
             print(f"⚠️  History model {model} unavailable, trying fallback...", file=sys.stderr)
+        except requests.RequestException as exc:
+            print(f"⚠️  History model {model} unreachable ({exc.__class__.__name__}), trying fallback...", file=sys.stderr)
     if raw_bullets is None:
         raise RuntimeError("All history extraction models unavailable.")
     now = f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] "

@@ -185,7 +185,4 @@ echo ""
 echo "💡 Updates:"
 echo "   ./vox-refiner-update.sh --check   → check for updates"
 echo "   ./vox-refiner-update.sh --apply   → apply updates"
-if [ "${ENABLE_HISTORY:-false}" = "true" ]; then
-    echo "   cat history.txt    → view history"
-    echo "   ${EDITOR:-nano} history.txt   → edit history"
-fi
+

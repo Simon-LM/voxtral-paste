@@ -218,14 +218,16 @@ class TestHistoryExtraction:
         assert not (tmp_path / "history.txt").exists()
 
     def test_history_extraction_uses_doubled_timeout(self, monkeypatch, tmp_path):
-        """_extract_and_update_history passes background-doubled + model-factored timeout.
+        """_extract_and_update_history uses history-only timeout multiplier.
 
         The exact value depends on the configured history model, but must be
         strictly greater than the foreground base timeout (proof that background
-        doubling was applied), and must equal base_bg × model_factor.
+        doubling was applied), and must equal base_bg × model_factor ×
+        HISTORY_TIMEOUT_MULTIPLIER.
         """
         refine = self._load(monkeypatch)
         monkeypatch.setattr(refine, "_HISTORY_FILE", tmp_path / "history.txt")
+        monkeypatch.setattr(refine, "_HISTORY_TIMEOUT_MULTIPLIER", 1.5)
         mock_post = MagicMock(return_value=_ok_response("- A bullet"))
         monkeypatch.setattr(requests, "post", mock_post)
 
@@ -236,7 +238,8 @@ class TestHistoryExtraction:
         fg_timeout, _ = refine._refine_timing(124, background=False)
         bg_base, _ = refine._refine_timing(124, background=True)
         history_model = refine._HISTORY_EXTRACTION_MODEL
-        expected_timeout = refine._effective_timeout(bg_base, history_model)
+        effective = refine._effective_timeout(bg_base, history_model)
+        expected_timeout = max(effective, round(effective * refine._HISTORY_TIMEOUT_MULTIPLIER))
         assert actual_timeout == expected_timeout, (
             f"Expected {expected_timeout}s for model={history_model}, got {actual_timeout}s"
         )
@@ -269,6 +272,22 @@ class TestHistoryExtraction:
         assert actual_timeout == expected, (
             f"Expected magistral-medium timeout {expected}s, got {actual_timeout}s"
         )
+
+    def test_history_timeout_uses_fallback_model(self, monkeypatch, tmp_path):
+        """History extraction should fallback on network timeout, not only HTTP errors."""
+        refine = self._load(monkeypatch)
+        monkeypatch.setattr(refine, "_HISTORY_FILE", tmp_path / "history.txt")
+
+        mock_post = MagicMock(side_effect=[
+            requests.Timeout("primary timed out"),
+            _ok_response("- Fallback after timeout"),
+        ])
+        monkeypatch.setattr(requests, "post", mock_post)
+
+        refine._extract_and_update_history("Some text.", "test-key")
+
+        assert mock_post.call_count == 2
+        assert (tmp_path / "history.txt").exists()
 
     def test_refine_does_not_trigger_extraction(self, monkeypatch, tmp_path):
         """refine() is pure: it never calls history extraction (clipboard not delayed)."""
