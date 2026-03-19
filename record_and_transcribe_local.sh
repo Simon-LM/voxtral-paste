@@ -122,13 +122,13 @@ fi
 if [ "${ENABLE_REFINE:-true}" = "true" ]; then
     # In compare mode, use a temp file so the fallback result is shown AFTER
     # the primary, not during Python execution.
+    VOXTRAL_MODELS_FILE=$(mktemp)
+    _TMPFILES+=("$VOXTRAL_MODELS_FILE")
+    export VOXTRAL_MODELS_FILE
     if [ "${REFINE_COMPARE_MODELS:-false}" = "true" ]; then
         VOXTRAL_COMPARE_FILE=$(mktemp)
         _TMPFILES+=("$VOXTRAL_COMPARE_FILE")
         export VOXTRAL_COMPARE_FILE
-        VOXTRAL_MODELS_FILE=$(mktemp)
-        _TMPFILES+=("$VOXTRAL_MODELS_FILE")
-        export VOXTRAL_MODELS_FILE
     fi
     refined_text=$(printf '%s' "$raw_transcription" | "$VENV_PYTHON" src/refine.py 2>&3)
     # Graceful degradation: if refinement fails, fall back to raw transcription
@@ -152,31 +152,43 @@ if [ -n "$final_text" ]; then
         echo "⚠️  Clipboard copy failed (is xclip installed and running under X11?)."
         echo ""
     fi
+    # Read which model actually produced the clipboard text
+    _used_model=""
+    _fallback_model=""
+    if [ -n "${VOXTRAL_MODELS_FILE:-}" ] && [ -s "$VOXTRAL_MODELS_FILE" ]; then
+        _used_model="$(sed -n '1p' "$VOXTRAL_MODELS_FILE")"
+        _fallback_model="$(sed -n '2p' "$VOXTRAL_MODELS_FILE")"
+    fi
+    # Build result label with model name
+    if [ -n "$_used_model" ]; then
+        _result_label="$_used_model"
+    elif [ "${ENABLE_REFINE:-true}" = "true" ]; then
+        _result_label="Voxtral raw — refinement failed"
+    else
+        _result_label="Voxtral raw"
+    fi
     if [ "${REFINE_COMPARE_MODELS:-false}" = "true" ] && [ "${ENABLE_REFINE:-true}" = "true" ]; then
         # Full 3-way view: Raw Voxtral + Primary + Fallback
-        _primary_label="Primary"
         _fallback_label="Fallback"
-        if [ -n "${VOXTRAL_MODELS_FILE:-}" ] && [ -s "$VOXTRAL_MODELS_FILE" ]; then
-            _primary_label="Primary ($(sed -n '1p' "$VOXTRAL_MODELS_FILE"))"
-            _fallback_label="Fallback ($(sed -n '2p' "$VOXTRAL_MODELS_FILE"))"
-            rm -f "$VOXTRAL_MODELS_FILE"
+        if [ -n "$_fallback_model" ]; then
+            _fallback_label="Fallback ($_fallback_model)"
         fi
         echo "📝 [1] Raw Voxtral:"
         echo "────────────────────────────────────────────────────────────────────"
         echo "$raw_transcription"
         echo "────────────────────────────────────────────────────────────────────"
         echo ""
-        echo "📝 [2] ${_primary_label} — copied to clipboard:"
+        echo "📝 [2] ${_result_label} — copied to clipboard:"
     elif [ "${SHOW_RAW_VOXTRAL:-false}" = "true" ] && [ "${ENABLE_REFINE:-true}" = "true" ]; then
-        # 2-way view: Raw Voxtral + Primary (no fallback model call)
+        # 2-way view: Raw Voxtral + Result (no fallback model call)
         echo "📝 [1] Raw Voxtral:"
         echo "────────────────────────────────────────────────────────────────────"
         echo "$raw_transcription"
         echo "────────────────────────────────────────────────────────────────────"
         echo ""
-        echo "📝 [2] Result — copied to clipboard:"
+        echo "📝 [2] ${_result_label} — copied to clipboard:"
     else
-        echo "📝 Result:"
+        echo "📝 ${_result_label}:"
     fi
     echo "────────────────────────────────────────────────────────────────────"
     echo "$final_text"

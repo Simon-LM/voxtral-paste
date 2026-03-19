@@ -2,7 +2,7 @@
 """Step 2: Raw transcription → refined text via Mistral chat API.
 
 Model routing (3 tiers):
-  - Short  (< REFINE_MODEL_THRESHOLD_SHORT words) → devstral-small-latest
+  - Short  (< REFINE_MODEL_THRESHOLD_SHORT words) → mistral-small-latest
   - Medium (≥ REFINE_MODEL_THRESHOLD_SHORT words) → magistral-small-latest
   - Long   (≥ REFINE_MODEL_THRESHOLD_LONG  words) → magistral-medium-latest
 
@@ -36,8 +36,8 @@ _HISTORY_FILE = Path(__file__).resolve().parent.parent / "history.txt"
 
 _THRESHOLD_SHORT = int(os.environ.get("REFINE_MODEL_THRESHOLD_SHORT", "80"))
 _THRESHOLD_LONG = int(os.environ.get("REFINE_MODEL_THRESHOLD_LONG", "240"))
-_MODEL_SHORT = os.environ.get("REFINE_MODEL_SHORT", "devstral-small-latest")
-_MODEL_SHORT_FALLBACK = os.environ.get("REFINE_MODEL_SHORT_FALLBACK", "mistral-small-latest")
+_MODEL_SHORT = os.environ.get("REFINE_MODEL_SHORT", "mistral-small-latest")
+_MODEL_SHORT_FALLBACK = os.environ.get("REFINE_MODEL_SHORT_FALLBACK", "mistral-medium-latest")
 _MODEL_MEDIUM = os.environ.get("REFINE_MODEL_MEDIUM", "magistral-small-latest")
 _MODEL_MEDIUM_FALLBACK = os.environ.get("REFINE_MODEL_MEDIUM_FALLBACK", "mistral-medium-latest")
 _MODEL_LONG = os.environ.get("REFINE_MODEL_LONG", "magistral-medium-latest")
@@ -47,8 +47,8 @@ _REQUEST_RETRIES = int(os.environ.get("REFINE_REQUEST_RETRIES", "2"))
 
 _ENABLE_HISTORY = os.environ.get("ENABLE_HISTORY", "false").lower() in ("true", "1", "yes")
 _HISTORY_MAX_BULLETS = int(os.environ.get("HISTORY_MAX_BULLETS", "100"))
-_HISTORY_EXTRACTION_MODEL = os.environ.get("HISTORY_EXTRACTION_MODEL", "devstral-small-latest")
-_HISTORY_EXTRACTION_FALLBACK_MODEL = os.environ.get("HISTORY_EXTRACTION_FALLBACK_MODEL", "mistral-small-latest")
+_HISTORY_EXTRACTION_MODEL = os.environ.get("HISTORY_EXTRACTION_MODEL", "mistral-small-latest")
+_HISTORY_EXTRACTION_FALLBACK_MODEL = os.environ.get("HISTORY_EXTRACTION_FALLBACK_MODEL", "mistral-medium-latest")
 _HISTORY_TIMEOUT_MULTIPLIER = float(os.environ.get("HISTORY_TIMEOUT_MULTIPLIER", "1.5"))
 
 # When true, the fallback model also runs after the primary and its result is
@@ -57,24 +57,31 @@ _HISTORY_TIMEOUT_MULTIPLIER = float(os.environ.get("HISTORY_TIMEOUT_MULTIPLIER",
 _COMPARE_MODELS = os.environ.get("REFINE_COMPARE_MODELS", "false").lower() in ("true", "1", "yes")
 
 # Output formatting profile — only applied to MEDIUM and LONG tiers.
-# plain      : no structural formatting (default, preserves current behaviour)
-# prose      : clean paragraphs, no lists — best for general use and screen readers
-# structured : paragraphs + bullet points for key ideas — suited for developers
-# technical  : Markdown (headers, paragraphs, bullets) — for technical notes / AI chat
+# plain         : no structural formatting (default, preserves current behaviour)
+# prose         : clean paragraphs, no lists — best for general use and screen readers
+# accessibility : alias for prose
+# structured    : paragraphs + bullet points for key ideas — suited for developers
+# dev           : alias for structured
+# technical     : Markdown (headers, paragraphs, bullets) — for technical notes / AI chat
 _OUTPUT_PROFILE = os.environ.get("OUTPUT_PROFILE", "plain").lower()
+
+_PROSE_FORMAT = (
+    "FORMAT: Organize your output in well-separated paragraphs. "
+    "Do not use bullet points, numbered lists, or headers. "
+    "Suitable for general use and screen readers.\n\n"
+)
+_STRUCTURED_FORMAT = (
+    "FORMAT: Organize your output in clear paragraphs. "
+    "Use bullet points (- ) for key ideas, distinct actions, or enumerable items. "
+    "Keep bullets concise.\n\n"
+)
 
 _FORMAT_INSTRUCTIONS: Dict[str, str] = {
     "plain": "",
-    "prose": (
-        "FORMAT: Organize your output in well-separated paragraphs. "
-        "Do not use bullet points, numbered lists, or headers. "
-        "Suitable for general use and screen readers.\n\n"
-    ),
-    "structured": (
-        "FORMAT: Organize your output in clear paragraphs. "
-        "Use bullet points (- ) for key ideas, distinct actions, or enumerable items. "
-        "Keep bullets concise.\n\n"
-    ),
+    "prose": _PROSE_FORMAT,
+    "accessibility": _PROSE_FORMAT,
+    "structured": _STRUCTURED_FORMAT,
+    "dev": _STRUCTURED_FORMAT,
     "technical": (
         "FORMAT: Use Markdown: ## headers for major sections, paragraphs for explanations, "
         "and - bullet points for lists, steps, or key items.\n\n"

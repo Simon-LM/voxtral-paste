@@ -13,40 +13,52 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ---
 
-## [2.1.3] — 2026-03-16
+## [2.2.0] — 2026-03-20
+
+### Changed — Mistral model routing (deprecation adaptation)
+
+- **SHORT tier:** `devstral-small-latest` → `mistral-small-latest` (primary),
+  `mistral-small-latest` → `mistral-medium-latest` (fallback).
+  `devstral-small-latest` is deprecated (end of life: 2026-03-31);
+  `mistral-small-latest` v4 is a MoE that integrates devstral-small and covers
+  both technical and conversational short texts.
+- **HISTORY extraction:** `magistral-small-latest` → `mistral-small-latest` (primary),
+  `mistral-medium-latest` (fallback). Avoids rate-limit contention with the
+  MEDIUM refinement tier (magistral-small).
+- `mistral-medium-latest` is now the universal fallback across all tiers.
+
+### Added
+
+- **Model name display:** the terminal always shows which model produced the
+  clipboard text — whether primary, fallback, or raw Voxtral (refinement failed).
+  Previously only visible in `REFINE_COMPARE_MODELS` mode.
+- **OUTPUT_PROFILE aliases:** `dev` (→ `structured`) and `accessibility`
+  (→ `prose`) for more intuitive configuration.
+- `SHOW_RAW_VOXTRAL` documentation added to README.
 
 ### Fixed
 
-- `_THRESHOLD_SHORT` default corrected from `90` to `80` in `src/refine.py` — the
-  value had drifted during a refactor; 80 is the intended threshold documented in
-  `docs/model-selection.md`.
+- `_THRESHOLD_SHORT` default corrected from `90` to `80` — the value had drifted
+  during a refactor.
+- History extraction now injects `context.txt` as `<user_context>` so the model
+  can identify relevant facts and avoid re-extracting information already in the
+  permanent context.
+- `docs/model-selection.md` model tables and rationale corrected (primary/fallback
+  were inverted in SHORT and MEDIUM tiers).
+- `docs/resilience.md` speed factors corrected: `magistral-small-latest` × 3.0,
+  `magistral-medium-latest` × 4.5.
 
-### Changed
+### Other
 
-- History extraction now injects `context.txt` as a `<user_context>` block alongside
-  the existing `<history>` and `<text>` blocks. The extraction model uses the user's
-  domain context to identify genuinely relevant facts and avoid re-extracting
-  information already covered by the permanent context.
-- `docs/model-selection.md` model tables corrected for SHORT and MEDIUM tiers
-  (primary/fallback were inverted), LONG tier fallback updated to `mistral-medium-latest`,
-  and rationale paragraphs updated to reflect actual decisions.
-- `docs/resilience.md` per-model speed factors corrected: `magistral-small-latest`
-  updated from × 2.5 to × 3.0, `magistral-medium-latest` updated from × 3.0 to × 4.5;
-  example recalculated accordingly. Audio tempo description updated to reflect the
-  `1.25` (`.env.example`) / `1.5` (code default) distinction.
-- `Readme.md` new **Show raw Voxtral output** section documents `SHOW_RAW_VOXTRAL`.
-- History extraction model changed from `magistral-small-latest` to
-  `devstral-small-latest` (primary) and `mistral-small-latest` (fallback).
-  Rationale: extraction is a structured instruction-following task, not a reasoning
-  task — devstral-small is better suited and avoids rate-limit contention with the
-  MEDIUM refinement tier (magistral-small) on the same quota.
+- Logo files renamed to English convention (`subtitle`, `text`).
+- LostInTab branding added to README and LICENSE.
+- `.markdownlint.json` updated to allow `p`, `a`, `img` HTML elements.
 
 ### Tests
 
-- Added `test_script_has_show_raw_voxtral_branch` (unit) to verify the
-  `SHOW_RAW_VOXTRAL` control flow is present in the shell script.
-- Added `test_show_raw_voxtral_displays_both_raw_and_refined` and
-  `test_show_raw_voxtral_false_shows_single_block` (integration sandbox tests).
+- Added `SHOW_RAW_VOXTRAL` unit and integration tests.
+- Integration sandbox fake `refine.py` now writes `VOXTRAL_MODELS_FILE` to
+  match real model-name display behaviour.
 
 ---
 

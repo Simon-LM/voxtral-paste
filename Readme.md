@@ -5,7 +5,7 @@
 <!-- markdownlint-disable-next-line MD033 -->
 <p align="center">
   <!-- markdownlint-disable-next-line MD033 -->
-  <img src="Logo/VoxRefiner_subtitile_Logo.svg" alt="VoxRefiner logo" width="360" />
+  <img src="Logo/VoxRefiner_Logo_subtitle.avif"g alt="VoxRefiner logo" width="360" />
 </p>
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -52,11 +52,11 @@ One API key. No complex UI. Just speak → paste.
 
 The refinement step automatically selects the right model based on the length of the transcription:
 
-| Transcription length | Primary model              | Fallback                   |
-| -------------------- | -------------------------- | -------------------------- |
-| < 80 words           | `devstral-small-latest`    | `mistral-small-latest`     |
-| 80 – 240 words       | `magistral-small-latest`   | `mistral-medium-latest`    |
-| > 240 words          | `magistral-medium-latest`  | `mistral-medium-latest`    |
+| Transcription length | Primary model             | Fallback                |
+| -------------------- | ------------------------- | ----------------------- |
+| < 80 words           | `mistral-small-latest`    | `mistral-medium-latest` |
+| 80 – 240 words       | `magistral-small-latest`  | `mistral-medium-latest` |
+| > 240 words          | `magistral-medium-latest` | `mistral-medium-latest` |
 
 Magistral models (reasoning) are used as primary because they follow instructions more
 faithfully — they won't add content, answer questions or deviate from the transcription.
@@ -74,12 +74,15 @@ Thresholds and models are fully configurable via `.env`.
 For medium and long transcriptions (≥ 80 words), VoxRefiner can structure the output.
 Set `OUTPUT_PROFILE` in your `.env`:
 
-| Profile       | Format                              | Best for                                  |
-| ------------- | ----------------------------------- | ----------------------------------------- |
-| `plain`       | Flowing text (default)              | Quick messages, form fields               |
-| `prose`       | Clean paragraphs, no lists          | General use, accessibility, screen readers|
-| `structured`  | Paragraphs + bullet points          | Developers, meeting notes, chatbot input  |
-| `technical`   | Markdown (## headers + bullets)     | Documentation, AI chat prompts            |
+| Profile      | Alias           | Format                          | Best for                                   |
+| ------------ | --------------- | ------------------------------- | ------------------------------------------ |
+| `plain`      | —               | Flowing text (default)          | Quick messages, form fields                |
+| `prose`      | `accessibility` | Clean paragraphs, no lists      | General use, accessibility, screen readers |
+| `structured` | `dev`           | Paragraphs + bullet points      | Developers, meeting notes, chatbot input   |
+| `technical`  | —               | Markdown (## headers + bullets) | Documentation, AI chat prompts             |
+
+**Quick start:** use `OUTPUT_PROFILE=dev` for development workflows, or
+`OUTPUT_PROFILE=accessibility` for screen-reader-friendly output.
 
 Short transcriptions (< 80 words) are always `plain`, regardless of this setting.
 
@@ -429,10 +432,20 @@ No matter how the tool evolves, the core principle will remain the same:
 
 ---
 
+## Author
+
+Built by **[Simon LM](https://simon-lm.dev)** · [GitHub](https://github.com/Simon-LM)
+
+<p align="center">
+  <a href="https://simon-lm.dev"><img src="Logo/LostInTab_Logo.avif" alt="LostInTab" height="320" /></a>
+</p>
+
+---
+
 ## License
 
 This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
 
-Copyright © 2026 [Simon LM](https://github.com/Simon-LM)
+Copyright © 2026 Simon LM — LostInTab
 
 You are free to use, modify, and distribute this software. If you do, **you must keep the copyright notice and license file** in all copies or substantial portions of the code. Attribution is required.

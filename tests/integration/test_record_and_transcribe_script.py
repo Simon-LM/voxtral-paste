@@ -62,13 +62,19 @@ print("raw transcription")
     )
     (src_dir / "refine.py").write_text(
         """
-import sys
+import os, sys
+from pathlib import Path
 
 if "--update-history" in sys.argv:
     raise SystemExit(0)
 
 text = sys.stdin.read()
 print(text.strip() + " [refined]")
+
+# Write model info so the shell script can display model names
+models_file = os.environ.get("VOXTRAL_MODELS_FILE")
+if models_file:
+    Path(models_file).write_text("fake-primary-model\\nfake-fallback-model", encoding="utf-8")
 """.strip()
         + "\n",
         encoding="utf-8",
@@ -197,7 +203,7 @@ def test_show_raw_voxtral_displays_both_raw_and_refined(tmp_path: Path):
 
     assert result.returncode == 0, result.stderr
     assert "[1] Raw Voxtral" in result.stdout
-    assert "[2] Result" in result.stdout
+    assert "[2] fake-primary-model" in result.stdout
     # Both raw and refined text must appear
     assert "raw transcription" in result.stdout
     assert "raw transcription [refined]" in result.stdout
@@ -213,4 +219,4 @@ def test_show_raw_voxtral_false_shows_single_block(tmp_path: Path):
 
     assert result.returncode == 0, result.stderr
     assert "[1] Raw Voxtral" not in result.stdout
-    assert "📝 Result:" in result.stdout
+    assert "📝 fake-primary-model:" in result.stdout

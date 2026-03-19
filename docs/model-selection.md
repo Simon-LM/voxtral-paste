@@ -32,15 +32,15 @@ LONG on genuine extended monologues).
 
 | Role     | Model                   |
 | -------- | ----------------------- |
-| Primary  | `devstral-small-latest` |
-| Fallback | `mistral-small-latest`  |
+| Primary  | `mistral-small-latest`  |
+| Fallback | `mistral-medium-latest` |
 
-**Why devstral-small as default:**
-The most important quality for VoxRefiner is strict instruction-following: the model
-must clean up the transcription without paraphrasing, adding content, or inventing
-details. Devstral-small excels at this regardless of content type — even on
-conversational or non-technical short notes. Mistral-small is available as a reliable
-fallback for general-purpose coverage.
+**Why mistral-small as default:**
+`devstral-small-latest` is deprecated (end of life: 2026-03-31). `mistral-small-latest`
+v4 is a MoE model that integrates devstral-small as one of its experts — it inherits
+the instruction-following discipline needed for short transcriptions (no paraphrasing,
+no added content) while covering the full range of content types (technical and
+conversational). `mistral-medium-latest` serves as a reliable fallback.
 
 ---
 
@@ -98,18 +98,16 @@ with acceptable quality for extended transcriptions when magistral-medium is una
 | Primary  | `devstral-small-latest` |
 | Fallback | `mistral-small-latest`  |
 
-**Why devstral-small:**
-History extraction is a structured extraction task, not a reasoning task. The model must
-parse existing bullets, identify new facts from the voice note, merge/deduplicate, and
-respect strict output format rules (`- bullet`, no timestamps, max N entries). The
-critical quality is instruction-following discipline — not hallucinating, not inventing
-bullets, not drifting from the format. This is the same quality that makes devstral-small
-the primary for the SHORT tier.
+**Why mistral-small:**
+History extraction is a structured extraction task: parse existing bullets, identify new
+facts, merge/deduplicate, and respect strict output format rules (`- bullet`, no
+timestamps, max N entries). The critical quality is instruction-following discipline —
+not hallucinating, not inventing bullets, not drifting from the format.
 
-Using a reasoning model (magistral-small) here would create rate-limit contention with
-the MEDIUM refinement tier (80–240 words), which is the most frequent use case.
-Devstral-small runs on a separate quota, is faster (×1.0), and cheaper — all
-advantages for a background task where the user is not waiting.
+`mistral-small-latest` v4 (MoE with devstral-small) covers this well: fast, cheap, and
+no rate-limit contention with the MEDIUM refinement tier (magistral-small). As a
+background task where the user is not waiting, it is the right balance of quality and
+cost. Upgrade to `devstral-latest` via `.env` if extraction quality proves insufficient.
 
 ---
 
@@ -117,10 +115,10 @@ advantages for a background task where the user is not waiting.
 
 | Tier    | Words  | Primary                   | Fallback                 | Status       |
 | ------- | ------ | ------------------------- | ------------------------ | ------------ |
-| SHORT   | < 80   | `devstral-small-latest`   | `mistral-small-latest`   | ✅ Confirmed |
+| SHORT   | < 80   | `mistral-small-latest`    | `mistral-medium-latest`  | ✅ Confirmed |
 | MEDIUM  | 80–240 | `magistral-small-latest`  | `mistral-medium-latest`  | ✅ Confirmed |
 | LONG    | > 240  | `magistral-medium-latest` | `mistral-medium-latest`  | ✅ Confirmed |
-| HISTORY | any    | `devstral-small-latest`   | `mistral-small-latest`   | ✅ Confirmed |
+| HISTORY | any    | `mistral-small-latest`    | `mistral-medium-latest`  | ✅ Confirmed |
 
 All values are overridable via `.env` — see `.env.example` for the full list of
 configurable parameters.
