@@ -13,15 +13,26 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ---
 
+## [2.4.3] — 2026-03-28
+
+### Improved
+
+- **Zero-delay microphone start:** recording starts immediately instead of
+  waiting for a blocking pre-check (~2.5s SoX init overhead). The health
+  check now runs *after* launch — if the mic is broken, PipeWire is restarted
+  and recording is relaunched automatically.
+- **Removed unnecessary delay:** dropped the 200ms sleep after orphan cleanup.
+
+---
+
 ## [2.4.2] — 2026-03-28
 
 ### Improved
 
-- **Faster microphone pre-check:** reduced from ~2-3s to ~150ms by using a
-  50ms audio sample (`trim 0 0.05`) with a 1s timeout instead of 0.1s/3s.
-- **Immediate feedback:** `🎙️ Initializing microphone...` is displayed as
-  soon as the terminal opens, eliminating the blank-screen perception.
-- **Removed unnecessary delay:** dropped the 200ms sleep after orphan cleanup.
+- **Microphone pre-check timeout:** increased from 0.5s to 1s to accommodate
+  slow PipeWire initialization.
+- **Immediate feedback:** `🎙️ Initializing microphone...` displayed at
+  startup to eliminate blank-screen perception.
 
 ---
 

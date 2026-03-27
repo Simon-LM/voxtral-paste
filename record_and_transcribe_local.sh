@@ -53,29 +53,9 @@ if [ "$RETRY_MODE" = "false" ]; then
     # after an interrupted/incorrect shutdown.
     rm -f local_audio.wav local_audio.mp3
 
-    echo "🎙️ Initializing microphone..."
-
     # ── B. Kill orphan VoxRefiner rec processes from previous interrupted runs ──
     # Pattern is specific enough to never match visio/webcam/other apps.
     pkill -f "rec.*local_audio" 2>/dev/null || true
-
-    # ── A. Pre-check microphone access ─────────────────────────────────────────
-    # Quick 10ms recording to verify the audio path works (rec cannot write to
-    # /dev/null because it infers the output format from the file extension).
-    MIC_TEST=$(mktemp /tmp/mic_test_XXXXXX.wav)
-    _TMPFILES+=("$MIC_TEST")
-    if ! timeout 1 rec -c 1 -r 16000 "$MIC_TEST" trim 0 0.05 2>/dev/null; then
-        echo "⚠️  Microphone inaccessible, attempting audio reset..."
-        # Restart PipeWire (works on modern Linux); falls back silently if unavailable.
-        systemctl --user restart pipewire pipewire-pulse 2>/dev/null || true
-        sleep 1
-        if ! timeout 1 rec -c 1 -r 16000 "$MIC_TEST" trim 0 0.05 2>/dev/null; then
-            echo "❌ Microphone still inaccessible after reset. Check your audio settings."
-            exit 1
-        fi
-        echo "✅ Microphone recovered."
-    fi
-    rm -f "$MIC_TEST"
 
     # Record into a temporary WAV and only promote it when sane.
     TMP_WAV=$(mktemp /tmp/local_audio_XXXXXX.wav)
@@ -88,6 +68,31 @@ if [ "$RETRY_MODE" = "false" ]; then
     #    grants microphone access when launched from a keyboard shortcut. ────────
     rec -c 1 -r 16000 "$TMP_WAV" &
     REC_PID=$!
+
+    # ── A. Post-launch mic health check ──────────────────────────────────────────
+    # Wait briefly then verify rec is alive and the file is growing.
+    # If the mic is broken, rec dies or produces an empty file — restart PipeWire
+    # and relaunch. This avoids a blocking pre-check (~2.5s SoX init overhead).
+    sleep 0.3
+    WAV_HEADER_SIZE=44
+    if ! kill -0 "$REC_PID" 2>/dev/null || \
+       [ "$(stat -c%s "$TMP_WAV" 2>/dev/null || echo 0)" -le "$WAV_HEADER_SIZE" ]; then
+        kill "$REC_PID" 2>/dev/null; wait "$REC_PID" 2>/dev/null
+        echo "⚠️  Microphone inaccessible, attempting audio reset..."
+        systemctl --user restart pipewire pipewire-pulse 2>/dev/null || true
+        sleep 1
+        rm -f "$TMP_WAV"
+        TMP_WAV=$(mktemp /tmp/local_audio_XXXXXX.wav)
+        _TMPFILES+=("$TMP_WAV")
+        rec -c 1 -r 16000 "$TMP_WAV" &
+        REC_PID=$!
+        sleep 0.3
+        if ! kill -0 "$REC_PID" 2>/dev/null; then
+            echo "❌ Microphone still inaccessible after reset. Check your audio settings."
+            exit 1
+        fi
+        echo "✅ Microphone recovered."
+    fi
 
     stop_recording() {
         echo ""
