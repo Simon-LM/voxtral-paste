@@ -18,7 +18,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ### Improved
 
 - **Faster microphone pre-check:** reduced from ~2-3s to ~150ms by using a
-  10ms audio sample (`trim 0 0.01`) with a 0.5s timeout instead of 0.1s/3s.
+  50ms audio sample (`trim 0 0.05`) with a 1s timeout instead of 0.1s/3s.
 - **Immediate feedback:** `🎙️ Initializing microphone...` is displayed as
   soon as the terminal opens, eliminating the blank-screen perception.
 - **Removed unnecessary delay:** dropped the 200ms sleep after orphan cleanup.
