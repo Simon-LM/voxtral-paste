@@ -13,6 +13,18 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ---
 
+## [2.3.0] — 2026-03-27
+
+### Added
+
+- **`OUTPUT_LANG=en`:** force English output regardless of spoken input language.
+  Useful for developers working in English-only tools (VS Code, Claude Code) while
+  speaking French or another language. Technical terms stay in English naturally.
+  Set in `.env`; unset or empty preserves the default behaviour (reply in the same
+  language as the input).
+
+---
+
 ## [2.2.1] — 2026-03-27
 
 ### Fixed

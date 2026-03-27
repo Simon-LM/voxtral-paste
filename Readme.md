@@ -88,6 +88,21 @@ Short transcriptions (< 80 words) are always `plain`, regardless of this setting
 
 ---
 
+## Output language
+
+By default, VoxRefiner replies in the same language you speak.
+Set `OUTPUT_LANG=en` in your `.env` to always get English output — useful for
+developers working in English-only tools (VS Code, Claude Code) while speaking
+another language.
+
+```bash
+OUTPUT_LANG=en    # force English output regardless of input language
+```
+
+Technical terms (`commit`, `push`, `refactor`, etc.) stay in English naturally.
+
+---
+
 ## History context (optional)
 
 VoxRefiner can automatically build a `history.txt` file by extracting key facts from

@@ -560,3 +560,58 @@ class TestOutputProfile:
         refine = self._load(monkeypatch, "nonexistent_profile")
         system = self._capture_system_prompt(monkeypatch, refine, " ".join(["word"] * 100))
         assert "FORMAT:" not in system
+
+
+class TestOutputLang:
+    """OUTPUT_LANG switches the language instruction in the system prompt sent to the API."""
+
+    def _load(self, monkeypatch, lang: str = ""):
+        monkeypatch.setenv("MISTRAL_API_KEY", "test-key")
+        monkeypatch.setenv("REFINE_REQUEST_RETRIES", "0")
+        monkeypatch.setenv("REFINE_COMPARE_MODELS", "false")
+        if lang:
+            monkeypatch.setenv("OUTPUT_LANG", lang)
+        else:
+            monkeypatch.delenv("OUTPUT_LANG", raising=False)
+        if "src.refine" in sys.modules:
+            del sys.modules["src.refine"]
+        import src.refine as refine
+        return refine
+
+    def _capture_system_prompt(self, monkeypatch, refine, text: str) -> str:
+        captured = {}
+
+        def fake_post(url, **kwargs):  # noqa: ARG001
+            captured["system"] = kwargs["json"]["messages"][0]["content"]
+            return _ok_response("ok")
+
+        monkeypatch.setattr(requests, "post", fake_post)
+        refine.refine(text)
+        return captured["system"]
+
+    def test_default_sends_same_language_instruction_short(self, monkeypatch):
+        refine = self._load(monkeypatch, "")
+        system = self._capture_system_prompt(monkeypatch, refine, "hello world")
+        assert "Never translate" in system
+        assert "Always reply in English" not in system
+
+    def test_default_sends_same_language_instruction_medium(self, monkeypatch):
+        refine = self._load(monkeypatch, "")
+        system = self._capture_system_prompt(monkeypatch, refine, " ".join(["word"] * 100))
+        assert "Never translate" in system
+
+    def test_en_sends_english_instruction_short(self, monkeypatch):
+        refine = self._load(monkeypatch, "en")
+        system = self._capture_system_prompt(monkeypatch, refine, "bonjour le monde")
+        assert "Always reply in English" in system
+        assert "Never translate" not in system
+
+    def test_en_sends_english_instruction_medium(self, monkeypatch):
+        refine = self._load(monkeypatch, "en")
+        system = self._capture_system_prompt(monkeypatch, refine, " ".join(["mot"] * 100))
+        assert "Always reply in English" in system
+
+    def test_en_sends_english_instruction_long(self, monkeypatch):
+        refine = self._load(monkeypatch, "en")
+        system = self._capture_system_prompt(monkeypatch, refine, " ".join(["mot"] * 300))
+        assert "Always reply in English" in system

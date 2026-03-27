@@ -24,21 +24,21 @@ class TestPromptFormatting:
     def test_format_with_context_does_not_raise(self, monkeypatch, prompt_name):
         refine = _get_refine(monkeypatch)
         prompt = getattr(refine, prompt_name)
-        result = prompt.format(context="Some context.", history_section="", format_block="")
+        result = prompt.format(context="Some context.", history_section="", format_block="", language_instruction=refine._LANG_INSTRUCTION_DEFAULT)
         assert isinstance(result, str)
 
     @pytest.mark.parametrize("prompt_name", PROMPTS)
     def test_context_injected_in_output(self, monkeypatch, prompt_name):
         refine = _get_refine(monkeypatch)
         prompt = getattr(refine, prompt_name)
-        result = prompt.format(context="MySpecificContext", history_section="", format_block="")
+        result = prompt.format(context="MySpecificContext", history_section="", format_block="", language_instruction=refine._LANG_INSTRUCTION_DEFAULT)
         assert "MySpecificContext" in result
 
     @pytest.mark.parametrize("prompt_name", PROMPTS)
     def test_context_xml_tags_present(self, monkeypatch, prompt_name):
         refine = _get_refine(monkeypatch)
         prompt = getattr(refine, prompt_name)
-        result = prompt.format(context="x", history_section="", format_block="")
+        result = prompt.format(context="x", history_section="", format_block="", language_instruction=refine._LANG_INSTRUCTION_DEFAULT)
         assert "<context>" in result
 
     @pytest.mark.parametrize("prompt_name", PROMPTS)
@@ -46,7 +46,7 @@ class TestPromptFormatting:
         """All prompts must include the CRITICAL language rule."""
         refine = _get_refine(monkeypatch)
         prompt = getattr(refine, prompt_name)
-        result = prompt.format(context="x", history_section="", format_block="")
+        result = prompt.format(context="x", history_section="", format_block="", language_instruction=refine._LANG_INSTRUCTION_DEFAULT)
         assert "CRITICAL" in result
         assert "Never translate" in result
 
@@ -55,17 +55,18 @@ class TestPromptFormatting:
         """After formatting, no {placeholder} should remain."""
         refine = _get_refine(monkeypatch)
         prompt = getattr(refine, prompt_name)
-        result = prompt.format(context="x", history_section="", format_block="")
+        result = prompt.format(context="x", history_section="", format_block="", language_instruction=refine._LANG_INSTRUCTION_DEFAULT)
         assert "{context}" not in result
         assert "{history_section}" not in result
         assert "{format_block}" not in result
+        assert "{language_instruction}" not in result
 
     @pytest.mark.parametrize("prompt_name", PROMPTS)
     def test_injection_warning_present(self, monkeypatch, prompt_name):
         """All prompts must instruct the model to treat <transcription> as data, not instructions."""
         refine = _get_refine(monkeypatch)
         prompt = getattr(refine, prompt_name)
-        result = prompt.format(context="x", history_section="", format_block="")
+        result = prompt.format(context="x", history_section="", format_block="", language_instruction=refine._LANG_INSTRUCTION_DEFAULT)
         assert "IMPORTANT" in result
         assert "microphone" in result
 
@@ -75,7 +76,7 @@ class TestPromptFormatting:
         refine = _get_refine(monkeypatch)
         prompt = getattr(refine, prompt_name)
         history_block = "\n\n<history>\n- User works on VoxRefiner\n</history>"
-        result = prompt.format(context="x", history_section=history_block, format_block="")
+        result = prompt.format(context="x", history_section=history_block, format_block="", language_instruction=refine._LANG_INSTRUCTION_DEFAULT)
         assert "<history>" in result
         assert "VoxRefiner" in result
 
@@ -83,18 +84,18 @@ class TestPromptFormatting:
 class TestPromptDifferentiation:
     def test_short_prompt_shorter_than_medium(self, monkeypatch):
         refine = _get_refine(monkeypatch)
-        short = refine._SYSTEM_PROMPT_SHORT.format(context="x", history_section="", format_block="")
-        medium = refine._SYSTEM_PROMPT_MEDIUM.format(context="x", history_section="", format_block="")
+        short = refine._SYSTEM_PROMPT_SHORT.format(context="x", history_section="", format_block="", language_instruction=refine._LANG_INSTRUCTION_DEFAULT)
+        medium = refine._SYSTEM_PROMPT_MEDIUM.format(context="x", history_section="", format_block="", language_instruction=refine._LANG_INSTRUCTION_DEFAULT)
         assert len(short) < len(medium)
 
     def test_long_prompt_contains_prose_instruction(self, monkeypatch):
         refine = _get_refine(monkeypatch)
-        long_prompt = refine._SYSTEM_PROMPT_LONG.format(context="x", history_section="", format_block="")
+        long_prompt = refine._SYSTEM_PROMPT_LONG.format(context="x", history_section="", format_block="", language_instruction=refine._LANG_INSTRUCTION_DEFAULT)
         assert "prose" in long_prompt.lower()
 
     def test_medium_prompt_does_not_contain_prose_instruction(self, monkeypatch):
         refine = _get_refine(monkeypatch)
-        medium_prompt = refine._SYSTEM_PROMPT_MEDIUM.format(context="x", history_section="", format_block="")
+        medium_prompt = refine._SYSTEM_PROMPT_MEDIUM.format(context="x", history_section="", format_block="", language_instruction=refine._LANG_INSTRUCTION_DEFAULT)
         assert "well-structured written prose" not in medium_prompt
 
 
@@ -132,3 +133,54 @@ class TestOutputProfile:
         for name, block in refine._FORMAT_INSTRUCTIONS.items():
             if name != "plain":
                 assert block.endswith("\n\n"), f"Profile '{name}' block must end with '\\n\\n'"
+
+
+class TestOutputLang:
+    """OUTPUT_LANG switches the language instruction in all prompt tiers."""
+
+    @pytest.mark.parametrize("prompt_name", PROMPTS)
+    def test_default_uses_detect_language_instruction(self, monkeypatch, prompt_name):
+        """Without OUTPUT_LANG, prompts instruct to reply in the same language."""
+        refine = _get_refine(monkeypatch)
+        prompt = getattr(refine, prompt_name)
+        result = prompt.format(
+            context="x", history_section="", format_block="",
+            language_instruction=refine._LANG_INSTRUCTION_DEFAULT,
+        )
+        assert "Never translate" in result
+        assert "same language" in result
+
+    @pytest.mark.parametrize("prompt_name", PROMPTS)
+    def test_en_uses_english_instruction(self, monkeypatch, prompt_name):
+        """With OUTPUT_LANG=en, prompts instruct to always reply in English."""
+        refine = _get_refine(monkeypatch)
+        prompt = getattr(refine, prompt_name)
+        result = prompt.format(
+            context="x", history_section="", format_block="",
+            language_instruction=refine._LANG_INSTRUCTION_EN,
+        )
+        assert "Always reply in English" in result
+        assert "Never translate" not in result
+
+    def test_output_lang_en_sets_variable(self, monkeypatch):
+        """OUTPUT_LANG=en is correctly parsed from env."""
+        monkeypatch.setenv("OUTPUT_LANG", "en")
+        refine = _get_refine(monkeypatch)
+        assert refine._OUTPUT_LANG == "en"
+
+    def test_output_lang_empty_default(self, monkeypatch):
+        """Unset OUTPUT_LANG defaults to empty string."""
+        monkeypatch.delenv("OUTPUT_LANG", raising=False)
+        refine = _get_refine(monkeypatch)
+        assert refine._OUTPUT_LANG == ""
+
+    @pytest.mark.parametrize("prompt_name", PROMPTS)
+    def test_no_placeholder_left_with_lang_en(self, monkeypatch, prompt_name):
+        """After formatting with EN instruction, no {placeholder} remains."""
+        refine = _get_refine(monkeypatch)
+        prompt = getattr(refine, prompt_name)
+        result = prompt.format(
+            context="x", history_section="", format_block="",
+            language_instruction=refine._LANG_INSTRUCTION_EN,
+        )
+        assert "{language_instruction}" not in result
