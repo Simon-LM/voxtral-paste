@@ -46,9 +46,15 @@ _MODEL_LONG_FALLBACK = os.environ.get("REFINE_MODEL_LONG_FALLBACK", "mistral-lar
 _REQUEST_RETRIES = int(os.environ.get("REFINE_REQUEST_RETRIES", "2"))
 
 # ── Per-tier API parameters (primary models only, fallbacks use Mistral defaults) ─
+# reasoning_effort is ONLY supported by mistral-small-latest (Mistral Small 4).
+# It is automatically stripped for any other model at call time.
 _PARAMS_SHORT: Dict[str, Any] = {"temperature": 0.2, "top_p": 0.85}
 _PARAMS_MEDIUM: Dict[str, Any] = {"temperature": 0.3, "top_p": 0.9, "reasoning_effort": "high"}
 _PARAMS_LONG: Dict[str, Any] = {"temperature": 0.4, "top_p": 0.9}
+_PARAMS_HISTORY: Dict[str, Any] = {"reasoning_effort": "high"}
+
+# Only this model supports the reasoning_effort parameter.
+_REASONING_CAPABLE_MODEL = "mistral-small-latest"
 
 _ENABLE_HISTORY = os.environ.get("ENABLE_HISTORY", "false").lower() in ("true", "1", "yes")
 _HISTORY_MAX_BULLETS = int(os.environ.get("HISTORY_MAX_BULLETS", "100"))
@@ -408,7 +414,12 @@ def _call_model(
         try:
             payload: Dict[str, Any] = {"model": model, "messages": messages}
             if model_params:
-                payload.update(model_params)
+                filtered = dict(model_params)
+                # reasoning_effort is only supported by mistral-small-latest.
+                # Strip it for any other model to avoid HTTP 400.
+                if model != _REASONING_CAPABLE_MODEL and "reasoning_effort" in filtered:
+                    del filtered["reasoning_effort"]
+                payload.update(filtered)
             response = requests.post(
                 _API_URL,
                 headers={
@@ -472,9 +483,10 @@ def _extract_and_update_history(refined_text: str, api_key: str) -> None:
     raw_bullets = None
     for model in (_HISTORY_EXTRACTION_MODEL, _HISTORY_EXTRACTION_FALLBACK_MODEL):
         try:
-            timeout = _effective_timeout(base_timeout, model)
+            h_params = _PARAMS_HISTORY if model == _HISTORY_EXTRACTION_MODEL else None
+            timeout = _effective_timeout(base_timeout, model, h_params)
             timeout = max(timeout, round(timeout * _HISTORY_TIMEOUT_MULTIPLIER))
-            raw_bullets = _call_model(model, messages, api_key, timeout=timeout, retry_delay=retry_delay)
+            raw_bullets = _call_model(model, messages, api_key, timeout=timeout, retry_delay=retry_delay, model_params=h_params)
             break
         except requests.HTTPError as exc:
             if exc.response is not None and exc.response.status_code in (401, 403):

@@ -238,7 +238,7 @@ class TestHistoryExtraction:
         fg_timeout, _ = refine._refine_timing(124, background=False)
         bg_base, _ = refine._refine_timing(124, background=True)
         history_model = refine._HISTORY_EXTRACTION_MODEL
-        effective = refine._effective_timeout(bg_base, history_model)
+        effective = refine._effective_timeout(bg_base, history_model, refine._PARAMS_HISTORY)
         expected_timeout = max(effective, round(effective * refine._HISTORY_TIMEOUT_MULTIPLIER))
         assert actual_timeout == expected_timeout, (
             f"Expected {expected_timeout}s for model={history_model}, got {actual_timeout}s"
@@ -268,7 +268,7 @@ class TestHistoryExtraction:
 
         actual_timeout = mock_post.call_args.kwargs["timeout"]
         base_timeout, _ = refine._refine_timing(202)
-        expected = refine._effective_timeout(base_timeout, "magistral-medium-latest")
+        expected = refine._effective_timeout(base_timeout, "magistral-medium-latest", refine._PARAMS_LONG)
         assert actual_timeout == expected, (
             f"Expected magistral-medium timeout {expected}s, got {actual_timeout}s"
         )
@@ -624,6 +624,9 @@ class TestModelParams:
         monkeypatch.setenv("MISTRAL_API_KEY", "test-key")
         monkeypatch.setenv("REFINE_REQUEST_RETRIES", "0")
         monkeypatch.setenv("REFINE_COMPARE_MODELS", "false")
+        # Force code defaults — load_dotenv() in refine.py may override from .env.
+        monkeypatch.setenv("REFINE_MODEL_MEDIUM", "mistral-small-latest")
+        monkeypatch.setenv("HISTORY_EXTRACTION_MODEL", "mistral-small-latest")
         if "src.refine" in sys.modules:
             del sys.modules["src.refine"]
         import src.refine as refine
@@ -647,14 +650,15 @@ class TestModelParams:
         assert payload["top_p"] == 0.85
         assert "reasoning_effort" not in payload
 
-    def test_medium_tier_sends_reasoning_effort_high(self, monkeypatch):
+    def test_medium_tier_sends_all_params(self, monkeypatch):
         refine = self._load(monkeypatch)
         payload = self._capture_payload(monkeypatch, refine, " ".join(["word"] * 100))
+        assert payload["reasoning_effort"] == "high"
         assert payload["temperature"] == 0.3
         assert payload["top_p"] == 0.9
-        assert payload["reasoning_effort"] == "high"
 
     def test_long_tier_sends_temperature_no_reasoning(self, monkeypatch):
+        """LONG tier uses magistral-medium which doesn't support reasoning_effort."""
         refine = self._load(monkeypatch)
         payload = self._capture_payload(monkeypatch, refine, " ".join(["word"] * 300))
         assert payload["temperature"] == 0.4
@@ -678,3 +682,30 @@ class TestModelParams:
         assert "reasoning_effort" in payloads[0]
         assert "reasoning_effort" not in payloads[1]
         assert "temperature" not in payloads[1]
+
+    def test_magistral_model_strips_reasoning_effort(self, monkeypatch):
+        """If user overrides MEDIUM to magistral, reasoning_effort is filtered out."""
+        monkeypatch.setenv("MISTRAL_API_KEY", "test-key")
+        monkeypatch.setenv("REFINE_REQUEST_RETRIES", "0")
+        monkeypatch.setenv("REFINE_COMPARE_MODELS", "false")
+        monkeypatch.setenv("REFINE_MODEL_MEDIUM", "magistral-small-latest")
+        if "src.refine" in sys.modules:
+            del sys.modules["src.refine"]
+        import src.refine as refine
+        payload = self._capture_payload(monkeypatch, refine, " ".join(["word"] * 100))
+        assert "reasoning_effort" not in payload
+        assert payload["model"] == "magistral-small-latest"
+
+    def test_history_primary_sends_reasoning_effort(self, monkeypatch, tmp_path):
+        """History extraction primary model receives reasoning_effort=high."""
+        refine = self._load(monkeypatch)
+        monkeypatch.setattr(refine, "_HISTORY_FILE", tmp_path / "history.txt")
+        captured = {}
+
+        def fake_post(url, **kwargs):  # noqa: ARG001
+            captured["payload"] = kwargs["json"]
+            return _ok_response("- Some fact")
+
+        monkeypatch.setattr(requests, "post", fake_post)
+        refine._extract_and_update_history("Some longer text to extract facts from.", "test-key")
+        assert captured["payload"]["reasoning_effort"] == "high"

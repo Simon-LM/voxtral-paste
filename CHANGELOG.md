@@ -13,6 +13,19 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ---
 
+## [2.4.1] — 2026-03-27
+
+### Fixed
+
+- **`reasoning_effort` compatibility:** only `mistral-small-latest` supports
+  `reasoning_effort`; the parameter is now stripped from API payloads for all
+  other models (whitelist guard). Fixes HTTP 400 when `.env` overrides MEDIUM
+  to a non-compatible model.
+- **History extraction:** primary history model now receives
+  `reasoning_effort=high` for better structured extraction quality.
+
+---
+
 ## [2.4.0] — 2026-03-27
 
 ### Changed — Per-tier API parameters and MEDIUM model routing
