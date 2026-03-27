@@ -38,12 +38,17 @@ _THRESHOLD_SHORT = int(os.environ.get("REFINE_MODEL_THRESHOLD_SHORT", "80"))
 _THRESHOLD_LONG = int(os.environ.get("REFINE_MODEL_THRESHOLD_LONG", "240"))
 _MODEL_SHORT = os.environ.get("REFINE_MODEL_SHORT", "mistral-small-latest")
 _MODEL_SHORT_FALLBACK = os.environ.get("REFINE_MODEL_SHORT_FALLBACK", "mistral-medium-latest")
-_MODEL_MEDIUM = os.environ.get("REFINE_MODEL_MEDIUM", "magistral-small-latest")
+_MODEL_MEDIUM = os.environ.get("REFINE_MODEL_MEDIUM", "mistral-small-latest")
 _MODEL_MEDIUM_FALLBACK = os.environ.get("REFINE_MODEL_MEDIUM_FALLBACK", "mistral-medium-latest")
 _MODEL_LONG = os.environ.get("REFINE_MODEL_LONG", "magistral-medium-latest")
 _MODEL_LONG_FALLBACK = os.environ.get("REFINE_MODEL_LONG_FALLBACK", "mistral-large-latest")
 
 _REQUEST_RETRIES = int(os.environ.get("REFINE_REQUEST_RETRIES", "2"))
+
+# ── Per-tier API parameters (primary models only, fallbacks use Mistral defaults) ─
+_PARAMS_SHORT: Dict[str, Any] = {"temperature": 0.2, "top_p": 0.85}
+_PARAMS_MEDIUM: Dict[str, Any] = {"temperature": 0.3, "top_p": 0.9, "reasoning_effort": "high"}
+_PARAMS_LONG: Dict[str, Any] = {"temperature": 0.4, "top_p": 0.9}
 
 _ENABLE_HISTORY = os.environ.get("ENABLE_HISTORY", "false").lower() in ("true", "1", "yes")
 _HISTORY_MAX_BULLETS = int(os.environ.get("HISTORY_MAX_BULLETS", "100"))
@@ -103,7 +108,7 @@ _MODEL_SPEED_FACTOR: Dict[str, float] = {
     "devstral-small-latest":   1.0,
     "mistral-small-latest":    1.0,
     "mistral-medium-latest":   1.2,
-    "magistral-small-latest":  3.0,
+    "magistral-small-latest":  3.0,  # kept for users who override REFINE_MODEL_MEDIUM
     "magistral-medium-latest": 4.5,
     "mistral-large-latest":    1.5,
 }
@@ -359,18 +364,38 @@ def _refine_timing(word_count: int, *, background: bool = False) -> Tuple[int, f
     return t, d
 
 
-def _effective_timeout(base_timeout: int, model: str) -> int:
-    """Apply a per-model speed factor to the base word-count timeout."""
+# Extra timeout multiplier when reasoning_effort is enabled on a non-reasoning model.
+_REASONING_EFFORT_TIMEOUT_FACTOR = 1.8
+
+
+def _effective_timeout(base_timeout: int, model: str, model_params: Optional[Dict[str, Any]] = None) -> int:
+    """Apply a per-model speed factor to the base word-count timeout.
+
+    When ``model_params`` contains ``reasoning_effort``, an additional factor
+    is applied to account for the extra thinking time.
+    """
     factor = _MODEL_SPEED_FACTOR.get(model, 1.0)
+    if model_params and model_params.get("reasoning_effort"):
+        factor *= _REASONING_EFFORT_TIMEOUT_FACTOR
     return max(base_timeout, round(base_timeout * factor))
 
 
-def _call_model(model: str, messages: List[Dict[str, str]], api_key: str, *, timeout: int, retry_delay: float) -> str:
+def _call_model(
+    model: str,
+    messages: List[Dict[str, str]],
+    api_key: str,
+    *,
+    timeout: int,
+    retry_delay: float,
+    model_params: Optional[Dict[str, Any]] = None,
+) -> str:
     """Call the Mistral chat API, retrying up to _REQUEST_RETRIES times on transient errors.
 
     Timeout and retry delay are caller-supplied (computed from word count).
     Timeout and connection errors are NOT retried here — the caller's fallback
     loop handles switching to the next model in that case.
+    ``model_params`` (optional) — extra keys merged into the JSON body
+    (e.g. temperature, top_p, reasoning_effort).
     """
     last_exc: Exception = RuntimeError("unreachable")
     for attempt in range(1 + _REQUEST_RETRIES):
@@ -381,13 +406,16 @@ def _call_model(model: str, messages: List[Dict[str, str]], api_key: str, *, tim
             )
             time.sleep(retry_delay)
         try:
+            payload: Dict[str, Any] = {"model": model, "messages": messages}
+            if model_params:
+                payload.update(model_params)
             response = requests.post(
                 _API_URL,
                 headers={
                     "Authorization": f"Bearer {api_key}",
                     "Content-Type": "application/json",
                 },
-                json={"model": model, "messages": messages},  # type: ignore[arg-type]
+                json=payload,
                 timeout=timeout,
             )
             response.raise_for_status()
@@ -498,12 +526,15 @@ def refine(raw_text: str) -> str:
     if word_count < _THRESHOLD_SHORT:
         prompt_template = _SYSTEM_PROMPT_SHORT
         tier = "short"
+        primary_params = _PARAMS_SHORT
     elif word_count < _THRESHOLD_LONG:
         prompt_template = _SYSTEM_PROMPT_MEDIUM
         tier = "medium"
+        primary_params = _PARAMS_MEDIUM
     else:
         prompt_template = _SYSTEM_PROMPT_LONG
         tier = "long"
+        primary_params = _PARAMS_LONG
 
     context = _load_context()
     history = _load_history()
@@ -545,12 +576,13 @@ def refine(raw_text: str) -> str:
     succeeded_model = None
     for model in (primary, fallback):
         try:
-            timeout = _effective_timeout(base_timeout, model)
+            params = primary_params if model == primary else None
+            timeout = _effective_timeout(base_timeout, model, params)
             if model == primary:
                 print(f"✨ Refining via {model} ({word_count} words, timeout {timeout}s)...", file=sys.stderr)
             else:
                 print(f"⚠️  {primary} unavailable — switching to fallback: {model}", file=sys.stderr)
-            result = _call_model(model, messages, api_key, timeout=timeout, retry_delay=retry_delay)
+            result = _call_model(model, messages, api_key, timeout=timeout, retry_delay=retry_delay, model_params=params)
             succeeded = True
             succeeded_model = model
             break

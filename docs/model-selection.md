@@ -30,10 +30,10 @@ LONG on genuine extended monologues).
 
 ## Tier 1 — SHORT (< 80 words)
 
-| Role     | Model                   |
-| -------- | ----------------------- |
-| Primary  | `mistral-small-latest`  |
-| Fallback | `mistral-medium-latest` |
+| Role     | Model                   | Parameters                    |
+| -------- | ----------------------- | ----------------------------- |
+| Primary  | `mistral-small-latest`  | `temperature=0.2, top_p=0.85` |
+| Fallback | `mistral-medium-latest` | Mistral defaults              |
 
 **Why mistral-small as default:**
 `devstral-small-latest` is deprecated (end of life: 2026-03-31). `mistral-small-latest`
@@ -46,26 +46,26 @@ conversational). `mistral-medium-latest` serves as a reliable fallback.
 
 ## Tier 2 — MEDIUM (80–240 words)
 
-| Role     | Model                    |
-| -------- | ------------------------ |
-| Primary  | `magistral-small-latest` |
-| Fallback | `mistral-medium-latest`  |
+| Role     | Model                   | Parameters                                           |
+| -------- | ----------------------- | ---------------------------------------------------- |
+| Primary  | `mistral-small-latest`  | `temperature=0.3, top_p=0.9, reasoning_effort=high`  |
+| Fallback | `mistral-medium-latest` | Mistral defaults                                     |
 
-**Why magistral-small as default:**
-Magistral models follow instructions more faithfully than standard completion models —
-they won't add content, answer questions embedded in the transcription, or deviate from
-the speaker's words. This matters most at medium length where the risk of AI
-paraphrasing or "helpfully" expanding the text is highest. Mistral-medium is a fast,
-reliable fallback with acceptable quality.
+**Why mistral-small + reasoning_effort=high (was magistral-small):**
+Mistral Small 4 with `reasoning_effort=high` provides similar quality to Magistral Small
+(same underlying model architecture) but is faster and cheaper. The reasoning mode
+activates chain-of-thought when needed without the full overhead of a dedicated reasoning
+model. `temperature=0.3` and `top_p=0.9` keep the output faithful to the original text
+while allowing natural lexical diversity. Fallback uses Mistral defaults for reliability.
 
 ---
 
 ## Tier 3 — LONG (> 240 words)
 
-| Role     | Model                     |
-| -------- | ------------------------- |
-| Primary  | `magistral-medium-latest` |
-| Fallback | `mistral-medium-latest`   |
+| Role     | Model                     | Parameters                   |
+| -------- | ------------------------- | ---------------------------- |
+| Primary  | `magistral-medium-latest` | `temperature=0.4, top_p=0.9` |
+| Fallback | `mistral-large-latest`    | Mistral defaults             |
 
 **Why magistral-medium over mistral-large:**
 Both models were compared on the same extended transcription (~350 words, French,
@@ -113,12 +113,14 @@ cost. Upgrade to `devstral-latest` via `.env` if extraction quality proves insuf
 
 ## Summary table (current defaults)
 
-| Tier    | Words  | Primary                   | Fallback                 | Status       |
-| ------- | ------ | ------------------------- | ------------------------ | ------------ |
-| SHORT   | < 80   | `mistral-small-latest`    | `mistral-medium-latest`  | ✅ Confirmed |
-| MEDIUM  | 80–240 | `magistral-small-latest`  | `mistral-medium-latest`  | ✅ Confirmed |
-| LONG    | > 240  | `magistral-medium-latest` | `mistral-medium-latest`  | ✅ Confirmed |
-| HISTORY | any    | `mistral-small-latest`    | `mistral-medium-latest`  | ✅ Confirmed |
+| Tier    | Words  | Primary                   | Fallback                 | Key params               | Status       |
+| ------- | ------ | ------------------------- | ------------------------ | ------------------------ | ------------ |
+| SHORT   | < 80   | `mistral-small-latest`    | `mistral-medium-latest`  | temp=0.2, top_p=0.85     | ✅ Confirmed |
+| MEDIUM  | 80–240 | `mistral-small-latest`    | `mistral-medium-latest`  | temp=0.3, reasoning=high | ✅ Confirmed |
+| LONG    | > 240  | `magistral-medium-latest` | `mistral-large-latest`   | temp=0.4, top_p=0.9      | ✅ Confirmed |
+| HISTORY | any    | `mistral-small-latest`    | `mistral-medium-latest`  | Mistral defaults         | ✅ Confirmed |
 
-All values are overridable via `.env` — see `.env.example` for the full list of
-configurable parameters.
+All model and parameter values are overridable via `.env` — see `.env.example` for the
+full list of configurable parameters. Per-tier parameters (temperature, top_p,
+reasoning_effort) are only applied to the primary model; fallbacks use Mistral defaults
+for maximum reliability.

@@ -13,6 +13,24 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ---
 
+## [2.4.0] — 2026-03-27
+
+### Changed — Per-tier API parameters and MEDIUM model routing
+
+- **MEDIUM tier:** `magistral-small-latest` → `mistral-small-latest` with
+  `reasoning_effort=high`. Mistral Small 4's reasoning mode provides similar quality
+  to Magistral Small, faster and at lower cost.
+- **Per-tier API parameters:** each tier now sends `temperature` and `top_p` to the
+  primary model for tighter control over output fidelity:
+  - SHORT: `temperature=0.2, top_p=0.85` (conservative corrections)
+  - MEDIUM: `temperature=0.3, top_p=0.9, reasoning_effort=high`
+  - LONG: `temperature=0.4, top_p=0.9` (fluent prose)
+- **Fallback models** use Mistral defaults (no extra parameters) for reliability.
+- **Timeout calculation:** `reasoning_effort` triggers an additional ×1.8 timeout
+  multiplier to account for thinking time.
+
+---
+
 ## [2.3.3] — 2026-03-27
 
 ### Fixed

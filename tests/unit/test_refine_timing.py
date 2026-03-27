@@ -54,6 +54,27 @@ class TestEffectiveTimeout:
         assert base_timeout == 8
         assert effective == 36
 
+    def test_reasoning_effort_multiplies_timeout(self, monkeypatch):
+        """reasoning_effort=high on mistral-small: base × 1.0 × 1.8 = 1.8×."""
+        rm = _load_refine(monkeypatch)
+        params = {"reasoning_effort": "high"}
+        effective = rm._effective_timeout(10, "mistral-small-latest", params)
+        assert effective == 18  # 10 × 1.0 × 1.8
+
+    def test_no_reasoning_effort_no_extra_factor(self, monkeypatch):
+        """Without reasoning_effort, mistral-small keeps factor 1.0."""
+        rm = _load_refine(monkeypatch)
+        effective = rm._effective_timeout(10, "mistral-small-latest")
+        assert effective == 10
+
+    def test_reasoning_effort_stacks_with_model_factor(self, monkeypatch):
+        """reasoning_effort on a model with factor > 1.0 stacks both multipliers."""
+        rm = _load_refine(monkeypatch)
+        params = {"reasoning_effort": "high"}
+        # mistral-medium-latest factor=1.2, × 1.8 = 2.16 → round(21.6) = 22
+        effective = rm._effective_timeout(10, "mistral-medium-latest", params)
+        assert effective == 22
+
 
 class TestRefineTiming:
     def test_short_text_foreground_timeout(self, monkeypatch):

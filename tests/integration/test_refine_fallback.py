@@ -615,3 +615,66 @@ class TestOutputLang:
         refine = self._load(monkeypatch, "en")
         system = self._capture_system_prompt(monkeypatch, refine, " ".join(["mot"] * 300))
         assert "Always reply in English" in system
+
+
+class TestModelParams:
+    """Per-tier API parameters are sent to the primary model but not fallbacks."""
+
+    def _load(self, monkeypatch):
+        monkeypatch.setenv("MISTRAL_API_KEY", "test-key")
+        monkeypatch.setenv("REFINE_REQUEST_RETRIES", "0")
+        monkeypatch.setenv("REFINE_COMPARE_MODELS", "false")
+        if "src.refine" in sys.modules:
+            del sys.modules["src.refine"]
+        import src.refine as refine
+        return refine
+
+    def _capture_payload(self, monkeypatch, refine, text: str) -> dict:
+        captured = {}
+
+        def fake_post(url, **kwargs):  # noqa: ARG001
+            captured["payload"] = kwargs["json"]
+            return _ok_response("ok")
+
+        monkeypatch.setattr(requests, "post", fake_post)
+        refine.refine(text)
+        return captured["payload"]
+
+    def test_short_tier_sends_temperature_and_top_p(self, monkeypatch):
+        refine = self._load(monkeypatch)
+        payload = self._capture_payload(monkeypatch, refine, "hello world")
+        assert payload["temperature"] == 0.2
+        assert payload["top_p"] == 0.85
+        assert "reasoning_effort" not in payload
+
+    def test_medium_tier_sends_reasoning_effort_high(self, monkeypatch):
+        refine = self._load(monkeypatch)
+        payload = self._capture_payload(monkeypatch, refine, " ".join(["word"] * 100))
+        assert payload["temperature"] == 0.3
+        assert payload["top_p"] == 0.9
+        assert payload["reasoning_effort"] == "high"
+
+    def test_long_tier_sends_temperature_no_reasoning(self, monkeypatch):
+        refine = self._load(monkeypatch)
+        payload = self._capture_payload(monkeypatch, refine, " ".join(["word"] * 300))
+        assert payload["temperature"] == 0.4
+        assert payload["top_p"] == 0.9
+        assert "reasoning_effort" not in payload
+
+    def test_fallback_has_no_extra_params(self, monkeypatch):
+        """When primary fails, fallback call must NOT include tier params."""
+        refine = self._load(monkeypatch)
+        payloads = []
+
+        def fake_post(url, **kwargs):  # noqa: ARG001
+            payloads.append(kwargs["json"])
+            if len(payloads) == 1:
+                return _error_response(429)
+            return _ok_response("fallback ok")
+
+        monkeypatch.setattr(requests, "post", fake_post)
+        refine.refine(" ".join(["word"] * 100))
+        # First call = primary (has params), second = fallback (no params)
+        assert "reasoning_effort" in payloads[0]
+        assert "reasoning_effort" not in payloads[1]
+        assert "temperature" not in payloads[1]
