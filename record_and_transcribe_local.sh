@@ -53,6 +53,25 @@ if [ "$RETRY_MODE" = "false" ]; then
     # after an interrupted/incorrect shutdown.
     rm -f local_audio.wav local_audio.mp3
 
+    # ── B. Kill orphan VoxRefiner rec processes from previous interrupted runs ──
+    # Pattern is specific enough to never match visio/webcam/other apps.
+    pkill -f "rec.*local_audio" 2>/dev/null || true
+    sleep 0.2
+
+    # ── A. Pre-check microphone access ─────────────────────────────────────────
+    # Test with a 0.1s silent recording; if it fails, attempt a PulseAudio reset.
+    if ! timeout 3 rec -c 1 -r 16000 /dev/null trim 0 0.1 2>/dev/null; then
+        echo "⚠️  Microphone inaccessible, attempting audio reset..."
+        pactl suspend-sink 1 2>/dev/null;   pactl suspend-sink 0 2>/dev/null
+        pactl suspend-source 1 2>/dev/null; pactl suspend-source 0 2>/dev/null
+        sleep 0.5
+        if ! timeout 3 rec -c 1 -r 16000 /dev/null trim 0 0.1 2>/dev/null; then
+            echo "❌ Microphone still inaccessible after reset. Check your audio settings."
+            exit 1
+        fi
+        echo "✅ Microphone recovered."
+    fi
+
     # Record into a temporary WAV and only promote it when sane.
     TMP_WAV=$(mktemp /tmp/local_audio_XXXXXX.wav)
     _TMPFILES+=("$TMP_WAV")
@@ -60,7 +79,9 @@ if [ "$RETRY_MODE" = "false" ]; then
     echo "=== Audio recording ==="
     echo "Press Ctrl+C to stop..."
 
-    setsid rec -c 1 -r 16000 "$TMP_WAV" &
+    # ── C. No setsid — keep rec in the same session so PulseAudio/PipeWire
+    #    grants microphone access when launched from a keyboard shortcut. ────────
+    rec -c 1 -r 16000 "$TMP_WAV" &
     REC_PID=$!
 
     stop_recording() {

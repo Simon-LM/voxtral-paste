@@ -13,6 +13,23 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ---
 
+## [2.2.1] — 2026-03-27
+
+### Fixed
+
+- **Microphone not activating via keyboard shortcut:** removed `setsid` from `rec`
+  so PulseAudio/PipeWire grants microphone access when launched from a `.desktop`
+  shortcut (session isolation was preventing device access).
+- **Pre-check microphone access:** added a 0.1 s probe before recording; if the
+  device is locked, VoxRefiner automatically resets PulseAudio sources/sinks and
+  retries, with a clear error message if recovery fails.
+- **Orphan `rec` cleanup:** previous interrupted runs can leave a zombie `rec`
+  process holding the device; VoxRefiner now kills orphan `rec.*local_audio`
+  processes at startup (pattern is specific to VoxRefiner — visio/webcam apps are
+  never affected).
+
+---
+
 ## [2.2.0] — 2026-03-20
 
 ### Changed — Mistral model routing (deprecation adaptation)
