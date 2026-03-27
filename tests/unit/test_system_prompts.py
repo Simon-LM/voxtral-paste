@@ -174,6 +174,14 @@ class TestOutputLang:
         refine = _get_refine(monkeypatch)
         assert refine._OUTPUT_LANG == ""
 
+    def test_unsupported_lang_falls_back_to_default(self, monkeypatch, capsys):
+        """OUTPUT_LANG=fr (or any unsupported value) resets to empty with a warning."""
+        monkeypatch.setenv("OUTPUT_LANG", "fr")
+        refine = _get_refine(monkeypatch)
+        assert refine._OUTPUT_LANG == ""
+        captured = capsys.readouterr()
+        assert "not supported" in captured.err
+
     @pytest.mark.parametrize("prompt_name", PROMPTS)
     def test_no_placeholder_left_with_lang_en(self, monkeypatch, prompt_name):
         """After formatting with EN instruction, no {placeholder} remains."""

@@ -13,6 +13,18 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ---
 
+## [2.3.3] — 2026-03-27
+
+### Fixed
+
+- **`OUTPUT_LANG` validation:** unsupported values (e.g. `fr`, `es`) now print a
+  warning to stderr and fall back to the default behaviour (same language as input),
+  instead of being silently ignored.
+- **`.env.example` clarified:** `OUTPUT_LANG` documentation now explicitly explains
+  the three cases (empty/unset, `en`, unsupported) to avoid confusion.
+
+---
+
 ## [2.3.2] — 2026-03-27
 
 ### Fixed

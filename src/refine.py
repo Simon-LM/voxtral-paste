@@ -65,10 +65,13 @@ _COMPARE_MODELS = os.environ.get("REFINE_COMPARE_MODELS", "false").lower() in ("
 # technical     : Markdown (headers, paragraphs, bullets) — for technical notes / AI chat
 _OUTPUT_PROFILE = os.environ.get("OUTPUT_PROFILE", "plain").lower()
 
-# Output language override.
+# Output language override — only "en" is supported for now.
 # Empty / unset  : reply in the same language as the input (default)
 # "en"           : always reply in English, keeping technical terms intact
 _OUTPUT_LANG = os.environ.get("OUTPUT_LANG", "").strip().lower()
+if _OUTPUT_LANG and _OUTPUT_LANG != "en":
+    print(f"⚠️  OUTPUT_LANG='{_OUTPUT_LANG}' is not supported — only 'en' or empty. Falling back to default.", file=sys.stderr)
+    _OUTPUT_LANG = ""
 
 _PROSE_FORMAT = (
     "FORMAT: Organize your output in well-separated paragraphs. "
