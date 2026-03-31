@@ -10,6 +10,7 @@ C_RESET='\033[0m'
 C_BOLD='\033[1m'
 C_DIM='\033[2m'
 C_CYAN='\033[36m'
+C_GREEN='\033[32m'
 C_BGREEN='\033[1;32m'   # bold green
 C_BYELLOW='\033[1;33m'  # bold yellow
 
@@ -196,39 +197,40 @@ if [ -n "$final_text" ]; then
     fi
     # Build result label with model name
     if [ -n "$_used_model" ]; then
-        _result_label="$_used_model"
+        _result_label="REFINED TEXT — $_used_model"
     elif [ "${ENABLE_REFINE:-true}" = "true" ]; then
-        _result_label="Voxtral raw — refinement failed"
+        _result_label="RAW TRANSCRIPTION — refinement failed"
     else
-        _result_label="Voxtral raw"
+        _result_label="RAW TRANSCRIPTION"
     fi
+    _transcribe_label="RAW TRANSCRIPTION — Voxtral"
     if [ "${REFINE_COMPARE_MODELS:-false}" = "true" ] && [ "${ENABLE_REFINE:-true}" = "true" ]; then
         # Full 3-way view: Raw Voxtral + Primary + Fallback
-        _fallback_label="Fallback"
+        _fallback_label="FALLBACK MODEL"
         if [ -n "$_fallback_model" ]; then
-            _fallback_label="Fallback ($_fallback_model)"
+            _fallback_label="FALLBACK MODEL — $_fallback_model"
         fi
-        _header "RAW TRANSCRIPTION" "📝"
+        _header "$_transcribe_label" "📝"
         echo "$raw_transcription"
         echo ""
-        _header "REFINED TEXT" "📝"
+        _header "$_result_label" "📝"
         _success "Copied to clipboard"
         echo ""
     elif [ "${SHOW_RAW_VOXTRAL:-false}" = "true" ] && [ "${ENABLE_REFINE:-true}" = "true" ]; then
         # 2-way view: Raw Voxtral + Result (no fallback model call)
-        _header "RAW TRANSCRIPTION" "📝"
+        _header "$_transcribe_label" "📝"
         echo "$raw_transcription"
         echo ""
-        _header "REFINED TEXT" "📝"
+        _header "$_result_label" "📝"
         _success "Copied to clipboard"
         echo ""
     else
-        _header "REFINED TEXT" "📝"
+        _header "$_result_label" "📝"
     fi
     echo "$final_text"
     if [ -n "${VOXTRAL_COMPARE_FILE:-}" ] && [ -s "$VOXTRAL_COMPARE_FILE" ]; then
         echo ""
-        _header "FALLBACK MODEL" "📝"
+        _header "$_fallback_label" "📝"
         cat "$VOXTRAL_COMPARE_FILE"
         rm -f "$VOXTRAL_COMPARE_FILE"
     fi
@@ -248,22 +250,19 @@ if [ "${ENABLE_HISTORY:-false}" = "true" ] && [ -n "$final_text" ]; then
     fi
 fi
 
-# ─── Quick commands (only in direct/terminal mode, not from the menu) ────────
+# ─── Interactive prompt (only in direct/terminal mode, not from the menu) ────
 if [ "${VOXREFINER_MENU:-}" != "1" ]; then
-    echo ""
-    echo "💡 Retry:"
-    echo "   ./$SCRIPT_NAME --retry   → re-run on existing audio (skip recording)"
-    echo ""
-    echo "💡 Useful files:"
-    echo "   ${EDITOR:-nano} context.txt   → edit personal context"
-    echo "   ${EDITOR:-nano} .env          → edit settings"
-    if [ "${ENABLE_HISTORY:-false}" = "true" ]; then
-        echo "   cat history.txt    → view history"
-        echo "   ${EDITOR:-nano} history.txt   → edit history"
-    fi
-    echo ""
-    echo "💡 Updates:"
-    echo "   ./vox-refiner-update.sh --check   → check for updates"
-    echo "   ./vox-refiner-update.sh --apply   → apply updates"
+    while true; do
+        echo ""
+        printf "${C_DIM}──────────────────────────────────────────────────────────────────${C_RESET}\n"
+        printf "  ${C_BOLD}[r]${C_RESET} Retry  ${C_BOLD}[n]${C_RESET} New recording  ${C_BOLD}[m]${C_RESET} Open menu  ${C_DIM}[Enter] Quit${C_RESET}: "
+        read -r _action
+        case "$_action" in
+            r|R) exec "$0" --retry ;;
+            n|N) exec "$0" ;;
+            m|M) exec "$SCRIPT_DIR/vox-refiner-menu.sh" ;;
+            *)   break ;;
+        esac
+    done
 fi
 

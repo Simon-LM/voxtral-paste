@@ -219,6 +219,7 @@ def test_show_raw_voxtral_displays_both_raw_and_refined(tmp_path: Path):
     assert result.returncode == 0, result.stderr
     assert "RAW TRANSCRIPTION" in result.stdout
     assert "REFINED TEXT" in result.stdout
+    assert "fake-primary-model" in result.stdout
     # Both raw and refined text must appear
     assert "raw transcription" in result.stdout
     assert "raw transcription [refined]" in result.stdout
@@ -236,3 +237,4 @@ def test_show_raw_voxtral_false_shows_single_block(tmp_path: Path):
     assert result.returncode == 0, result.stderr
     assert "RAW TRANSCRIPTION" not in result.stdout
     assert "REFINED TEXT" in result.stdout
+    assert "fake-primary-model" in result.stdout

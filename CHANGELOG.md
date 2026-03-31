@@ -13,6 +13,38 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ---
 
+## [3.1.0] — 2026-03-31
+
+### Added
+
+- **Voice Translate — save audio (`[d]`):** after a translation, press `[d]` to
+  save the generated MP3 to `~/Downloads/VoxRefiner/` (or `~/Téléchargements/VoxRefiner/`
+  — detected automatically via `xdg-user-dir`). Filename format:
+  `YYYY-MM-DD_HHhMM_<slug>.mp3`.
+- **AI-generated filename slugs (`src/slug.py`):** Mistral generates a short
+  3–5 word slug from the raw transcription (source language). Model chain:
+  `mistral-small-latest` → `mistral-medium-latest` → `"voice-translate"` fallback.
+  The user is shown the suggestion and can confirm or type a custom name.
+- **`SAVE_SLUG_LANG`** env var: `auto` (slug in source language, default) or
+  `en` (always English).
+- **Interactive post-action menu in direct STT mode:** when launched via keyboard
+  shortcut (not from the menu), the passive hints block is replaced by an
+  interactive prompt: `[r] Retry  [n] New recording  [m] Open menu  [Enter] Quit`.
+
+### Changed
+
+- **Model names in STT output headers:** the header now shows both the function
+  and the model, e.g. `REFINED TEXT — mistral-small-latest`,
+  `FALLBACK MODEL — mistral-medium-latest`, or `RAW TRANSCRIPTION — Voxtral`.
+  When refinement fails, the header reads `RAW TRANSCRIPTION — refinement failed`
+  instead of the misleading `REFINED TEXT`.
+- **Clipboard fix in Voice Translate:** the `✓ Copied to clipboard` message now
+  only appears after a successful copy. Both `clipboard` and `primary` X11
+  selections are populated (same as STT). The silently-suppressed `2>/dev/null`
+  has been removed.
+
+---
+
 ## [3.0.0] — 2026-03-29
 
 ### Added — Voice Translate
