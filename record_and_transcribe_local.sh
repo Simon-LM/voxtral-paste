@@ -5,28 +5,9 @@ SCRIPT_DIR="$(pwd)"
 SCRIPT_NAME="$(basename "$0")"
 VENV_PYTHON="$SCRIPT_DIR/.venv/bin/python"
 
-# ─── ANSI colors ─────────────────────────────────────────────────────────────
-C_RESET='\033[0m'
-C_BOLD='\033[1m'
-C_DIM='\033[2m'
-C_CYAN='\033[36m'
-C_GREEN='\033[32m'
-C_BGREEN='\033[1;32m'   # bold green
-C_BYELLOW='\033[1;33m'  # bold yellow
-
-# ─── UI helpers ──────────────────────────────────────────────────────────────
-_header() {
-    local title="$1" emoji="${2:-}"
-    local prefix=""
-    [ -n "$emoji" ] && prefix="$emoji  "
-    echo ""
-    printf "${C_DIM}%s${C_RESET}\n" "──────────────────────────────────────────────────────────────────"
-    printf "  ${C_GREEN}%s%s${C_RESET}\n" "$prefix" "$title"
-    printf "${C_DIM}%s${C_RESET}\n" "──────────────────────────────────────────────────────────────────"
-}
-
-_success() { printf "  ${C_BGREEN}✓${C_RESET} %s\n" "$1"; }
-_warn()    { printf "  ${C_BYELLOW}⚠${C_RESET}  %s\n" "$1"; }
+# ─── Shared UI (colors + helpers) ────────────────────────────────────────────
+# shellcheck disable=SC1091
+source "$SCRIPT_DIR/src/ui.sh"
 
 if [ ! -x "$VENV_PYTHON" ]; then
     echo "❌ Missing .venv Python interpreter: $VENV_PYTHON"
@@ -49,11 +30,21 @@ if [[ "${1:-}" == "--retry" || "${1:-}" == "-r" ]]; then
 fi
 # ─── Configuration ───────────────────────────────────────────────────────────
 
+# Save caller-provided overrides before sourcing .env (menu passes these inline).
+_PRE_OUTPUT_PROFILE="${OUTPUT_PROFILE:-}"
+_PRE_OUTPUT_LANG="${OUTPUT_LANG:-}"
+_PRE_COMPARE="${REFINE_COMPARE_MODELS:-}"
+
 # Load .env if present (for AUDIO_TEMPO and other variables)
 if [ -f .env ]; then
     # shellcheck disable=SC1091
     set -a; source .env; set +a
 fi
+
+# Restore caller-provided values so they take precedence over .env defaults.
+[ -n "$_PRE_OUTPUT_PROFILE" ]  && { OUTPUT_PROFILE="$_PRE_OUTPUT_PROFILE";       export OUTPUT_PROFILE; }
+[ -n "$_PRE_OUTPUT_LANG" ]     && { OUTPUT_LANG="$_PRE_OUTPUT_LANG";             export OUTPUT_LANG; }
+[ -n "$_PRE_COMPARE" ]         && { REFINE_COMPARE_MODELS="$_PRE_COMPARE";       export REFINE_COMPARE_MODELS; }
 
 # Speed multiplier applied to the recorded audio before transcription.
 # Lower values reduce transcription errors (1.0 = no change, 1.5 = default).
@@ -76,8 +67,11 @@ if [ "$RETRY_MODE" = "false" ]; then
     # Pattern is specific enough to never match visio/webcam/other apps.
     pkill -f "rec.*source.wav" 2>/dev/null || true
 
-    echo "=== Audio recording ==="
-    echo "Press Ctrl+C to stop..."
+    echo ""
+    printf "  ${C_BGREEN}🎙  RECORDING${C_RESET}\n"
+    echo ""
+    printf "  ${C_BBLUE}Press Ctrl+C to stop.${C_RESET}\n"
+    echo ""
 
     # ── C. No setsid — keep rec in the same session so PulseAudio/PipeWire
     #    grants microphone access when launched from a keyboard shortcut. ────────
@@ -90,7 +84,7 @@ if [ "$RETRY_MODE" = "false" ]; then
     # and the file stays header-only for ~2s even when recording normally).
     sleep 0.3
     if ! kill -0 "$REC_PID" 2>/dev/null; then
-        echo "⚠️  Microphone inaccessible, attempting audio reset..."
+        _warn "Microphone inaccessible, attempting audio reset..."
         systemctl --user restart pipewire pipewire-pulse 2>/dev/null || true
         sleep 1
         rm -f "$REC_DIR/source.wav"
@@ -98,18 +92,19 @@ if [ "$RETRY_MODE" = "false" ]; then
         REC_PID=$!
         sleep 0.3
         if ! kill -0 "$REC_PID" 2>/dev/null; then
-            echo "❌ Microphone still inaccessible after reset. Check your audio settings."
+            _error "Microphone still inaccessible after reset. Check your audio settings."
             exit 1
         fi
-        echo "✅ Microphone recovered."
+        _success "Microphone recovered."
     fi
 
     stop_recording() {
         echo ""
-        echo "⏹️ Stopping recording..."
+        printf "  ${C_DIM}⏹  Stopping recording...${C_RESET}\n"
         kill -INT "$REC_PID" 2>/dev/null
         wait "$REC_PID" 2>/dev/null
-        echo "✅ Recording stopped."
+        echo "" 
+        _success "Recording stopped."
     }
 
     trap stop_recording SIGINT
@@ -129,7 +124,7 @@ if [ "$RETRY_MODE" = "false" ]; then
         exit 1
     fi
 
-    printf "  ${C_GREEN}⚡ Processing audio...${C_RESET}\n"
+    _process "Processing audio..."
     ffmpeg -y -i "$REC_DIR/source.wav" \
         -af "silenceremove=detection=peak:start_periods=1:start_threshold=-35dB:stop_periods=-1:stop_duration=1.2:stop_threshold=-35dB,atempo=${AUDIO_TEMPO}" \
         -codec:a libmp3lame -b:a 64k "$REC_DIR/source.mp3" 2>/dev/null
@@ -179,7 +174,7 @@ if [ -n "$final_text" ]; then
     if printf '%s' "$final_text" | xclip -selection clipboard && \
        printf '%s' "$final_text" | xclip -selection primary; then
         echo ""
-        _success "Text copied to BOTH clipboards!"
+        _success "Text copied to BOTH clipboards:"
         echo "   Ctrl+V        → standard clipboard"
         echo "   Middle-click  → primary selection"
         echo ""
@@ -211,27 +206,33 @@ if [ -n "$final_text" ]; then
             _fallback_label="FALLBACK MODEL — $_fallback_model"
         fi
         _header "$_transcribe_label" "📝"
-        echo "$raw_transcription"
+        echo ""
+        printf "${C_BG_CYAN} %s ${C_RESET}\n" "$raw_transcription"
         echo ""
         _header "$_result_label" "📝"
         _success "Copied to clipboard"
         echo ""
-    elif [ "${SHOW_RAW_VOXTRAL:-false}" = "true" ] && [ "${ENABLE_REFINE:-true}" = "true" ]; then
-        # 2-way view: Raw Voxtral + Result (no fallback model call)
+        printf "${C_BG_BLUE} %s ${C_RESET}\n" "$final_text"
+    elif [ "${SHOW_RAW_VOXTRAL:-true}" = "true" ] && [ "${ENABLE_REFINE:-true}" = "true" ]; then
+        # 2-way view: Raw Voxtral + Result (on by default)
         _header "$_transcribe_label" "📝"
-        echo "$raw_transcription"
+        echo ""
+        printf "${C_BG_CYAN} %s ${C_RESET}\n" "$raw_transcription"
         echo ""
         _header "$_result_label" "📝"
         _success "Copied to clipboard"
         echo ""
+        printf "${C_BG_BLUE} %s ${C_RESET}\n" "$final_text"
     else
         _header "$_result_label" "📝"
+        printf "${C_BG_BLUE} %s ${C_RESET}\n" "$final_text"
     fi
-    echo "$final_text"
     if [ -n "${VOXTRAL_COMPARE_FILE:-}" ] && [ -s "$VOXTRAL_COMPARE_FILE" ]; then
         echo ""
         _header "$_fallback_label" "📝"
-        cat "$VOXTRAL_COMPARE_FILE"
+        echo ""
+        printf "${C_BG_PURPLE} %s ${C_RESET}\n" "$(cat "$VOXTRAL_COMPARE_FILE")"
+        echo ""
         rm -f "$VOXTRAL_COMPARE_FILE"
     fi
 else

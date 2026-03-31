@@ -34,6 +34,9 @@ def _build_sandbox(tmp_path: Path) -> tuple[Path, dict[str, str]]:
     src_dir = sandbox / "src"
     src_dir.mkdir()
 
+    # ui.sh is sourced by record_and_transcribe_local.sh — copy the real one.
+    shutil.copy2(repo_root / "src" / "ui.sh", src_dir / "ui.sh")
+
     # Minimal venv python expected by the script under test.
     venv_bin = sandbox / ".venv" / "bin"
     venv_bin.mkdir(parents=True)
@@ -226,11 +229,12 @@ def test_show_raw_voxtral_displays_both_raw_and_refined(tmp_path: Path):
 
 
 def test_show_raw_voxtral_false_shows_single_block(tmp_path: Path):
-    """Without SHOW_RAW_VOXTRAL, output must show a single 'Result' block."""
+    """SHOW_RAW_VOXTRAL=false must suppress raw block and show only refined result."""
     sandbox, env = _build_sandbox(tmp_path)
     rec = _rec_dir(sandbox)
     (rec / "source.mp3").write_text("existing-mp3", encoding="utf-8")
     env["ENABLE_REFINE"] = "true"
+    env["SHOW_RAW_VOXTRAL"] = "false"
 
     result = _run_script(sandbox, env, "--retry")
 

@@ -127,7 +127,7 @@ def call_model(
     for attempt in range(1 + retries):
         if attempt > 0:
             print(
-                f"\u23f3  {model} — retry {attempt}/{retries} (waiting {retry_delay:.0f}s)\u2026",
+                f"  \u23f3  {model} — retry {attempt}/{retries} (waiting {retry_delay:.0f}s)\u2026",
                 file=sys.stderr,
             )
             time.sleep(retry_delay)

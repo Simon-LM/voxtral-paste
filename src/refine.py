@@ -74,14 +74,36 @@ _COMPARE_MODELS = os.environ.get("REFINE_COMPARE_MODELS", "false").lower() in ("
 # structured    : paragraphs + bullet points for key ideas — suited for developers
 # dev           : alias for structured
 # technical     : Markdown (headers, paragraphs, bullets) — for technical notes / AI chat
-_OUTPUT_PROFILE = os.environ.get("OUTPUT_PROFILE", "plain").lower()
+_OUTPUT_PROFILE = os.environ.get("OUTPUT_PROFILE", "prose").lower()
 
-# Output language override — only "en" is supported for now.
+# Output language override.
 # Empty / unset  : reply in the same language as the input (default)
-# "en"           : always reply in English, keeping technical terms intact
+# ISO 639-1 code : force output in that language (e.g. "en", "fr", "zh")
+# Supported codes align with Voxtral STT supported languages.
+_SUPPORTED_OUTPUT_LANGS = {
+    "ar": "Arabic",
+    "zh": "Chinese (Mandarin)",
+    "nl": "Dutch",
+    "en": "English",
+    "fr": "French",
+    "de": "German",
+    "hi": "Hindi",
+    "it": "Italian",
+    "ja": "Japanese",
+    "ko": "Korean",
+    "pt": "Portuguese",
+    "ru": "Russian",
+    "es": "Spanish",
+}
 _OUTPUT_LANG = os.environ.get("OUTPUT_LANG", "").strip().lower()
-if _OUTPUT_LANG and _OUTPUT_LANG != "en":
-    print(f"⚠️  OUTPUT_LANG='{_OUTPUT_LANG}' is not supported — only 'en' or empty. Falling back to default.", file=sys.stderr)
+if _OUTPUT_LANG == "auto":
+    _OUTPUT_LANG = ""  # "auto" is the UI label for "same as input" (empty)
+if _OUTPUT_LANG and _OUTPUT_LANG not in _SUPPORTED_OUTPUT_LANGS:
+    print(
+        f"⚠️  OUTPUT_LANG='{_OUTPUT_LANG}' is not supported. "
+        f"Supported: {', '.join(sorted(_SUPPORTED_OUTPUT_LANGS))}. Falling back to default.",
+        file=sys.stderr,
+    )
     _OUTPUT_LANG = ""
 
 _PROSE_FORMAT = (
@@ -136,6 +158,18 @@ _LANG_INSTRUCTION_DEFAULT = (
 _LANG_INSTRUCTION_EN = (
     "CRITICAL: Always reply in English, regardless of the input language. "
     "Keep technical terms (code, tools, protocols) in their original English form.\n"
+)
+
+def _build_lang_instruction(lang: str) -> str:
+    """Return the language instruction for the system prompt."""
+    if not lang:
+        return _LANG_INSTRUCTION_DEFAULT
+    if lang == "en":
+        return _LANG_INSTRUCTION_EN
+    lang_name = _SUPPORTED_OUTPUT_LANGS.get(lang, lang)
+    return (
+        f"CRITICAL: Always reply in {lang_name}, regardless of the input language. "
+        "Keep technical terms (code, tools, protocols) in their original form.\n"
 )
 
 _PROMPT_FOOTER = (
@@ -552,7 +586,7 @@ def refine(raw_text: str) -> str:
     history = _load_history()
     history_section = _HISTORY_SECTION.format(history=history) if history else ""
     format_block = _FORMAT_INSTRUCTIONS.get(_OUTPUT_PROFILE, "") if tier != "short" else ""
-    language_instruction = _LANG_INSTRUCTION_EN if _OUTPUT_LANG == "en" else _LANG_INSTRUCTION_DEFAULT
+    language_instruction = _build_lang_instruction(_OUTPUT_LANG)
     system_prompt = prompt_template.format(context=context, history_section=history_section, format_block=format_block, language_instruction=language_instruction)
     messages = [
         {"role": "system", "content": system_prompt},
@@ -570,7 +604,7 @@ def refine(raw_text: str) -> str:
 
     if _COMPARE_MODELS:
         timeout_fb = _effective_timeout(base_timeout, fallback)
-        print(f"🔀 Comparing fallback ({fallback}, timeout {timeout_fb}s)...", file=sys.stderr)
+        print(f"  🔀 Comparing fallback ({fallback}, timeout {timeout_fb}s)...", file=sys.stderr)
 
         def _run_compare() -> None:
             try:
@@ -591,9 +625,9 @@ def refine(raw_text: str) -> str:
             params = primary_params if model == primary else None
             timeout = _effective_timeout(base_timeout, model, params)
             if model == primary:
-                print(f"✨ Refining via {model} ({word_count} words, timeout {timeout}s)...", file=sys.stderr)
+                print(f"  ✨ Refining via {model} ({word_count} words, timeout {timeout}s)...", file=sys.stderr)
             else:
-                print(f"⚠️  {primary} unavailable — switching to fallback: {model}", file=sys.stderr)
+                print(f"  ⚠️  {primary} unavailable — switching to fallback: {model}", file=sys.stderr)
             result = _call_model(model, messages, api_key, timeout=timeout, retry_delay=retry_delay, model_params=params)
             succeeded = True
             succeeded_model = model
@@ -602,17 +636,17 @@ def refine(raw_text: str) -> str:
             status = e.response.status_code if e.response is not None else "?"
             if status in _TRANSIENT_HTTP_CODES:
                 if status == 429:
-                    print(f"⚠️  {model} rate limit (429) — exhausted retries, switching model…", file=sys.stderr)
+                    print(f"  ⚠️  {model} rate limit (429) — exhausted retries, switching model…", file=sys.stderr)
                 else:
-                    print(f"⚠️  {model} server error ({status}) — switching model…", file=sys.stderr)
+                    print(f"  ⚠️  {model} server error ({status}) — switching model…", file=sys.stderr)
                 continue
             raise
         except requests.RequestException:
-            print(f"⚠️  {model} unreachable, switching...", file=sys.stderr)
+            print(f"  ⚠️  {model} unreachable, switching...", file=sys.stderr)
             continue
 
     if not succeeded:
-        print("⚠️  All models unavailable — returning raw transcription.", file=sys.stderr)
+        print("  ⚠️  All models unavailable — returning raw transcription.", file=sys.stderr)
 
     # Collect compare result — join thread (it may still be running) then write output.
     # Compare display is skipped when primary failed (succeeded_model != primary).

@@ -26,9 +26,8 @@ def test_script_has_configurable_wav_size_guard():
 
 
 def test_script_has_show_raw_voxtral_branch():
-    """SHOW_RAW_VOXTRAL=true must trigger a 2-way display without running fallback."""
+    """SHOW_RAW_VOXTRAL defaults to true and has a dedicated elif branch."""
     text = _script_text()
-    assert 'SHOW_RAW_VOXTRAL:-false' in text
-    assert 'Raw Voxtral' in text
+    assert 'SHOW_RAW_VOXTRAL:-true' in text
     # Must be separate from the compare-models branch (independent elif)
     assert 'elif' in text

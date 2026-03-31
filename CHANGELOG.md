@@ -13,6 +13,55 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ---
 
+## [3.3.0] — 2026-04-01
+
+### Added
+
+- **`src/ui.sh`:** shared ANSI color palette and UI helpers (`_header`, `_success`,
+  `_warn`, `_error`, `_info`, `_sep`, etc.) sourced by all shell scripts — single
+  source of truth for the visual language.
+- **`voice_translate.sh`:** Voice Translate extracted from the menu into a dedicated
+  standalone script; can be launched directly via keyboard shortcut like
+  `record_and_transcribe_local.sh`.
+- **Speak & Refine submenu (`[1]`):** full interactive sub-menu with live status header
+  showing current Format, Output lang, Compare, and History settings.
+  - `[f]` Change format (plain / prose / structured / markdown) — permanent or session.
+  - `[l]` Change output language (13 Voxtral-supported languages + auto) — permanent or session.
+  - `[c]` Compare models — runs primary and fallback in parallel, displays 3-way output (raw / primary / fallback).
+  - `[h]` Toggle history on/off — permanent (saved to `.env`).
+  - `[b]` Set max bullets in history — permanent (saved to `.env`).
+  - `[v]` View `history.txt` inline.
+  - `[e]` Edit `history.txt` in `$EDITOR` (default: nano).
+  - `[m]` Back to menu (replaces `[q]` for clarity).
+- **Post-recording mini-menu:** after each transcription, `[r] Retry`, `[n] New`,
+  `[v] View history`, `[e] Edit history`, `[Enter] Back` — without relaunching
+  recording for view/edit actions.
+- **Python stderr indentation:** all user-facing progress messages in `transcribe.py`,
+  `refine.py`, and `common.py` now carry 2-space indent to align with bash output.
+- **`REFINE_COMPARE_MODELS` session override:** menu-set values now take precedence
+  over `.env` defaults for `OUTPUT_PROFILE`, `OUTPUT_LANG`, and `REFINE_COMPARE_MODELS`.
+
+### Changed
+
+- **`vox-refiner-menu.sh`:** colors and UI helpers removed — now sourced from `src/ui.sh`.
+  Voice Translate functions removed — now in `voice_translate.sh`.
+- **`record_and_transcribe_local.sh`:** colors and UI helpers removed — now sourced from `src/ui.sh`.
+- **`[h] History`** removed from the main menu footer; history management moved into
+  the Speak & Refine submenu.
+- **`[c] Toggle compare mode`** renamed to `[c] Compare models` for clarity.
+- **`OUTPUT_PROFILE` default** changed to `prose` (was `plain`) in `refine.py` and `.env.example`.
+- **`SHOW_RAW_VOXTRAL` default** changed to `true` (was `false`).
+
+### Fixed
+
+- **`[n] New recording`** in the post-result mini-menu now launches a new recording
+  immediately instead of returning to the submenu.
+- **`[v]` / `[e]` history actions** no longer re-trigger a recording after use.
+- **`REFINE_COMPARE_MODELS`** environment variable was being overridden by `.env` source;
+  caller-provided values are now preserved after `source .env`.
+
+---
+
 ## [3.2.0] — 2026-03-31
 
 ### Added

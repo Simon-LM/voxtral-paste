@@ -175,8 +175,8 @@ class TestOutputLang:
         assert refine._OUTPUT_LANG == ""
 
     def test_unsupported_lang_falls_back_to_default(self, monkeypatch, capsys):
-        """OUTPUT_LANG=fr (or any unsupported value) resets to empty with a warning."""
-        monkeypatch.setenv("OUTPUT_LANG", "fr")
+        """OUTPUT_LANG with an unsupported value resets to empty with a warning."""
+        monkeypatch.setenv("OUTPUT_LANG", "xx")
         refine = _get_refine(monkeypatch)
         assert refine._OUTPUT_LANG == ""
         captured = capsys.readouterr()
