@@ -5,19 +5,20 @@
 # This script opens a new terminal window and runs VoxRefiner.
 # Copy it to launch-vox-refiner.sh and customize it for your setup.
 #
-# Two launch modes:
+# Three launch modes:
 #   - Interactive menu (vox-refiner-menu.sh):
 #       Speech-to-Text, Voice Translate, Settings — best for the app launcher.
 #   - Direct recording (record_and_transcribe_local.sh):
 #       Speak → clipboard instantly — best for a keyboard shortcut.
+#   - Selection to Voice (selection_to_voice.sh):
+#       Selected/clipboard text → read aloud instantly — best for a keyboard shortcut.
 #
 # Recommended setup:
 #   1. cp launch-vox-refiner.example.sh launch-vox-refiner.sh
 #   2. Edit INSTALL_DIR below to match your installation path
-#   3. .desktop file  → launches the interactive menu (SCRIPT_PATH below)
-#   4. Keyboard shortcut → bind directly to:
-#        ~/.local/bin/vox-refiner/launch-vox-refiner.sh --direct
-#      or bind record_and_transcribe_local.sh in your own terminal wrapper.
+#   3. .desktop file       → launches the interactive menu (no flag)
+#   4. Keyboard shortcut 1 → bind to: launch-vox-refiner.sh --direct
+#   5. Keyboard shortcut 2 → bind to: launch-vox-refiner.sh --selection
 #
 # Terminal examples:
 #   MATE:    mate-terminal -- bash -c "\"$SCRIPT_PATH\"; exec bash"
@@ -28,12 +29,26 @@
 
 INSTALL_DIR="$HOME/.local/bin/vox-refiner"
 
-# --direct flag: skip the menu, record immediately (ideal for keyboard shortcut)
-if [[ "${1:-}" == "--direct" ]]; then
-    SCRIPT_PATH="$INSTALL_DIR/record_and_transcribe_local.sh"
-else
-    SCRIPT_PATH="$INSTALL_DIR/vox-refiner-menu.sh"
-fi
+# ─── Display / D-Bus environment fix ─────────────────────────────────────────
+# When launched from a DE keyboard shortcut the process runs in a minimal
+# environment. mate-terminal and gnome-terminal need DBUS_SESSION_BUS_ADDRESS
+# to open a window; without it they exit silently.
+export DISPLAY="${DISPLAY:-:0}"
+export DBUS_SESSION_BUS_ADDRESS="${DBUS_SESSION_BUS_ADDRESS:-unix:path=/run/user/$(id -u)/bus}"
+
+case "${1:-}" in
+    --direct)
+        # Skip the menu, record immediately (ideal for keyboard shortcut)
+        SCRIPT_PATH="$INSTALL_DIR/record_and_transcribe_local.sh"
+        ;;
+    --selection)
+        # Read selected/clipboard text aloud (ideal for keyboard shortcut)
+        SCRIPT_PATH="$INSTALL_DIR/selection_to_voice.sh"
+        ;;
+    *)
+        SCRIPT_PATH="$INSTALL_DIR/vox-refiner-menu.sh"
+        ;;
+esac
 
 # Optional terminal override.
 # Examples:

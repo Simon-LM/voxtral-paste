@@ -13,6 +13,37 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ---
 
+## [3.5.0] — 2026-04-01
+
+### Added
+
+- **`selection_to_voice.sh`:** new standalone script — reads selected text (primary
+  selection, fallback clipboard) aloud using a configured preset voice. Launcha­ble
+  via keyboard shortcut or from the menu.
+  - Post-action mini-menu: `[l]` listen again, `[d]` save to `~/Downloads/VoxRefiner/`,
+    `[Enter]` quit.
+- **Option `[4]` Selection to Voice:** now active in `vox-refiner-menu.sh`; calls
+  `./selection_to_voice.sh` directly.
+- **`launch-vox-refiner.example.sh`:** added `--selection` flag (opens
+  `selection_to_voice.sh` in a terminal); added `DISPLAY` and
+  `DBUS_SESSION_BUS_ADDRESS` exports for reliable keyboard shortcut launch.
+- **Settings → `[v]` Reading voice:** voice picker with all 30 Mistral preset voices
+  grouped by character (Marie FR / Paul US / Oliver GB / Jane GB), each with a live
+  listen preview before confirming. Saves `TTS_SELECTION_VOICE_ID` permanently to
+  `.env`.
+- **`src/tts.py` voice system:** added `_LANG_VOICE_MAP` (language code → UUID),
+  `voice_id` parameter to `synthesize()`, and `TTS_VOICE_ID` / `TTS_LANG` env var
+  support. `voice_translate.sh` passes `TTS_LANG` so the target-language preset voice
+  is used when no voice sample is available.
+
+### Changed
+
+- **Default reading voice:** `fr_marie_curious` (`e0580ce5`) — French, curious tone.
+- **`language` field removed** from TTS API payload (not accepted by Mistral API).
+- **Menu description** for `[4]` updated to "read aloud instantly".
+
+---
+
 ## [3.4.0] — 2026-04-01
 
 ### Added

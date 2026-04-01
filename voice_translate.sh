@@ -308,7 +308,9 @@ _translate_and_speak() {
         TTS_ARGS="$REC_TTS_OUTPUT $VOICE_SAMPLE"
     fi
 
-    if printf '%s' "$rewritten_text" | "$VENV_PYTHON" -m src.tts $TTS_ARGS 2>&3; then
+    # Pass target language so tts.py can pick a matching preset voice when no
+    # voice sample is used (TTS_LANG → _LANG_VOICE_MAP lookup in tts.py).
+    if printf '%s' "$rewritten_text" | TTS_LANG="$TARGET_LANG" "$VENV_PYTHON" -m src.tts $TTS_ARGS 2>&3; then
 
         # Loudness normalization + volume boost
         TTS_LOUDNESS="${TTS_LOUDNESS:--16}"
