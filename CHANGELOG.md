@@ -13,6 +13,26 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ---
 
+## [3.5.1] — 2026-04-01
+
+### Changed
+
+- **`launch-vox-refiner.sh`** is now committed to the repository and auto-detects
+  its install directory (`INSTALL_DIR="$(cd "$(dirname "$0")" && pwd)"`). No manual
+  copy or path configuration needed after rsync.
+- **`launch-vox-refiner.example.sh`** deleted — superseded by the versioned launcher.
+- **Launcher flags renamed** for clarity and future scalability:
+  - `--direct` → `--speak-refine` (Speak & Refine)
+  - `--selection` → `--selection-voice` (Selection to Voice)
+  - Added `--speak-translate` (Speak & Translate)
+- **`install.sh`:** removed `cp launch-vox-refiner.example.sh` step; added
+  `voice_translate.sh` and `selection_to_voice.sh` to `chmod +x`.
+- **`.gitignore`:** removed `launch-vox-refiner.sh` entry.
+- **DBUS/display fix** in launcher for reliable keyboard shortcut launch
+  (`DISPLAY` and `DBUS_SESSION_BUS_ADDRESS` exported if not set).
+
+---
+
 ## [3.5.0] — 2026-04-01
 
 ### Added

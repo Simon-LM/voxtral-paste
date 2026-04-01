@@ -290,26 +290,11 @@ chmod +x record_and_transcribe_local.sh launch-vox-refiner.sh vox-refiner-update
 
 For the best experience, bind VoxRefiner to a keyboard shortcut so you can launch it with a single key press from anywhere.
 
-1. Set up the launcher script:
+1. Bind `launch-vox-refiner.sh` to a keyboard shortcut in your desktop environment:
 
-```bash
-cp launch-vox-refiner.example.sh launch-vox-refiner.sh
-# Edit launch-vox-refiner.sh:
-#   - set SCRIPT_PATH to the full path of record_and_transcribe_local.sh
-#   - optional: set VOXREFINER_TERMINAL (mate-terminal, gnome-terminal, xfce4-terminal, konsole, xterm)
-chmod +x launch-vox-refiner.sh
-```
+The launcher auto-detects your terminal (`mate-terminal` → `gnome-terminal` → `xfce4-terminal` → `konsole` → `xterm`) and auto-detects the install directory — no configuration needed.
 
-Why keep `launch-vox-refiner.example.sh`?
-
-- The `.example` file is the shared, versioned template for everyone.
-- `launch-vox-refiner.sh` is your personal local copy (paths, terminal choice), so it stays untracked.
-- This separation avoids committing machine-specific paths and keeps installation reproducible.
-- The launcher auto-detects an available terminal in this order:
-  `mate-terminal` -> `gnome-terminal` -> `xfce4-terminal` -> `konsole` -> `xterm`.
-- If needed, set `VOXREFINER_TERMINAL` in `launch-vox-refiner.sh` to force one terminal.
-
-1. Bind it to a keyboard shortcut in your desktop environment:
+To force a specific terminal, set `VOXREFINER_TERMINAL` in your environment.
 
 | Desktop   | Where to configure                             |
 | --------- | ---------------------------------------------- |

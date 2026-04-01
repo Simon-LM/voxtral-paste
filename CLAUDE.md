@@ -49,7 +49,7 @@ All 110 tests should pass.
 
 ## Files that must never be committed
 
-`.env`, `launch-vox-refiner.sh`, `context.txt`, `history.txt`, `*.wav`, `*.mp3`
+`.env`, `context.txt`, `history.txt`, `*.wav`, `*.mp3`
 
 These are listed in `.gitignore`. Never force-add them.
 

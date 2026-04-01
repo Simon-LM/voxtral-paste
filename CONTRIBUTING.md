@@ -16,7 +16,7 @@ vox-refiner/
 │   └── refine.py           # Step 2: raw text → refined text (Mistral chat API)
 ├── record_and_transcribe_local.sh   # Main entry point (bash pipeline)
 ├── install.sh              # One-shot installer (system checks + venv setup)
-├── launch-vox-refiner.example.sh    # Keyboard shortcut launcher template
+├── launch-vox-refiner.sh            # Keyboard shortcut launcher (committed, auto-detects install dir)
 ├── vox-refiner.example.desktop      # Desktop menu entry template (.desktop)
 ├── context.txt             # User domain vocabulary (injected into refinement prompt)
 ├── .env.example            # Configuration template

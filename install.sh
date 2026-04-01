@@ -79,17 +79,12 @@ if [ ! -f "context.txt" ]; then
     echo "🧩 Created context.txt from context.example.txt"
 fi
 
-if [ ! -f "launch-vox-refiner.sh" ]; then
-    cp launch-vox-refiner.example.sh launch-vox-refiner.sh
-    echo "🧩 Created launch-vox-refiner.sh from template"
-fi
-
-chmod +x record_and_transcribe_local.sh launch-vox-refiner.sh vox-refiner-menu.sh vox-refiner-update.sh install.sh
+chmod +x record_and_transcribe_local.sh launch-vox-refiner.sh voice_translate.sh \
+         selection_to_voice.sh vox-refiner-menu.sh vox-refiner-update.sh install.sh
 
 echo ""
 echo "✅ Installation complete."
 echo ""
 echo "Next steps:"
 echo "  1. Edit .env and set MISTRAL_API_KEY"
-echo "  2. (Optional) Edit launch-vox-refiner.sh for your terminal app"
-echo "  3. Launch: ./launch-vox-refiner.sh"
+echo "  2. Launch: ./launch-vox-refiner.sh"
