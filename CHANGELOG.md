@@ -13,6 +13,52 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ---
 
+## [3.7.0] — 2026-04-03
+
+### Added
+
+- **`src/tts.py` — structural chunking (`_make_chunks` rewrite):** chunks are now
+  split on paragraph boundaries (`\n\n`) first, preserving editorial structure.
+  Consecutive short paragraphs are grouped into a single chunk when they fit within
+  `TTS_CHUNK_SIZE`. Oversized paragraphs are sub-split at sentence boundaries.
+  The text is never cut mid-paragraph.
+- **`src/tts.py` — content-type detection + specialized AI cleaning:** the
+  `_AI_CLEAN_SYSTEM` prompt now asks `devstral-latest` to silently detect the
+  content type (news_article, email, wikipedia, social_media, generic) and apply
+  type-specific cleaning rules in a single call. News articles strip "Lire aussi"
+  encarts; Wikipedia strips `[1][2]` references and warning banners; emails strip
+  technical headers and automatic footers; social media strips counters and pure
+  hashtags.
+- **`src/tts.py` — citation voice (`TTS_QUOTE_VOICE_ID`):** if the environment
+  variable `TTS_QUOTE_VOICE_ID` is set, paragraphs that are entirely a quotation
+  (`"..."`, `«...»`, `"..."`) are emitted as separate chunks using this voice UUID,
+  giving citations a distinct voice. When the variable is unset, behaviour is
+  unchanged (no extra API calls, no rate-limiting risk).
+- **`vox-refiner-menu.sh` — `_voice_picker` function:** the 150-line inline voice
+  picker is now a reusable `_voice_picker <ENV_VAR> <TITLE> <ALLOW_DISABLE>` function.
+- **`vox-refiner-menu.sh` — Settings `[c]` Citation voice:** new entry in the
+  Settings submenu to pick `TTS_QUOTE_VOICE_ID` using the same numbered voice list
+  (1–29). Includes a `[d] Disable` option to set the variable to empty and turn off
+  the citation voice feature.
+
+### Fixed
+
+- **`selection_to_voice.sh` — chunk playback integrity:** shell-side chunk
+  regeneration has been removed in chunked mode so retries stay in Python, preserving
+  per-chunk voice assignment (including quote voice) across failures.
+- **`selection_to_voice.sh` — fail-fast on missing/failed chunk:** playback now
+  stops immediately when a passage is missing or definitively failed, preventing
+  silent holes in the final listening experience.
+- **`selection_to_voice.sh` — robust FIFO chunk handling:** incoming FIFO lines are
+  sanitized, chunk indices are deduplicated, and a short visibility wait is applied
+  before declaring a chunk missing, reducing false negatives like "passage OK" then
+  "introuvable/vide".
+- **`selection_to_voice.sh` — failure recovery UX:** on pipeline error, a dedicated
+  mini-menu offers `[r]` relaunch or `[m]` return to main menu instead of abrupt
+  fallback behavior.
+
+---
+
 ## [3.6.0] — 2026-04-02
 
 ### Added
@@ -20,7 +66,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - **`src/tts.py` — AI text cleaning (`_ai_clean_text`):** before chunked TTS,
   the selected text is sent to `mistral-small-latest` with an accessibility-focused
   prompt. Removes web UI noise (share buttons, metadata, nav links, `(Nouvelle
-  fenêtre)` annotations, agency credits) while preserving all editorial content,
+fenêtre)` annotations, agency credits) while preserving all editorial content,
   section headings, and image captions (prefixed "Photo :"). Falls back to
   minimal heuristic cleaning if the AI call fails.
 - **`src/tts.py` — cleaned text display:** the AI-cleaned text is printed to the
@@ -50,7 +96,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - **`selection_to_voice.sh` — `realpath` in concat list:** ffmpeg concat demuxer
   now receives absolute paths, fixing the incomplete `[l]` replay issue.
 - **`_make_chunks`:** paragraph breaks (`\n+`) are now collapsed to a single space
-  (previously ` . `) so the TTS engine no longer reads an audible "point" between
+  (previously `.`) so the TTS engine no longer reads an audible "point" between
   paragraphs.
 - **`_clean_text`:** simplified to a minimal pre-filter (removes `\ufffc` icons and
   excess whitespace only); full cleaning is now delegated to the AI step.

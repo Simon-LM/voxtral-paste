@@ -114,6 +114,8 @@ if [ "${#selected_text}" -gt "$TTS_CHUNK_THRESHOLD" ]; then
     _TTS_PID=$!
 
     _TTS_STOPPED=0
+    _PIPELINE_ERROR=0
+    declare -A _PROCESSED_CHUNKS=()
     _tts_stop() {
         _TTS_STOPPED=1
         kill "$_TTS_PID" 2>/dev/null
@@ -122,52 +124,105 @@ if [ "${#selected_text}" -gt "$TTS_CHUNK_THRESHOLD" ]; then
     trap '_tts_stop' INT TERM
 
     # Python prints chunk file paths (or CHUNK_FAILED:<idx>) to the FIFO.
+    # Retries are handled in Python to preserve per-chunk voice selection
+    # (including quote voice). Bash must fail fast on missing passages.
     while IFS= read -r chunk_file; do
         [ "$_TTS_STOPPED" = "1" ] && break
+
+        # FIFO lines may carry hidden CR/whitespace depending on producers.
+        chunk_file="${chunk_file//$'\r'/}"
+        chunk_file="${chunk_file#"${chunk_file%%[![:space:]]*}"}"
+        chunk_file="${chunk_file%"${chunk_file##*[![:space:]]}"}"
         [ -z "$chunk_file" ] && continue
-        # ── Failed chunk: retry here until it works ──────────────────────
-        _needs_retry=0
+
+        # Python already exhausted retries for this passage.
         if [[ "$chunk_file" == CHUNK_FAILED:* ]]; then
             _fail_idx="${chunk_file#CHUNK_FAILED:}"
-            _needs_retry=1
-        elif [ ! -s "$chunk_file" ]; then
-            _fail_idx="${chunk_file##*chunk_}"
-            _fail_idx="${_fail_idx%%.*}"
-            _fail_idx=$((10#$_fail_idx))
-            _needs_retry=1
+            _FAILED_CHUNKS+=("$_fail_idx")
+            printf "  ${C_BRED}❌ Passage $((_fail_idx + 1)) définitivement échoué.${C_RESET}\n"
+            _PIPELINE_ERROR=1
+            _TTS_STOPPED=1
+            kill "$_TTS_PID" 2>/dev/null
+            break
         fi
-        if [ "$_needs_retry" = "1" ]; then
-            _txt="$CHUNKS_DIR/$(printf 'chunk_%03d.txt' "$_fail_idx")"
-            _retry_mp3="$CHUNKS_DIR/$(printf 'chunk_%03d_retry.mp3' "$_fail_idx")"
-            _retry_ok=0
-            for _retry_n in 1 2 3; do
-                printf "\n  ${C_BYELLOW}⏳ Passage $((_fail_idx + 1)) en attente — tentative ${_retry_n}/3…${C_RESET}\n"
-                if [ -f "$_txt" ] && TTS_VOICE_ID="$_sel_voice" TTS_LANG="$_sel_lang" \
-                   "$VENV_PYTHON" -m src.tts "$_retry_mp3" < "$_txt" 2>&3; then
-                    if [ -s "$_retry_mp3" ]; then
-                        chunk_file="$_retry_mp3"
-                        _retry_ok=1
-                        break
-                    fi
-                fi
-                sleep $(( _retry_n * 3 ))
-            done
-            if [ "$_retry_ok" = "0" ]; then
-                _FAILED_CHUNKS+=("$_fail_idx")
-                printf "  ${C_BRED}❌ Passage $((_fail_idx + 1)) définitivement échoué.${C_RESET}\n"
+
+        _chunk_idx=""
+        _base_name="$(basename -- "$chunk_file")"
+        if [[ "$_base_name" =~ ^chunk_([0-9]{3})(_retry)?\.mp3$ ]]; then
+            _chunk_idx=$((10#${BASH_REMATCH[1]}))
+            # Ignore duplicated entries to prevent double-processing/fake failures.
+            if [ "${_PROCESSED_CHUNKS[$_chunk_idx]:-0}" = "1" ]; then
                 continue
             fi
         fi
+
+        # Some filesystems can expose a short delay between path emission
+        # and file visibility. Wait briefly before declaring it missing.
+        _chunk_ready=0
+        _chunk_path="$chunk_file"
+        _canonical_chunk=""
+        if [ -n "$_chunk_idx" ]; then
+            _canonical_chunk="$CHUNKS_DIR/$(printf 'chunk_%03d.mp3' "$_chunk_idx")"
+        fi
+        for _wait_n in 1 2 3 4 5 6 7 8 9 10; do
+            if [ -s "$_chunk_path" ]; then
+                _chunk_ready=1
+                break
+            fi
+            if [ -n "$_canonical_chunk" ] && [ -s "$_canonical_chunk" ]; then
+                _chunk_path="$_canonical_chunk"
+                _chunk_ready=1
+                break
+            fi
+            sleep 0.2
+        done
+        if [ "$_chunk_ready" = "0" ]; then
+            if [ -n "$_chunk_idx" ]; then
+                _FAILED_CHUNKS+=("$_chunk_idx")
+                printf "  ${C_BRED}❌ Passage $((_chunk_idx + 1)) introuvable/vide.${C_RESET}\n"
+            else
+                printf "  ${C_BRED}❌ Chunk introuvable/vide: ${chunk_file}${C_RESET}\n"
+            fi
+            _PIPELINE_ERROR=1
+            _TTS_STOPPED=1
+            kill "$_TTS_PID" 2>/dev/null
+            break
+        fi
+
+        chunk_file="$_chunk_path"
         _normalize_chunk "$chunk_file" "${chunk_file%.mp3}_norm.mp3"
         # Use realpath for ffmpeg concat compatibility
         printf 'file %s\n' "$(realpath "$chunk_file")" >> "$CONCAT_LIST"
         _play_audio "$chunk_file"
+        [ -n "$_chunk_idx" ] && _PROCESSED_CHUNKS[$_chunk_idx]=1
         [ "$_TTS_STOPPED" = "1" ] && break
     done < "$_TTS_FIFO"
 
     wait "$_TTS_PID" 2>/dev/null
     rm -f "$_TTS_FIFO"
     trap - INT TERM
+
+    if [ "$_PIPELINE_ERROR" = "1" ]; then
+        echo ""
+        _error "Lecture interrompue : au moins un passage est manquant/échoué (aucun trou audio autorisé)."
+        while true; do
+            echo ""
+            _sep
+            printf "  ${C_BOLD}[r]${C_RESET} Relancer  ${C_BOLD}[m]${C_RESET} Menu principal  ${C_DIM}[Entrée] Quitter${C_RESET} : "
+            read -r _fail_action
+            case "$_fail_action" in
+                r|R)
+                    exec "$0"
+                    ;;
+                m|M)
+                    exit 0
+                    ;;
+                *)
+                    exit 1
+                    ;;
+            esac
+        done
+    fi
 
     if [ "$_TTS_STOPPED" = "1" ]; then
         echo ""

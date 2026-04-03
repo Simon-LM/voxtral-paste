@@ -55,30 +55,189 @@ _CHUNK_MAX_CHARS = int(os.environ.get("TTS_CHUNK_SIZE", "800"))
 
 _AI_CLEAN_SYSTEM = (
     "Tu es un assistant d'accessibilité pour malvoyants. Tu reçois un texte brut copié-collé depuis "
-    "une page web (article de presse, blog, etc.) et tu dois le préparer pour une lecture vocale "
-    "complète par un moteur TTS.\n\n"
-    "OBJECTIF ABSOLU : que l'utilisateur entende TOUT le contenu éditorial, sans rien sauter.\n\n"
-    "CONSERVER ET ADAPTER :\n"
-    "- Titre principal (tel quel, en premier)\n"
-    "- Sous-titres ou intertitres de sections (garder leur texte intégralement)\n"
-    "- Corps de l'article dans son intégralité, tous les paragraphes sans exception\n"
-    "- Citations et discours rapportés\n"
-    "- Légendes de photos ou d'images : l'utilisateur peut voir les images mais a du mal à lire ; "
-    "introduire chaque légende par 'Photo : ' suivi de son texte\n\n"
-    "SUPPRIMER UNIQUEMENT (jamais le contenu éditorial) :\n"
-    "- Boutons et éléments UI : 'Partager', 'Tweeter', 'Lire plus tard', compteurs de commentaires\n"
-    "- Métadonnées techniques : auteur, date de publication, temps de lecture, crédit photo seul (ex: 'AFP')\n"
-    "- Navigation : 'Lire aussi', 'Sur le même sujet', 'Newsletter', 'Accueil', fils d'Ariane\n"
-    "- Annotations de liens : '(Nouvelle fenêtre)', '(new window)'\n"
-    "- URLs brutes et adresses email\n\n"
-    "FORMAT de sortie :\n"
-    "- Texte brut uniquement, sans markdown (pas de **, *, #, listes à tirets)\n"
-    "- Paragraphes séparés par une seule ligne vide\n"
-    "- Ne pas ajouter de ponctuation artificielle entre les paragraphes\n"
-    "- Pas de commentaire ni d'explication de ta part, uniquement le texte nettoyé"
+    "une page web et tu dois le préparer pour une lecture vocale complète par un moteur TTS.\n\n"
+    "ÉTAPE 1 — DÉTECTION DU TYPE DE CONTENU :\n"
+    "Identifie silencieusement le type parmi : news_article, email, wikipedia, social_media, generic.\n\n"
+    "ÉTAPE 2 — NETTOYAGE selon le type détecté :\n\n"
+    "RÈGLES COMMUNES à tous les types :\n"
+    "- OBJECTIF ABSOLU : que l'utilisateur entende TOUT le contenu éditorial, sans rien sauter\n"
+    "- Conserver : titre principal, sous-titres et intertitres (intégralement), corps complet "
+    "(tous les paragraphes sans exception), citations et discours rapportés\n"
+    "- Citations et discours directs (les passages avec «, \" ou \u201C) : "
+    "les conserver comme passages/paragraphes SÉPARÉS avec leur propre ligne vide avant et après, "
+    "ne jamais les fusionner avec le texte qui les précède ou suit. Les citations entre guillemets "
+    "doivent clairement être séparées du reste des paragraphes pour permettre une lecture avec une "
+    "autre voix si nécessaire.\n"
+    "- Légendes de photos : introduire chaque légende par 'Photo : ' suivi de son texte "
+    "(l'utilisateur voit les images mais a du mal à lire)\n"
+    "- Supprimer : boutons UI ('Partager', 'Tweeter', 'Lire plus tard', compteurs), "
+    "métadonnées (auteur, date, temps de lecture, crédit photo seul comme 'AFP'), "
+    "annotations de liens ('(Nouvelle fenêtre)', '(new window)'), URLs brutes, adresses email\n"
+    "- Format de sortie : texte brut sans markdown (pas de **, *, #, tirets), "
+    "paragraphes séparés par une seule ligne vide, aucun commentaire de ta part\n\n"
+    "RÈGLES SPÉCIFIQUES par type :\n"
+    "- news_article : supprimer aussi les encarts 'Lire aussi : [titre]', 'Sur le même sujet', "
+    "'À lire aussi', 'À voir aussi', les fils d'Ariane ('Accueil > Rubrique > ...'), "
+    "les blocs newsletter, et tous les liens inline éditoriaux insérés dans le corps\n"
+    "- wikipedia : supprimer les références numériques [1], [2], [note 1], les bandeaux "
+    "d'avertissement ('Cet article...', 'La neutralité de cet article est contestée'), "
+    "les boîtes d'information latérales répétées, les catégories en bas de page\n"
+    "- email : supprimer les en-têtes techniques (De :, À :, Cc :, Date :, Objet :), "
+    "les pieds de page automatiques ('Ce message a été envoyé par...', 'Se désabonner', "
+    "'Unsubscribe', 'Ce courriel est confidentiel'), les signatures automatiques d'entreprise\n"
+    "- social_media : supprimer les compteurs (likes, retweets, vues, partages), "
+    "les hashtags purs (#mot) s'ils n'apportent pas de sens, les mentions @user si ce sont "
+    "des artefacts de navigation plutôt que du contenu\n"
+    "- generic : appliquer uniquement les règles communes\n\n"
+    """
+EXEMPLE DÉTAILLÉ (news_article) — modèle à reproduire :
+AVANT : {
+
+«Aujourd’hui est votre dernier jour» : Oracle licencie des milliers de salariés par un simple e-mail
+Par Ségolène Forgar
+Il y a 1 jour
+
+Sujets
+Oracle
+￼
+Copier le lien
+￼
+Écouter cet article
+￼
+00:00/04:25
+￼
+L’entreprise du milliardaire Larry Ellison a procédé, ce mardi, à une vague de licenciements d’ampleur. En cause : sa réorientation stratégique vers l’intelligence artificielle.
+
+PASSER LA PUBLICITÉ
+PASSER LA PUBLICITÉ
+Un e-mail laconique, envoyé aux aurores. Ce mardi 31 mars, des milliers de salariés d’Oracle ont découvert, avec stupeur, que leur poste avait tout bonnement été supprimé. Le géant de l’informatique à distance (cloud), fondé par le milliardaire Larry Ellison et basé à Austin (Texas), a en effet procédé à une vague de licenciements d’ampleur, qui toucherait près de 10.000 personnes selon un employé interrogé par la BBC. L’entreprise, qui comptait 162.000 salariés en mai 2025 d’après un document déposé auprès de la Securities and Exchange Commission (SEC), justifie ces départs par «les besoins actuels de l’entreprise».
+
+Emploi & EntrepriseNewsletter
+Tous les lundis
+
+Recevez tous les lundis l’actualité de l’Entreprise : emploi, formation, vie de bureau, entrepreneurs, social…
+
+Adresse e-mail
+￼￼S'INSCRIRE
+Le message adressé aux licenciés, révélé par Business Insider, ne laisse aucune place à l’ambiguïté. «Après un examen attentif des besoins actuels d’Oracle, nous avons pris la décision de supprimer votre poste dans le cadre d’une réorganisation plus large. Par conséquent, aujourd’hui est votre dernier jour de travail», peut-on y lire.
+
+PASSER LA PUBLICITÉ
+Publicité
+Les employés congédiés ont été informés que leur accès aux outils informatiques, à leur messagerie et à leurs fichiers serait désactivé dans les heures suivantes. Ils se sont, par ailleurs, vu proposer une indemnité de départ équivalente à un mois de salaire, selon la BBC.
+
+Investissements massifs dans l’IA
+D’après les publications LinkedIn d’employés remerciés, les réductions d’effectifs concernent plusieurs départements : Oracle Health, Ventes, Cloud, Customer Success et NetSuite. Michael Shepard, cadre supérieur non touché par le plan, a précisé sur LinkedIn que des «ingénieurs seniors, architectes, responsables opérationnels, chefs de programme et spécialistes techniques» figuraient parmi les licenciés. Il a insisté sur le fait que cette «coupe significative des effectifs» n’était pas liée à la performance individuelle. «Les personnes concernées n’ont pas été licenciées en raison de ce qu’elles ont fait ou n’ont pas fait (...) Ceci est la fin d’un chapitre, pas de votre histoire», a-t-il ajouté. Sollicité par la presse américaine, Oracle se refuse pour l’heure à tout commentaire.
+
+Il n’empêche, ces suppressions de postes interviennent alors qu’Oracle investit massivement dans l’intelligence artificielle (IA). Cette année, l’entreprise prévoit de consacrer au moins 50 milliards de dollars (43,2 milliards d’euros) au développement de ses infrastructures IA. L’objectif ? «Pouvoir répondre à la demande qu’il a déjà contractée auprès de clients tels que Nvidia, Meta Platforms, TikTok, OpenAI, xAI d’Elon Musk et le fabricant de puces Advanced Micro Devices», nous apprenaient nos confrères du Wall Street Journal  en février.
+
+Oracle est par ailleurs partenaire du projet Stargate, une initiative à 500 milliards de dollars lancée aux côtés d’OpenAI, de SoftBank et de MGX, un fonds d’investissement soutenu par le président Donald Trump, et destinée à développer les capacités de centres de données aux États-Unis.
+
+Wall Street applaudit, la Silicon Valley tremble
+En interne, l’IA transforme déjà les méthodes de travail. «L’utilisation d’outils de codage par IA au sein d’Oracle permet à des équipes d’ingénieurs plus réduites de fournir des solutions plus complètes à nos clients, plus rapidement», déclarait Mike Sicilia, co-directeur général d’Oracle, au début du mois.
+
+￼
+PASSER LA PUBLICITÉ
+Publicité
+En attendant, la Bourse de Wall Street a réagi favorablement. L’action Oracle a ainsi progressé de 2,5% mardi à la mi-journée, une éclaircie pour un titre qui a perdu plus de 27% depuis le début de l’année, note Forbes .
+
+Oracle n’est pas un cas isolé. Ces licenciements s’inscrivent dans une tendance du secteur de la tech aux États-Unis. En janvier, Amazon avait annoncé la suppression de 16.000 postes. La conséquence d’une nouvelle stratégie consistant à «réduire les niveaux hiérarchiques et à supprimer la bureaucratie». Tandis qu’on apprenait encore la semaine dernière que Meta songeait à licencier au moins 20% de ses effectifs. La maison mère de Facebook, Instagram et WhatsApp - qui emploie 79.000 personnes dans le monde - chercherait à compenser l’augmentation de ses investissements en IA et à se préparer aux changements d’organisation apportés par les assistants conversationnels.
+
+La rédaction vous conseille
+Cloud : l'américain Oracle veut lever jusqu'à 50 milliards de dollars en 2026
+«Le personnage me fait peur» : Larry Ellison, le puissant magnat de la tech qui murmure à l’oreille de Donald Trump 
+PASSER LA PUBLICITÉ
+Publicité
+«Aujourd’hui est votre dernier jour» : Oracle licencie des milliers de salariés par un simple e-mail
+
+￼
+124 commentaires
+￼
+S'ABONNER
+PASSER LA PUBLICITÉ
+PASSER LA PUBLICITÉ
+124 commentaires   }
+
+APRÈS : {
+
+«Aujourd’hui est votre dernier jour»
+
+Oracle licencie des milliers de salariés par un simple e-mail
+
+Article rédigé par Ségolène Forgar, il y a 1 jour.
+
+Photo d’illustration: L’entreprise du milliardaire Larry Ellison a procédé, ce mardi, à une vague de licenciements d’ampleur. En cause : sa réorientation stratégique vers l’intelligence artificielle.
+
+Un e-mail laconique, envoyé aux aurores. Ce mardi 31 mars, des milliers de salariés d’Oracle ont découvert, avec stupeur, que leur poste avait tout bonnement été supprimé. Le géant de l’informatique à distance (cloud), fondé par le milliardaire Larry Ellison et basé à Austin (Texas), a en effet procédé à une vague de licenciements d’ampleur, qui toucherait près de 10.000 personnes selon un employé interrogé par la BBC. L’entreprise, qui comptait 162.000 salariés en mai 2025 d’après un document déposé auprès de la Securities and Exchange Commission (SEC), justifie ces départs par
+
+«les besoins actuels de l’entreprise».
+
+Le message adressé aux licenciés, révélé par Business Insider, ne laisse aucune place à l’ambiguïté. 
+
+«Après un examen attentif des besoins actuels d’Oracle, nous avons pris la décision de supprimer votre poste dans le cadre d’une réorganisation plus large. Par conséquent, aujourd’hui est votre dernier jour de travail»,
+
+ peut-on y lire.
+
+Les employés congédiés ont été informés que leur accès aux outils informatiques, à leur messagerie et à leurs fichiers serait désactivé dans les heures suivantes. Ils se sont, par ailleurs, vu proposer une indemnité de départ équivalente à un mois de salaire, selon la BBC.
+
+Investissements massifs dans l’IA
+D’après les publications LinkedIn d’employés remerciés, les réductions d’effectifs concernent plusieurs départements : Oracle Health, Ventes, Cloud, Customer Success et NetSuite. Michael Shepard, cadre supérieur non touché par le plan, a précisé sur LinkedIn que des
+
+«ingénieurs seniors, architectes, responsables opérationnels, chefs de programme et spécialistes techniques»
+
+figuraient parmi les licenciés. Il a insisté sur le fait que cette
+
+«coupe significative des effectifs»
+
+n’était pas liée à la performance individuelle.
+
+«Les personnes concernées n’ont pas été licenciées en raison de ce qu’elles ont fait ou n’ont pas fait (...) Ceci est la fin d’un chapitre, pas de votre histoire»,
+
+a-t-il ajouté. Sollicité par la presse américaine, Oracle se refuse pour l’heure à tout commentaire.
+
+Il n’empêche, ces suppressions de postes interviennent alors qu’Oracle investit massivement dans l’intelligence artificielle (IA). Cette année, l’entreprise prévoit de consacrer au moins 50 milliards de dollars (43,2 milliards d’euros) au développement de ses infrastructures IA. L’objectif ? 
+
+«Pouvoir répondre à la demande qu’il a déjà contractée auprès de clients tels que Nvidia, Meta Platforms, TikTok, OpenAI, xAI d’Elon Musk et le fabricant de puces Advanced Micro Devices»,
+
+nous apprenaient nos confrères du Wall Street Journal  en février.
+
+Oracle est par ailleurs partenaire du projet Stargate, une initiative à 500 milliards de dollars lancée aux côtés d’OpenAI, de SoftBank et de MGX, un fonds d’investissement soutenu par le président Donald Trump, et destinée à développer les capacités de centres de données aux États-Unis.
+
+Wall Street applaudit, la Silicon Valley tremble
+En interne, l’IA transforme déjà les méthodes de travail.
+
+«L’utilisation d’outils de codage par IA au sein d’Oracle permet à des équipes d’ingénieurs plus réduites de fournir des solutions plus complètes à nos clients, plus rapidement»,
+
+déclarait Mike Sicilia, co-directeur général d’Oracle, au début du mois.
+
+En attendant, la Bourse de Wall Street a réagi favorablement. L’action Oracle a ainsi progressé de 2,5% mardi à la mi-journée, une éclaircie pour un titre qui a perdu plus de 27% depuis le début de l’année, note Forbes .
+
+Oracle n’est pas un cas isolé. Ces licenciements s’inscrivent dans une tendance du secteur de la tech aux États-Unis. En janvier, Amazon avait annoncé la suppression de 16.000 postes. La conséquence d’une nouvelle stratégie consistant à
+
+«réduire les niveaux hiérarchiques et à supprimer la bureaucratie».
+
+Tandis qu’on apprenait encore la semaine dernière que Meta songeait à licencier au moins 20% de ses effectifs. La maison mère de Facebook, Instagram et WhatsApp - qui emploie 79.000 personnes dans le monde - chercherait à compenser l’augmentation de ses investissements en IA et à se préparer aux changements d’organisation apportés par les assistants conversationnels.
+
+Fin de l’article.
+
+La rédaction vous conseille :
+
+Cloud : l'américain Oracle veut lever jusqu'à 50 milliards de dollars en 2026
+
+«Le personnage me fait peur» :
+
+Larry Ellison, le puissant magnat de la tech qui murmure à l’oreille de Donald Trump 
+
+«Aujourd’hui est votre dernier jour» :
+
+Oracle licencie des milliers de salariés par un simple e-mail
+
+}
+
+"""
+    "Retourne uniquement le texte nettoyé, rien d'autre."
 )
 
-_AI_CLEAN_MODEL = "mistral-small-latest"
+_AI_CLEAN_MODEL = "devstral-latest"
 
 
 def _clean_text(text: str) -> str:
@@ -137,30 +296,33 @@ def _ai_clean_text(text: str) -> str:
     return _clean_text(text)
 
 
-def _make_chunks(text: str, max_chars: int = _CHUNK_MAX_CHARS) -> list[str]:
-    """Split text into chunks of at most max_chars, breaking on sentence boundaries."""
-    # Normalize line endings: paragraph breaks and single newlines → space.
-    text = re.sub(r"\n+", " ", text)
-    text = re.sub(r" {2,}", " ", text).strip()
+def _is_quoted_paragraph(para: str) -> bool:
+    """Return True if the paragraph is a direct quotation or citation.
 
-    # Split on sentence boundaries: after .!?… optionally followed by a closing quote
-    sentences = re.split(r'(?<=[.!?…])\s+|(?<=[.!?…]["\u00BB\u201D)])\s+', text)
+    Matches paragraphs that begin with an opening quotation mark («, ", "),
+    which covers both complete quotes («…») and attribution-style quotes
+    («Citation», a-t-il dit.).
+    """
+    s = para.strip()
+    return s.startswith(('"', "\u00AB", "\u201C"))  # ", «, "
+
+
+def _split_sentences(para: str, max_chars: int) -> list[str]:
+    """Sub-split a paragraph at sentence boundaries when it exceeds max_chars."""
+    sentences = re.split(r'(?<=[.!?…])\s+|(?<=[.!?…]["\u00BB\u201D)])\s+', para)
     sentences = [s.strip() for s in sentences if s.strip()]
     if not sentences:
-        return [text] if text else []
+        return [para] if para else []
     chunks: list[str] = []
     current = ""
     for sentence in sentences:
-        # Force-split sentences that exceed max_chars on their own
         while len(sentence) > max_chars:
-            # Try to split on comma or semicolon
             split_at = -1
             for sep in [", ", "; ", " – ", " — "]:
                 pos = sentence.rfind(sep, 0, max_chars)
                 if pos > 0:
                     split_at = pos + len(sep)
                     break
-            # Fallback: split at last space before max_chars
             if split_at <= 0:
                 split_at = sentence.rfind(" ", 0, max_chars)
             if split_at <= 0:
@@ -180,6 +342,65 @@ def _make_chunks(text: str, max_chars: int = _CHUNK_MAX_CHARS) -> list[str]:
     if current:
         chunks.append(current)
     return chunks
+
+
+def _make_chunks(
+    text: str,
+    max_chars: int = _CHUNK_MAX_CHARS,
+    quote_voice_id: Optional[str] = None,
+) -> list[tuple[str, Optional[str]]]:
+    """Split text into chunks preserving paragraph structure.
+
+    Splits on double-newline paragraph boundaries first; groups consecutive small
+    paragraphs into a single chunk when they fit; sub-splits oversized paragraphs
+    at sentence boundaries. Never cuts mid-paragraph.
+
+    Returns a list of (chunk_text, voice_id) tuples. voice_id is quote_voice_id
+    for paragraphs that are entirely a quotation (when quote_voice_id is set),
+    None otherwise.
+    """
+    paragraphs = re.split(r"\n\n+", text)
+    paragraphs = [p.strip() for p in paragraphs if p.strip()]
+    if not paragraphs:
+        return [(text.strip(), None)] if text.strip() else []
+
+    result: list[tuple[str, Optional[str]]] = []
+    group: list[str] = []
+    group_len = 0  # len("\n\n".join(group))
+
+    def _flush_group() -> None:
+        nonlocal group, group_len
+        if group:
+            result.append(("\n\n".join(group), None))
+            group = []
+            group_len = 0
+
+    for para in paragraphs:
+        quoted = quote_voice_id and _is_quoted_paragraph(para)
+
+        if quoted:
+            # Quoted paragraph: emit with quote voice, isolated from the group
+            _flush_group()
+            if len(para) > max_chars:
+                for sub in _split_sentences(para, max_chars):
+                    result.append((sub, quote_voice_id))
+            else:
+                result.append((para, quote_voice_id))
+        elif len(para) > max_chars:
+            # Oversized paragraph: flush group, then sub-split at sentence level
+            _flush_group()
+            for sub in _split_sentences(para, max_chars):
+                result.append((sub, None))
+        else:
+            # Normal paragraph: try to group with previous paragraphs
+            separator_len = 2 if group else 0  # "\n\n" is 2 chars
+            if group and group_len + separator_len + len(para) > max_chars:
+                _flush_group()
+            group.append(para)
+            group_len += separator_len + len(para)
+
+    _flush_group()
+    return result
 
 
 def _resolve_voice_id() -> Optional[str]:
@@ -347,8 +568,12 @@ if __name__ == "__main__":
         print(f"{_BG}{'─' * 64}{_RST}", file=sys.stderr)
 
         resolved_voice_id = _resolve_voice_id()
-        chunks = _make_chunks(text)
-        total = len(chunks)
+        quote_voice_id: Optional[str] = os.environ.get("TTS_QUOTE_VOICE_ID") or None
+        if quote_voice_id:
+            print(f"\U0001f4ac Quote voice: {quote_voice_id}", file=sys.stderr)
+
+        chunk_tuples = _make_chunks(text, quote_voice_id=quote_voice_id)
+        total = len(chunk_tuples)
         print(
             f"\U0001f50a Generating {total} chunk(s) via {_MODEL} ({len(text)} chars)...",
             file=sys.stderr,
@@ -358,14 +583,27 @@ if __name__ == "__main__":
         _CHUNK_RETRY_DELAYS = [2, 4, 8, 15]  # escalating delays between retries
         _MIN_AUDIO_BYTES = 1024  # valid mp3 should be > 1 KB
 
-        def _gen_chunk(idx_chunk: tuple[int, str]) -> str:
-            idx, chunk_text = idx_chunk
+        def _gen_chunk(args: tuple[int, str, Optional[str]]) -> str:
+            idx, chunk_text, chunk_voice_id = args
+            citation_voice = chunk_voice_id if chunk_voice_id is not None else resolved_voice_id
             out = str(Path(chunks_dir) / f"chunk_{idx:03d}.mp3")
             Path(chunks_dir, f"chunk_{idx:03d}.txt").write_text(chunk_text, encoding="utf-8")
             last_exc: Exception = RuntimeError("unknown")
+            # Attempts 0-2 use the requested voice; attempts 3-4 fall back to
+            # resolved_voice_id so the text is always read even if citation voice
+            # is wrong for the language or temporarily unavailable.
+            _FALLBACK_AT = 3
             for attempt in range(_CHUNK_MAX_ATTEMPTS):
+                use_voice = citation_voice
+                if attempt >= _FALLBACK_AT and citation_voice != resolved_voice_id:
+                    if attempt == _FALLBACK_AT:
+                        print(
+                            f"  \u26a0\ufe0f  Voix citation \u00e9chou\u00e9e \u2014 repli sur la voix normale.",
+                            file=sys.stderr,
+                        )
+                    use_voice = resolved_voice_id
                 try:
-                    synthesize(chunk_text, out, voice_id=resolved_voice_id)
+                    synthesize(chunk_text, out, voice_id=use_voice)
                     out_size = Path(out).stat().st_size if Path(out).exists() else 0
                     if out_size < _MIN_AUDIO_BYTES:
                         raise RuntimeError(f"audio trop petit ({out_size} octets)")
@@ -388,9 +626,9 @@ if __name__ == "__main__":
             # Submit with a slight stagger (0.5s between submissions) to avoid
             # hitting Mistral rate limits while keeping 2-3 chunks pre-generating.
             futures = []
-            for i, chunk in enumerate(chunks):
-                futures.append(executor.submit(_gen_chunk, (i, chunk)))
-                if i < len(chunks) - 1:
+            for i, (chunk_text, chunk_voice) in enumerate(chunk_tuples):
+                futures.append(executor.submit(_gen_chunk, (i, chunk_text, chunk_voice)))
+                if i < len(chunk_tuples) - 1:
                     time.sleep(0.5)
             for i, fut in enumerate(futures):
                 try:

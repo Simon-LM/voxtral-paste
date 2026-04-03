@@ -60,6 +60,171 @@ _set_env_var() {
     fi
 }
 
+_voice_picker() {
+    # _voice_picker <ENV_VAR_NAME> <MENU_TITLE> <ALLOW_DISABLE>
+    # ALLOW_DISABLE="1" adds [d] Disable option (sets the var to empty string).
+    local _vp_var="$1" _vp_title="$2" _vp_allow_disable="${3:-0}"
+    local _cur_vid _cur_slug _vpreview_id _vpreview_slug _vchoice _vi _vsample _tts_tmp
+    local -a _vids _vslugs
+
+    _vids=(
+        "5a271406-039d-46fe-835b-fbbb00eaf08d"
+        "49d024dd-981b-4462-bb17-74d381eb8fd7"
+        "4adeb2c6-25a3-44bc-8100-5234dfc1193b"
+        "2f62b1af-aea3-4079-9d10-7ca665ee7243"
+        "e0580ce5-e63c-4cbe-88c8-a983b80c5f1f"
+        "a7c07cdc-1c35-4d87-a938-c610a654f600"
+        "c69964a6-ab8b-4f8a-9465-ec0925096ec8"
+        "1024d823-a11e-43ee-bf3d-d440dccc0577"
+        "530e2e20-58e2-45d8-b0a5-4594f4915944"
+        "5940190b-f58a-4c3e-8264-a40d63fd6883"
+        "98559b22-62b5-4a64-a7cd-fc78ca41faa8"
+        "01d985cd-5e0c-4457-bfd8-80ba31a5bc03"
+        "cb891218-482c-4392-9878-91e8d999d57a"
+        "1f017bcb-02e5-460d-989b-db065c0c6122"
+        "e3596645-b1af-469e-b857-f18ddedc7652"
+        "d4101b8f-12c3-450d-a812-7d700b3a3245"
+        "e8e5b1de-493c-4061-8414-e2170f9f4b6f"
+        "390c8a2b-60a6-4882-8437-c49a8bd33b63"
+        "8169ab87-bc99-4669-a5ec-6855860ace24"
+        "5ad5d44e-6b4e-4a57-a8a8-4cae088034ed"
+        "862274a7-8333-48f7-b668-f19c932999e0"
+        "82c99ee6-f932-423f-a4a3-d403c8914b8d"
+        "a3e41ea8-020b-44c0-8d8b-f6cc03524e31"
+        "230ccacf-8800-4aa0-8ac2-8d004f1d9fb7"
+        "c7a8eb83-5247-4540-89f3-6650d349100d"
+        "e7168caa-f7ed-4e1c-98a1-434251f4f2b0"
+        "60844938-221d-4d1e-8233-34203f787d9f"
+        "5de47977-6e47-4266-a938-3bc1d76b4676"
+        "cbe96cf0-85ec-4a10-accb-0b35c93b6dfd"
+    )
+    _vslugs=(
+        "fr_marie_neutral"    "fr_marie_happy"
+        "fr_marie_sad"        "fr_marie_excited"
+        "fr_marie_curious"    "fr_marie_angry"
+        "en_paul_neutral"     "en_paul_happy"
+        "en_paul_sad"         "en_paul_excited"
+        "en_paul_confident"   "en_paul_cheerful"
+        "en_paul_angry"       "en_paul_frustrated"
+        "gb_oliver_neutral"   "gb_oliver_sad"
+        "gb_oliver_excited"   "gb_oliver_curious"
+        "gb_oliver_confident" "gb_oliver_cheerful"
+        "gb_oliver_angry"     "gb_jane_neutral"
+        "gb_jane_sarcasm"     "gb_jane_shameful"
+        "gb_jane_sad"         "gb_jane_jealousy"
+        "gb_jane_frustrated"  "gb_jane_curious"
+        "gb_jane_confident"
+    )
+    local _vtext_fr="Bonjour ! Je suis votre assistante vocale. Comment puis-je vous aider aujourd'hui ?"
+    local _vtext_en="Hello! I'm your voice assistant. How can I help you today?"
+    _vpreview_id=""
+    _vpreview_slug=""
+
+    while true; do
+        _cur_vid="${!_vp_var}"
+        _cur_slug="(not set)"
+        if [ -z "$_cur_vid" ] && [ "$_vp_allow_disable" = "1" ]; then
+            _cur_slug="(disabled)"
+        else
+            for _i in "${!_vids[@]}"; do
+                if [ "${_vids[$_i]}" = "$_cur_vid" ]; then
+                    _cur_slug="${_vslugs[$_i]}"
+                    break
+                fi
+            done
+        fi
+
+        clear
+        _header "$_vp_title" "🔈"
+        echo ""
+        printf "  ${C_DIM}Current:${C_RESET} ${C_BGREEN}%s${C_RESET}\n" "$_cur_slug"
+        echo ""
+        _sep
+        echo ""
+        printf "  ${C_BCYAN}🇫🇷  MARIE (French)${C_RESET}\n"
+        printf "  ${C_BOLD}[ 1]${C_RESET} Neutral    ${C_BOLD}[ 2]${C_RESET} Happy     ${C_BOLD}[ 3]${C_RESET} Sad\n"
+        printf "  ${C_BOLD}[ 4]${C_RESET} Excited    ${C_BOLD}[ 5]${C_RESET} Curious   ${C_BOLD}[ 6]${C_RESET} Angry\n"
+        echo ""
+        printf "  ${C_BCYAN}🇺🇸  PAUL (English US)${C_RESET}\n"
+        printf "  ${C_BOLD}[ 7]${C_RESET} Neutral    ${C_BOLD}[ 8]${C_RESET} Happy     ${C_BOLD}[ 9]${C_RESET} Sad\n"
+        printf "  ${C_BOLD}[10]${C_RESET} Excited    ${C_BOLD}[11]${C_RESET} Confident ${C_BOLD}[12]${C_RESET} Cheerful\n"
+        printf "  ${C_BOLD}[13]${C_RESET} Angry      ${C_BOLD}[14]${C_RESET} Frustrated\n"
+        echo ""
+        printf "  ${C_BCYAN}🇬🇧  OLIVER (English GB)${C_RESET}\n"
+        printf "  ${C_BOLD}[15]${C_RESET} Neutral    ${C_BOLD}[16]${C_RESET} Sad       ${C_BOLD}[17]${C_RESET} Excited\n"
+        printf "  ${C_BOLD}[18]${C_RESET} Curious    ${C_BOLD}[19]${C_RESET} Confident ${C_BOLD}[20]${C_RESET} Cheerful\n"
+        printf "  ${C_BOLD}[21]${C_RESET} Angry\n"
+        echo ""
+        printf "  ${C_BCYAN}🇬🇧  JANE (English GB)${C_RESET}\n"
+        printf "  ${C_BOLD}[22]${C_RESET} Neutral    ${C_BOLD}[23]${C_RESET} Sarcasm   ${C_BOLD}[24]${C_RESET} Shameful\n"
+        printf "  ${C_BOLD}[25]${C_RESET} Sad        ${C_BOLD}[26]${C_RESET} Jealousy  ${C_BOLD}[27]${C_RESET} Frustrated\n"
+        printf "  ${C_BOLD}[28]${C_RESET} Curious    ${C_BOLD}[29]${C_RESET} Confident\n"
+        echo ""
+        _sep
+        if [ -n "$_vpreview_id" ]; then
+            printf "  ${C_DIM}Last preview:${C_RESET} ${C_CYAN}%s${C_RESET}   ${C_BOLD}[s]${C_RESET} Select it" "$_vpreview_slug"
+            [ "$_vp_allow_disable" = "1" ] && printf "  ${C_BOLD}[d]${C_RESET} Disable"
+            printf "  ${C_DIM}[Enter] Back${C_RESET}\n"
+        else
+            printf "  ${C_DIM}Type a number to listen"
+            [ "$_vp_allow_disable" = "1" ] && printf "   ${C_BOLD}[d]${C_RESET} ${C_DIM}Disable"
+            printf "   ${C_BOLD}[Enter]${C_RESET} ${C_DIM}Back${C_RESET}\n"
+        fi
+        printf "  Choice: "
+        read -r _vchoice
+
+        case "$_vchoice" in
+            s|S)
+                if [ -n "$_vpreview_id" ]; then
+                    _set_env_var "$_vp_var" "$_vpreview_id"
+                    if [ -f .env ]; then set -a; source .env; set +a; fi
+                    _success "Voice set to: $_vpreview_slug"
+                    sleep 1
+                fi
+                ;;
+            d|D)
+                if [ "$_vp_allow_disable" = "1" ]; then
+                    _set_env_var "$_vp_var" ""
+                    if [ -f .env ]; then set -a; source .env; set +a; fi
+                    _success "Citation voice disabled."
+                    sleep 1
+                fi
+                ;;
+            ""|m|M) break ;;
+            *)
+                if [[ "$_vchoice" =~ ^[0-9]+$ ]] && \
+                   [ "$_vchoice" -ge 1 ] && [ "$_vchoice" -le "${#_vids[@]}" ]; then
+                    _vi=$(( _vchoice - 1 ))
+                    _vpreview_id="${_vids[$_vi]}"
+                    _vpreview_slug="${_vslugs[$_vi]}"
+                    if [ "$_vchoice" -le 6 ]; then
+                        _vsample="$_vtext_fr"
+                    else
+                        _vsample="$_vtext_en"
+                    fi
+                    _tts_tmp="$SCRIPT_DIR/recordings/.voice_preview.mp3"
+                    echo ""
+                    _process "Generating preview for $_vpreview_slug..."
+                    if printf '%s' "$_vsample" | \
+                        TTS_VOICE_ID="$_vpreview_id" \
+                        "$VENV_PYTHON" -m src.tts "$_tts_tmp" 2>/dev/null; then
+                        TTS_PLAYER="${TTS_PLAYER:-mpv --no-video}"
+                        $TTS_PLAYER "$_tts_tmp" 2>/dev/null
+                        rm -f "$_tts_tmp"
+                    else
+                        _warn "Preview failed."
+                        _vpreview_id=""
+                        _vpreview_slug=""
+                    fi
+                else
+                    _warn "Invalid choice."
+                    sleep 0.5
+                fi
+                ;;
+        esac
+    done
+}
+
 _mask_key() {
     # Show only last 4 chars: sk-...xxxx
     local key="$1"
@@ -543,6 +708,7 @@ while true; do
                 echo ""
                 printf "  ${C_BOLD}[k]${C_RESET}  API Keys\n"
                 printf "  ${C_BOLD}[v]${C_RESET}  Reading voice (Selection to Voice)\n"
+                printf "  ${C_BOLD}[c]${C_RESET}  Citation voice (quoted paragraphs)\n"
                 printf "  ${C_BOLD}[e]${C_RESET}  Edit .env\n"
                 echo ""
                 printf "  ${C_DIM}Press Enter to return...${C_RESET} "
@@ -552,155 +718,10 @@ while true; do
                         _submenu_api_keys
                         ;;
                     v|V)
-                        # ── Voice selection submenu ───────────────────────
-                        # All 30 Mistral preset voices, grouped by character.
-                        # Parallel arrays: _vids (UUIDs), _vslugs (readable),
-                        # _vlabels (display), _vlangs (fr/en).
-                        _vids=(
-                            "5a271406-039d-46fe-835b-fbbb00eaf08d"
-                            "49d024dd-981b-4462-bb17-74d381eb8fd7"
-                            "4adeb2c6-25a3-44bc-8100-5234dfc1193b"
-                            "2f62b1af-aea3-4079-9d10-7ca665ee7243"
-                            "e0580ce5-e63c-4cbe-88c8-a983b80c5f1f"
-                            "a7c07cdc-1c35-4d87-a938-c610a654f600"
-                            "c69964a6-ab8b-4f8a-9465-ec0925096ec8"
-                            "1024d823-a11e-43ee-bf3d-d440dccc0577"
-                            "530e2e20-58e2-45d8-b0a5-4594f4915944"
-                            "5940190b-f58a-4c3e-8264-a40d63fd6883"
-                            "98559b22-62b5-4a64-a7cd-fc78ca41faa8"
-                            "01d985cd-5e0c-4457-bfd8-80ba31a5bc03"
-                            "cb891218-482c-4392-9878-91e8d999d57a"
-                            "1f017bcb-02e5-460d-989b-db065c0c6122"
-                            "e3596645-b1af-469e-b857-f18ddedc7652"
-                            "d4101b8f-12c3-450d-a812-7d700b3a3245"
-                            "e8e5b1de-493c-4061-8414-e2170f9f4b6f"
-                            "390c8a2b-60a6-4882-8437-c49a8bd33b63"
-                            "8169ab87-bc99-4669-a5ec-6855860ace24"
-                            "5ad5d44e-6b4e-4a57-a8a8-4cae088034ed"
-                            "862274a7-8333-48f7-b668-f19c932999e0"
-                            "82c99ee6-f932-423f-a4a3-d403c8914b8d"
-                            "a3e41ea8-020b-44c0-8d8b-f6cc03524e31"
-                            "230ccacf-8800-4aa0-8ac2-8d004f1d9fb7"
-                            "c7a8eb83-5247-4540-89f3-6650d349100d"
-                            "e7168caa-f7ed-4e1c-98a1-434251f4f2b0"
-                            "60844938-221d-4d1e-8233-34203f787d9f"
-                            "5de47977-6e47-4266-a938-3bc1d76b4676"
-                            "cbe96cf0-85ec-4a10-accb-0b35c93b6dfd"
-                        )
-                        _vslugs=(
-                            "fr_marie_neutral"    "fr_marie_happy"
-                            "fr_marie_sad"        "fr_marie_excited"
-                            "fr_marie_curious"    "fr_marie_angry"
-                            "en_paul_neutral"     "en_paul_happy"
-                            "en_paul_sad"         "en_paul_excited"
-                            "en_paul_confident"   "en_paul_cheerful"
-                            "en_paul_angry"       "en_paul_frustrated"
-                            "gb_oliver_neutral"   "gb_oliver_sad"
-                            "gb_oliver_excited"   "gb_oliver_curious"
-                            "gb_oliver_confident" "gb_oliver_cheerful"
-                            "gb_oliver_angry"     "gb_jane_neutral"
-                            "gb_jane_sarcasm"     "gb_jane_shameful"
-                            "gb_jane_sad"         "gb_jane_jealousy"
-                            "gb_jane_frustrated"  "gb_jane_curious"
-                            "gb_jane_confident"
-                        )
-                        # Sample text per language
-                        _vtext_fr="Bonjour ! Je suis votre assistante vocale. Comment puis-je vous aider aujourd'hui ?"
-                        _vtext_en="Hello! I'm your voice assistant. How can I help you today?"
-
-                        _vpreview_id=""
-                        _vpreview_slug=""
-
-                        while true; do
-                            # Resolve current voice slug for display
-                            _cur_vid="${TTS_SELECTION_VOICE_ID:-}"
-                            _cur_slug="not set"
-                            for _i in "${!_vids[@]}"; do
-                                if [ "${_vids[$_i]}" = "$_cur_vid" ]; then
-                                    _cur_slug="${_vslugs[$_i]}"
-                                    break
-                                fi
-                            done
-
-                            clear
-                            _header "READING VOICE" "🔈"
-                            echo ""
-                            printf "  ${C_DIM}Current:${C_RESET} ${C_BGREEN}%s${C_RESET}\n" "$_cur_slug"
-                            echo ""
-                            _sep
-                            echo ""
-                            printf "  ${C_BCYAN}🇫🇷  MARIE (French)${C_RESET}\n"
-                            printf "  ${C_BOLD}[ 1]${C_RESET} Neutral    ${C_BOLD}[ 2]${C_RESET} Happy     ${C_BOLD}[ 3]${C_RESET} Sad\n"
-                            printf "  ${C_BOLD}[ 4]${C_RESET} Excited    ${C_BOLD}[ 5]${C_RESET} Curious   ${C_BOLD}[ 6]${C_RESET} Angry\n"
-                            echo ""
-                            printf "  ${C_BCYAN}🇺🇸  PAUL (English US)${C_RESET}\n"
-                            printf "  ${C_BOLD}[ 7]${C_RESET} Neutral    ${C_BOLD}[ 8]${C_RESET} Happy     ${C_BOLD}[ 9]${C_RESET} Sad\n"
-                            printf "  ${C_BOLD}[10]${C_RESET} Excited    ${C_BOLD}[11]${C_RESET} Confident ${C_BOLD}[12]${C_RESET} Cheerful\n"
-                            printf "  ${C_BOLD}[13]${C_RESET} Angry      ${C_BOLD}[14]${C_RESET} Frustrated\n"
-                            echo ""
-                            printf "  ${C_BCYAN}🇬🇧  OLIVER (English GB)${C_RESET}\n"
-                            printf "  ${C_BOLD}[15]${C_RESET} Neutral    ${C_BOLD}[16]${C_RESET} Sad       ${C_BOLD}[17]${C_RESET} Excited\n"
-                            printf "  ${C_BOLD}[18]${C_RESET} Curious    ${C_BOLD}[19]${C_RESET} Confident ${C_BOLD}[20]${C_RESET} Cheerful\n"
-                            printf "  ${C_BOLD}[21]${C_RESET} Angry\n"
-                            echo ""
-                            printf "  ${C_BCYAN}🇬🇧  JANE (English GB)${C_RESET}\n"
-                            printf "  ${C_BOLD}[22]${C_RESET} Neutral    ${C_BOLD}[23]${C_RESET} Sarcasm   ${C_BOLD}[24]${C_RESET} Shameful\n"
-                            printf "  ${C_BOLD}[25]${C_RESET} Sad        ${C_BOLD}[26]${C_RESET} Jealousy  ${C_BOLD}[27]${C_RESET} Frustrated\n"
-                            printf "  ${C_BOLD}[28]${C_RESET} Curious    ${C_BOLD}[29]${C_RESET} Confident\n"
-                            echo ""
-                            _sep
-                            if [ -n "$_vpreview_id" ]; then
-                                printf "  ${C_DIM}Last preview:${C_RESET} ${C_CYAN}%s${C_RESET}   ${C_BOLD}[s]${C_RESET} Select it  ${C_DIM}[Enter] Back${C_RESET}\n" "$_vpreview_slug"
-                            else
-                                printf "  ${C_DIM}Type a number to listen  ${C_BOLD}[Enter]${C_RESET} ${C_DIM}Back${C_RESET}\n"
-                            fi
-                            printf "  Choice: "
-                            read -r _vchoice
-
-                            case "$_vchoice" in
-                                s|S)
-                                    if [ -n "$_vpreview_id" ]; then
-                                        _set_env_var "TTS_SELECTION_VOICE_ID" "$_vpreview_id"
-                                        if [ -f .env ]; then set -a; source .env; set +a; fi
-                                        _success "Voice set to: $_vpreview_slug"
-                                        sleep 1
-                                    fi
-                                    ;;
-                                ""|m|M) break ;;
-                                *)
-                                    # Numeric input: 1-indexed → array 0-indexed
-                                    if [[ "$_vchoice" =~ ^[0-9]+$ ]] && \
-                                       [ "$_vchoice" -ge 1 ] && [ "$_vchoice" -le "${#_vids[@]}" ]; then
-                                        _vi=$(( _vchoice - 1 ))
-                                        _vpreview_id="${_vids[$_vi]}"
-                                        _vpreview_slug="${_vslugs[$_vi]}"
-                                        # Choose sample text
-                                        if [ "$_vchoice" -le 6 ]; then
-                                            _vsample="$_vtext_fr"
-                                        else
-                                            _vsample="$_vtext_en"
-                                        fi
-                                        _tts_tmp="$SCRIPT_DIR/recordings/.voice_preview.mp3"
-                                        echo ""
-                                        _process "Generating preview for $_vpreview_slug..."
-                                        if printf '%s' "$_vsample" | \
-                                            TTS_VOICE_ID="$_vpreview_id" \
-                                            "$VENV_PYTHON" -m src.tts "$_tts_tmp" 2>/dev/null; then
-                                            TTS_PLAYER="${TTS_PLAYER:-mpv --no-video}"
-                                            $TTS_PLAYER "$_tts_tmp" 2>/dev/null
-                                            rm -f "$_tts_tmp"
-                                        else
-                                            _warn "Preview failed."
-                                            _vpreview_id=""
-                                            _vpreview_slug=""
-                                        fi
-                                    else
-                                        _warn "Invalid choice."
-                                        sleep 0.5
-                                    fi
-                                    ;;
-                            esac
-                        done
+                        _voice_picker "TTS_SELECTION_VOICE_ID" "READING VOICE" "0"
+                        ;;
+                    c|C)
+                        _voice_picker "TTS_QUOTE_VOICE_ID" "CITATION VOICE" "1"
                         ;;
                     e|E)
                         ${EDITOR:-nano} .env
