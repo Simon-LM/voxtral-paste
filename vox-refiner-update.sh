@@ -111,6 +111,71 @@ auto_resolve_obsolete_deletions() {
     fi
 }
 
+sync_env() {
+    # Add keys from .env.example that are completely absent from .env.
+    # Keys already present (even commented or with a different value) are left
+    # untouched — we never overwrite the user's choices.
+    # Each new key is appended together with any comment lines that immediately
+    # precede it in .env.example, so the documentation travels with the key.
+    local example=".env.example"
+    local target=".env"
+
+    if [ ! -f "$example" ] || [ ! -f "$target" ]; then
+        return
+    fi
+
+    local added=0
+    local pending_comments=""
+    local in_block=false
+
+    while IFS= read -r line; do
+        # Blank line — reset comment accumulator
+        if [ -z "$line" ]; then
+            pending_comments=""
+            in_block=false
+            continue
+        fi
+
+        # Comment or section header — accumulate
+        if [[ "$line" == \#* ]]; then
+            pending_comments="${pending_comments:+$pending_comments
+}$line"
+            in_block=true
+            continue
+        fi
+
+        # Key=value line
+        local key
+        key="${line%%=*}"
+        if [ -z "$key" ]; then
+            pending_comments=""
+            in_block=false
+            continue
+        fi
+
+        # Check if this key exists anywhere in .env (active or commented)
+        if ! grep -qE "^#?[[:space:]]*${key}[[:space:]]*=" "$target" 2>/dev/null; then
+            # Key is completely absent — append block separator + comments + key
+            {
+                printf '\n'
+                [ -n "$pending_comments" ] && printf '%s\n' "$pending_comments"
+                printf '%s\n' "$line"
+            } >> "$target"
+            echo "  + Added to .env: $key"
+            added=$((added + 1))
+        fi
+
+        pending_comments=""
+        in_block=false
+    done < "$example"
+
+    if [ "$added" -gt 0 ]; then
+        echo "✅ .env updated: $added new key(s) added from .env.example."
+    else
+        echo "✓  .env is already up to date."
+    fi
+}
+
 repair_exec_bits() {
     if [ -f "record_and_transcribe_local.sh" ]; then
         chmod +x record_and_transcribe_local.sh
@@ -122,6 +187,10 @@ repair_exec_bits() {
 
     if [ -f "launch-vox-refiner.sh" ]; then
         chmod +x launch-vox-refiner.sh
+    fi
+
+    if [ -f "uninstall.sh" ]; then
+        chmod +x uninstall.sh
     fi
 }
 
@@ -145,6 +214,7 @@ run_apply() {
     if [ "$behind" -eq 0 ]; then
         echo "Already up to date."
         repair_exec_bits
+        sync_env
         return
     fi
 
@@ -155,6 +225,7 @@ run_apply() {
     fi
 
     repair_exec_bits
+    sync_env
     echo "Update applied successfully."
     print_status "$upstream" "$(count_behind "$upstream")"
 }

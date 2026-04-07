@@ -13,6 +13,57 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ---
 
+## [3.9.0] — 2026-04-07
+
+### Added
+
+- **`uninstall.sh`:** new uninstall script. Prompts for explicit confirmation (`yes`),
+  offers opt-in removal of personal data (`history.txt`, `context.txt`, `.env`),
+  removes the `.desktop` entry if present, then deletes the installation directory.
+  Reminds the user to remove keyboard shortcuts manually.
+- **`vox-refiner-update.sh` — `sync_env`:** after every `--apply` (including when
+  already up to date), new keys present in `.env.example` but absent from `.env` are
+  automatically appended, with their documentation comments. Keys already present —
+  even with a different value or commented out — are never touched.
+- **`src/refine.py` — per-tier history injection:** history is no longer injected
+  unconditionally. Short texts (< 80 words) receive no history; medium texts (80–240
+  words) receive only the most recent `HISTORY_INJECT_BULLETS_MEDIUM` bullets (default
+  40); long texts (> 240 words) receive the full history.
+- **`vox-refiner-menu.sh` — `[i]` Bullets injected for medium texts:** new settings
+  entry to configure `HISTORY_INJECT_BULLETS_MEDIUM` from the Speak & Refine submenu.
+  History status line now shows `on · max 80 · medium → 40`.
+- **`tests/unit/test_history_injection.py`:** 9 unit tests covering `_load_history`
+  capping and per-tier injection logic (short/medium/long).
+
+### Changed
+
+- **`src/refine.py` — history prompt wording (medium + long tiers):** `<history>` is
+  now described as a contextual aid to resolve ambiguity, not a vocabulary list.
+  The model is explicitly told to ignore it when the transcription is already clear,
+  and never to use it as a reason to add content or reformulate unambiguous text.
+- **`src/refine.py` — short tier prompt:** reference to `<history>` removed entirely
+  since history is no longer injected for short texts.
+- **`HISTORY_MAX_BULLETS` default:** changed from 100 to 80.
+- **`.env.example` — `HISTORY_INJECT_BULLETS_MEDIUM=40`:** new variable documented
+  with per-tier injection explanation.
+
+### Fixed
+
+- **`record_and_transcribe_local.sh` — empty recording not detected:** a WAV file
+  below `MIN_WAV_BYTES` (default 4096, configurable) is now rejected before ffmpeg
+  with "Recording too short or empty". Catches Ctrl+C with no audio captured (mic
+  silent or very brief press).
+- **`record_and_transcribe_local.sh` — silent MP3 after silenceremove:** an MP3
+  below `MIN_MP3_BYTES` (default 1000, configurable) is rejected after ffmpeg with
+  "Audio contains only silence".
+- **`record_and_transcribe_local.sh` — ffmpeg exit code not checked:** ffmpeg failures
+  now abort the pipeline immediately instead of passing an invalid file to Voxtral.
+- **`record_and_transcribe_local.sh` — Ctrl+C re-entry in `stop_recording`:** `trap ''
+  SIGINT` is now set at the start of the handler, preventing the function from being
+  called multiple times if the user presses Ctrl+C repeatedly during cleanup.
+
+---
+
 ## [3.8.0] — 2026-04-07
 
 ### Added

@@ -412,7 +412,8 @@ while true; do
                 echo "║                                                                  ║"
                 _STT_COMPARE="${REFINE_COMPARE_MODELS:-false}"
                 _STT_HISTORY="${ENABLE_HISTORY:-false}"
-                _STT_BULLETS="${HISTORY_MAX_BULLETS:-100}"
+                _STT_BULLETS="${HISTORY_MAX_BULLETS:-80}"
+                _STT_INJECT="${HISTORY_INJECT_BULLETS_MEDIUM:-40}"
                 printf "║  ${C_DIM}Format :${C_RESET}       ${C_CYAN}%-20s${C_RESET}                             ║\n" "$_STT_FORMAT"
                 printf "║  ${C_DIM}Output lang :${C_RESET}  ${C_CYAN}%-20s${C_RESET}                             ║\n" "$_STT_LANG"
                 if [ "$_STT_COMPARE" = "true" ]; then
@@ -421,7 +422,7 @@ while true; do
                     printf "║  ${C_DIM}Compare :${C_RESET}      ${C_DIM}%-20s${C_RESET}                             ║\n" "off"
                 fi
                 if [ "$_STT_HISTORY" = "true" ]; then
-                    printf "║  ${C_DIM}History :${C_RESET}      ${C_CYAN}on (max %s bullets)%-5s${C_RESET}                        ║\n" "$_STT_BULLETS" ""
+                    printf "║  ${C_DIM}History :${C_RESET}      ${C_CYAN}on · max %s · medium → %s%-5s${C_RESET}                ║\n" "$_STT_BULLETS" "$_STT_INJECT" ""
                 else
                     printf "║  ${C_DIM}History :${C_RESET}      ${C_DIM}%-20s${C_RESET}                            ║\n" "off"
                 fi
@@ -433,7 +434,8 @@ while true; do
                 printf "║  ${C_BOLD}[l]${C_RESET}      Change output language                                 ║\n"
                 printf "║  ${C_BOLD}[c]${C_RESET}      Compare models                                         ║\n"
                 printf "║  ${C_BOLD}[h]${C_RESET}      Toggle history (permanent)                             ║\n"
-                printf "║  ${C_BOLD}[b]${C_RESET}      Max bullets in history (permanent)                     ║\n"
+                printf "║  ${C_BOLD}[b]${C_RESET}      Max bullets in history file (permanent)                ║\n"
+                printf "║  ${C_BOLD}[i]${C_RESET}      Bullets injected for medium texts (permanent)          ║\n"
                 printf "║  ${C_BOLD}[v]${C_RESET}      View history                                           ║\n"
                 printf "║  ${C_BOLD}[e]${C_RESET}      Edit history                                           ║\n"
                 printf "║  ${C_BOLD}[m]${C_RESET}      Back to menu                                           ║\n"
@@ -596,13 +598,25 @@ while true; do
                         ;;
                     b|B)
                         echo ""
-                        printf "  ${C_DIM}Current max bullets: ${C_CYAN}${HISTORY_MAX_BULLETS:-100}${C_RESET}  —  Enter = keep current: "
+                        printf "  ${C_DIM}Current max bullets in file: ${C_CYAN}${HISTORY_MAX_BULLETS:-80}${C_RESET}  —  Enter = keep current: "
                         read -r _new_bullets
                         if [ -n "$_new_bullets" ] && echo "$_new_bullets" | grep -qE '^[0-9]+$'; then
                             _set_env_var "HISTORY_MAX_BULLETS" "$_new_bullets"
                             set -a; source .env; set +a
                             _success "Max bullets set to $_new_bullets (saved to .env)."
                         elif [ -n "$_new_bullets" ]; then
+                            _warn "Invalid value — must be a number."
+                        fi
+                        ;;
+                    i|I)
+                        echo ""
+                        printf "  ${C_DIM}Bullets injected for medium texts (80–240 words): ${C_CYAN}${HISTORY_INJECT_BULLETS_MEDIUM:-40}${C_RESET}  —  Enter = keep current: "
+                        read -r _new_inject
+                        if [ -n "$_new_inject" ] && echo "$_new_inject" | grep -qE '^[0-9]+$'; then
+                            _set_env_var "HISTORY_INJECT_BULLETS_MEDIUM" "$_new_inject"
+                            set -a; source .env; set +a
+                            _success "Inject bullets (medium) set to $_new_inject (saved to .env)."
+                        elif [ -n "$_new_inject" ]; then
                             _warn "Invalid value — must be a number."
                         fi
                         ;;

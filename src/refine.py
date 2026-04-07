@@ -57,7 +57,12 @@ _PARAMS_HISTORY: Dict[str, Any] = {"reasoning_effort": "high"}
 _REASONING_CAPABLE_MODEL = "mistral-small-latest"
 
 _ENABLE_HISTORY = os.environ.get("ENABLE_HISTORY", "false").lower() in ("true", "1", "yes")
-_HISTORY_MAX_BULLETS = int(os.environ.get("HISTORY_MAX_BULLETS", "100"))
+_HISTORY_MAX_BULLETS = int(os.environ.get("HISTORY_MAX_BULLETS", "80"))
+# Bullets injected per tier:
+#   short  (<  80 words) — no history injected
+#   medium (80–240 words) — most recent N bullets only (keeps prompt focused)
+#   long   (> 240 words) — full history
+_HISTORY_INJECT_BULLETS_MEDIUM = int(os.environ.get("HISTORY_INJECT_BULLETS_MEDIUM", "40"))
 _HISTORY_EXTRACTION_MODEL = os.environ.get("HISTORY_EXTRACTION_MODEL", "mistral-small-latest")
 _HISTORY_EXTRACTION_FALLBACK_MODEL = os.environ.get("HISTORY_EXTRACTION_FALLBACK_MODEL", "mistral-medium-latest")
 _HISTORY_TIMEOUT_MULTIPLIER = float(os.environ.get("HISTORY_TIMEOUT_MULTIPLIER", "1.5"))
@@ -198,12 +203,11 @@ _SYSTEM_PROMPT_SHORT = (
     + _SECURITY_BLOCK + "\n"
     "\n"
     "Your task:\n"
-    "1. Correct transcription errors using the information in <context> and <history>. "
-    "You may use names, technical terms, and project details found in <context> or <history> "
-    "to fix homophones and domain-specific vocabulary errors. Do NOT introduce any name, "
-    "concept, or technical detail that does not appear in the transcription, <context>, or "
-    "<history>. Note: <history> is auto-generated and may contain inaccuracies \u2014 use it for "
-    "vocabulary correction only, not as a source of facts to inject into the output.\n"
+    "1. Correct transcription errors using the information in <context>. "
+    "You may use names, technical terms, and project details found in <context> "
+    "to fix homophones and domain-specific vocabulary errors. "
+    "Do NOT introduce any name, concept, or technical detail that does not appear "
+    "in the transcription or <context>.\n"
     "2. Remove stutters, false starts and filler words (\u201cuh\u201d, \u201cso\u201d, \u201cI mean\u201d, \u201cwell\u201d).\n"
     "3. Keep the original wording as close as possible \u2014 do not rephrase or restructure "
     "beyond what is needed to fix transcription errors.\n"
@@ -238,12 +242,15 @@ _SYSTEM_PROMPT_MEDIUM = (
     "1. Remove hesitations, filler words and repetitions \u2014 including cases where the same idea "
     "is expressed multiple times in different words.\n"
     "2. Merge redundant sentences that convey the same point.\n"
-    "3. Correct likely transcription errors using the information in <context> and <history>. "
-    "You may use names, technical terms, and project details found in <context> or <history> "
-    "to fix homophones and vocabulary errors. Do NOT introduce any name, concept, or technical "
-    "detail that does not appear in the transcription, <context>, or <history>. "
-    "Note: <history> is auto-generated and may contain inaccuracies \u2014 use it for vocabulary "
-    "correction only, not as a source of facts to inject into the output.\n"
+    "3. Correct likely transcription errors using the information in <context>. "
+    "You may use names, technical terms, and project details found in <context> "
+    "to fix homophones and domain-specific vocabulary errors.\n"
+    "   If <history> is provided: use it only when a word or phrase in the transcription "
+    "is ambiguous or likely misrecognised — to help you understand the speaker's context "
+    "(ongoing projects, working environment) and reformulate more faithfully. "
+    "If the transcription is already clear, ignore <history> entirely. "
+    "Never use <history> as a reason to add content, change meaning, or reformulate "
+    "what is already unambiguous. <history> is auto-generated and may contain inaccuracies.\n"
     "4. Rewrite the text clearly and fluently.\n"
     "5. Preserve EXACTLY the intent, meaning and logical structure of the original message. "
     "Do NOT complete reasoning chains, do NOT answer questions the speaker asked, do NOT add "
@@ -281,12 +288,15 @@ _SYSTEM_PROMPT_LONG = (
     "1. Remove hesitations, filler words and repetitions \u2014 including cases where the same idea "
     "is expressed multiple times in different words.\n"
     "2. Merge redundant sentences that convey the same point.\n"
-    "3. Correct likely transcription errors using the information in <context> and <history>. "
-    "You may use names, technical terms, and project details found in <context> or <history> "
-    "to fix homophones and vocabulary errors. Do NOT introduce any name, concept, or technical "
-    "detail that does not appear in the transcription, <context>, or <history>. "
-    "Note: <history> is auto-generated and may contain inaccuracies \u2014 use it for vocabulary "
-    "correction only, not as a source of facts to inject into the output.\n"
+    "3. Correct likely transcription errors using the information in <context>. "
+    "You may use names, technical terms, and project details found in <context> "
+    "to fix homophones and domain-specific vocabulary errors.\n"
+    "   If <history> is provided: use it only when a word or phrase in the transcription "
+    "is ambiguous or likely misrecognised — to help you understand the speaker's context "
+    "(ongoing projects, working environment) and reformulate more faithfully. "
+    "If the transcription is already clear, ignore <history> entirely. "
+    "Never use <history> as a reason to add content, change meaning, or reformulate "
+    "what is already unambiguous. <history> is auto-generated and may contain inaccuracies.\n"
     "4. Rewrite the text as clear, well-structured written prose \u2014 fluid and precise, "
     "while staying strictly true to the speaker's words and register.\n"
     "5. Preserve EXACTLY the intent, meaning and logical structure of the original message. "
@@ -332,12 +342,25 @@ def _load_context() -> str:
     return "No context defined."
 
 
-def _load_history() -> str:
+def _load_history(max_bullets: Optional[int] = None) -> str:
+    """Load history bullets, optionally capped to the most recent N entries.
+
+    Args:
+        max_bullets: if None, return the full history; otherwise return only
+                     the last ``max_bullets`` bullet lines (most recent first
+                     in the file, so we take the tail).
+    """
     if not _ENABLE_HISTORY:
         return ""
-    if _HISTORY_FILE.exists():
-        return _HISTORY_FILE.read_text(encoding="utf-8").strip()
-    return ""
+    if not _HISTORY_FILE.exists():
+        return ""
+    text = _HISTORY_FILE.read_text(encoding="utf-8").strip()
+    if not text or max_bullets is None:
+        return text
+    lines = [l for l in text.splitlines() if l.strip()]
+    if max_bullets == 0:
+        return ""
+    return "\n".join(lines[-max_bullets:])
 
 
 def _select_models(word_count: int) -> Tuple[str, str]:
@@ -583,7 +606,16 @@ def refine(raw_text: str) -> str:
         primary_params = _PARAMS_LONG
 
     context = _load_context()
-    history = _load_history()
+    # History injection strategy per tier:
+    #   short  → no history (too short to benefit; avoids noise)
+    #   medium → last N bullets only (focused context, less distraction)
+    #   long   → full history
+    if tier == "short":
+        history = ""
+    elif tier == "medium":
+        history = _load_history(max_bullets=_HISTORY_INJECT_BULLETS_MEDIUM)
+    else:
+        history = _load_history()
     history_section = _HISTORY_SECTION.format(history=history) if history else ""
     format_block = _FORMAT_INSTRUCTIONS.get(_OUTPUT_PROFILE, "") if tier != "short" else ""
     language_instruction = _build_lang_instruction(_OUTPUT_LANG)

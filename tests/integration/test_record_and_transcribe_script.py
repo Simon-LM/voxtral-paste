@@ -89,12 +89,13 @@ if models_file:
     # rec: writes a WAV payload then stays alive briefly (the post-launch
     # health check needs the process alive after 0.3s). Exits on SIGINT or
     # after 1s — fast enough for tests, long enough for the health check.
+    # Default size is 8192 to exceed the MIN_WAV_BYTES threshold (4096).
     _write_executable(
         fake_bin / "rec",
         """
 #!/usr/bin/env bash
 out="${@: -1}"
-size="${FAKE_WAV_SIZE:-64}"
+size="${FAKE_WAV_SIZE:-8192}"
 python3 - "$out" "$size" <<'PY'
 import pathlib
 import sys
@@ -112,13 +113,14 @@ wait $!
     )
 
     # ffmpeg: simulates successful conversion and records invocation.
+    # Writes 2000 bytes to exceed the MIN_MP3_BYTES threshold (1000).
     _write_executable(
         fake_bin / "ffmpeg",
         """
 #!/usr/bin/env bash
 set -euo pipefail
 out="${@: -1}"
-printf 'new-mp3' > "$out"
+python3 -c "import sys; sys.stdout.buffer.write(b'X' * int('${FAKE_MP3_SIZE:-2000}'))" > "$out"
 touch "${SANDBOX_DIR}/ffmpeg.called"
 """.strip()
         + "\n",
@@ -178,8 +180,8 @@ def test_recording_mode_cleans_and_rebuilds_audio_artifacts(tmp_path: Path):
     assert (sandbox / "rec.called").exists()
     assert (sandbox / "ffmpeg.called").exists()
     assert (rec / "source.wav").exists()
-    assert (rec / "source.wav").read_bytes() == b"W" * 64
-    assert (rec / "source.mp3").read_text(encoding="utf-8") == "new-mp3"
+    assert (rec / "source.wav").read_bytes() == b"W" * 8192
+    assert (rec / "source.mp3").stat().st_size == 2000
 
 
 def test_oversized_temp_wav_is_rejected_before_ffmpeg(tmp_path: Path):
@@ -242,3 +244,32 @@ def test_show_raw_voxtral_false_shows_single_block(tmp_path: Path):
     assert "RAW TRANSCRIPTION" not in result.stdout
     assert "REFINED TEXT" in result.stdout
     assert "fake-primary-model" in result.stdout
+
+
+def test_undersized_wav_is_rejected_before_ffmpeg(tmp_path: Path):
+    """A WAV below MIN_WAV_BYTES must abort before ffmpeg runs."""
+    sandbox, env = _build_sandbox(tmp_path)
+    env["FAKE_WAV_SIZE"] = "64"
+    env["MIN_WAV_BYTES"] = "4096"
+
+    result = _run_script(sandbox, env)
+
+    rec = _rec_dir(sandbox)
+    assert result.returncode == 1
+    assert "too short or empty" in result.stdout
+    assert not (sandbox / "ffmpeg.called").exists()
+    assert not (rec / "source.wav").exists()
+
+
+def test_silent_mp3_is_rejected_after_ffmpeg(tmp_path: Path):
+    """An MP3 below MIN_MP3_BYTES (all-silence after silenceremove) must abort."""
+    sandbox, env = _build_sandbox(tmp_path)
+    env["FAKE_MP3_SIZE"] = "50"
+    env["MIN_MP3_BYTES"] = "1000"
+
+    result = _run_script(sandbox, env)
+
+    rec = _rec_dir(sandbox)
+    assert result.returncode == 1
+    assert "only silence" in result.stdout
+    assert not (rec / "source.mp3").exists()

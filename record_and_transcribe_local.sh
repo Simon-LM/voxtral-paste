@@ -99,11 +99,12 @@ if [ "$RETRY_MODE" = "false" ]; then
     fi
 
     stop_recording() {
+        trap '' SIGINT  # Ignore further Ctrl+C during cleanup — prevents re-entry
         echo ""
         printf "  ${C_DIM}⏹  Stopping recording...${C_RESET}\n"
         kill -INT "$REC_PID" 2>/dev/null
         wait "$REC_PID" 2>/dev/null
-        echo "" 
+        echo ""
         _success "Recording stopped."
     }
 
@@ -117,9 +118,16 @@ if [ "$RETRY_MODE" = "false" ]; then
 
     # Defensive guard: corrupted WAVs can report absurd sizes and break ffmpeg.
     MAX_WAV_BYTES="${MAX_WAV_BYTES:-100000000}"  # 100 MB
+    # Minimum: a 16kHz mono WAV header is 44 bytes; anything ≤ 4 KB is silence/empty.
+    MIN_WAV_BYTES="${MIN_WAV_BYTES:-4096}"
     wav_size=$(stat -c%s "$REC_DIR/source.wav" 2>/dev/null || echo 0)
     if [ "$wav_size" -gt "$MAX_WAV_BYTES" ]; then
         echo "❌ Audio file is abnormally large (${wav_size} bytes)."
+        rm -f "$REC_DIR/source.wav"
+        exit 1
+    fi
+    if [ "$wav_size" -le "$MIN_WAV_BYTES" ]; then
+        _warn "Recording too short or empty (${wav_size} bytes) — nothing to transcribe."
         rm -f "$REC_DIR/source.wav"
         exit 1
     fi
@@ -128,9 +136,19 @@ if [ "$RETRY_MODE" = "false" ]; then
     ffmpeg -y -i "$REC_DIR/source.wav" \
         -af "silenceremove=detection=peak:start_periods=1:start_threshold=-35dB:stop_periods=-1:stop_duration=1.2:stop_threshold=-35dB,atempo=${AUDIO_TEMPO}" \
         -codec:a libmp3lame -b:a 64k "$REC_DIR/source.mp3" 2>/dev/null
+    ffmpeg_exit=$?
 
-    if [ ! -f "$REC_DIR/source.mp3" ]; then
-        echo "❌ Audio conversion failed."
+    if [ $ffmpeg_exit -ne 0 ] || [ ! -f "$REC_DIR/source.mp3" ]; then
+        _warn "Audio conversion failed (ffmpeg exit $ffmpeg_exit)."
+        exit 1
+    fi
+
+    # After silenceremove, the MP3 may be empty if the entire recording was silence.
+    MIN_MP3_BYTES="${MIN_MP3_BYTES:-1000}"
+    mp3_size=$(stat -c%s "$REC_DIR/source.mp3" 2>/dev/null || echo 0)
+    if [ "$mp3_size" -le "$MIN_MP3_BYTES" ]; then
+        _warn "Audio contains only silence — nothing to transcribe."
+        rm -f "$REC_DIR/source.mp3"
         exit 1
     fi
 else
