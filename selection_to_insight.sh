@@ -90,9 +90,24 @@ export INSIGHT_META_FILE INSIGHT_PERPLEXITY_FILE INSIGHT_GROK_FILE
 SUMMARY_AUDIO="$INSIGHT_DIR/summary.mp3"
 SEARCH_AUDIO="$INSIGHT_DIR/search.mp3"
 FACTCHECK_AUDIO="$INSIGHT_DIR/factcheck.mp3"
+FULL_ARTICLE_AUDIO="$SCRIPT_DIR/recordings/selection-to-voice/output.mp3"
 
 TTS_LOUDNESS="${TTS_LOUDNESS:--16}"
 TTS_VOLUME="${TTS_VOLUME:-2.0}"
+
+# ─── Session state ────────────────────────────────────────────────────────────
+# Dynamic menu: replay buttons appear only once the corresponding audio exists.
+# Settings: session-only overrides (not written to .env).
+
+_search_done=0       # 1 after first successful search
+_factcheck_done=0    # 1 after first successful fact-check
+_article_done=0      # 1 after first full-article read
+
+# Session settings (initialised from .env, overridable via [s] Settings)
+_SETTING_SUMMARY_REASONING="${INSIGHT_SUMMARY_REASONING:-standard}"
+_SETTING_SEARCH_ENGINE="${INSIGHT_SEARCH_ENGINE:-auto}"
+_SETTING_FACTCHECK_ENGINE="${INSIGHT_FACTCHECK_ENGINE:-both}"
+_SETTING_SYNTHESIS_REASONING="${INSIGHT_SYNTHESIS_REASONING:-standard}"
 
 # ─── Audio helpers ────────────────────────────────────────────────────────────
 
@@ -186,7 +201,9 @@ echo ""
 _process "Analysing and summarising..."
 echo ""
 
-summary_text=$(printf '%s' "$selected_text" | "$VENV_PYTHON" -m src.insight summarize 2>&3)
+summary_text=$(printf '%s' "$selected_text" | \
+    INSIGHT_SUMMARY_REASONING="$_SETTING_SUMMARY_REASONING" \
+    "$VENV_PYTHON" -m src.insight summarize 2>&3)
 
 if [ -z "$summary_text" ]; then
     _error "Summary failed — check your MISTRAL_API_KEY and connection."
@@ -206,7 +223,7 @@ echo ""
 # ─── Shared: read a result aloud + show it ────────────────────────────────────
 
 _show_and_speak() {
-    local header_label="$1" emoji="$2" result_text="$3" audio_file="$4" fallback="${5:-insight}"
+    local header_label="$1" emoji="$2" result_text="$3" audio_file="$4"
     _header "$header_label" "$emoji"
     echo ""
     printf "${C_BG_BLUE} %s ${C_RESET}\n" "$result_text"
@@ -235,7 +252,7 @@ _search_flow() {
     _header "SEARCH" "🔍"
     echo ""
     _info "Ask your question:"
-    printf "  ${C_BOLD}[v]${C_RESET} Voice  ${C_BOLD}[t]${C_RESET} Type  ${C_DIM}[Enter] Cancel${C_RESET}: "
+    printf "  ${C_BOLD}[v]${C_RESET} Voice  ${C_BOLD}[t]${C_RESET} Type  ${C_BOLD}[m]${C_RESET} Back${C_RESET}: "
     read -r _input_mode
 
     case "$_input_mode" in
@@ -270,6 +287,7 @@ _search_flow() {
 
     # Protocol: first line = query, rest = context summary
     search_result=$(printf '%s\n%s' "$query_text" "$summary_text" | \
+        INSIGHT_SEARCH_ENGINE="$_SETTING_SEARCH_ENGINE" \
         "$VENV_PYTHON" -m src.insight search 2>&3)
 
     if [ -z "$search_result" ]; then
@@ -277,24 +295,8 @@ _search_flow() {
         return
     fi
 
-    _show_and_speak "SEARCH RESULT" "🔍" "$search_result" "$SEARCH_AUDIO" "insight-search"
-
-    # Post-search menu
-    while true; do
-        echo ""
-        _sep
-        printf "  ${C_BOLD}[r]${C_RESET} Replay  ${C_BOLD}[d]${C_RESET} Save  ${C_BOLD}[p]${C_RESET} New search  ${C_BOLD}[f]${C_RESET} Fact-check  ${C_BOLD}[s]${C_RESET} Replay summary  ${C_BOLD}[l]${C_RESET} Read full  ${C_DIM}[Enter] Back${C_RESET}: "
-        read -r _post_action
-        case "$_post_action" in
-            r|R) _play_audio "$SEARCH_AUDIO" ;;
-            d|D) _save_audio_to_downloads "$SEARCH_AUDIO" "$search_result" "insight-search" ;;
-            p|P) _search_flow; return ;;
-            f|F) _factcheck_flow; return ;;
-            s|S) _play_audio "$SUMMARY_AUDIO" ;;
-            l|L) _read_full_article; return ;;
-            *) return ;;
-        esac
-    done
+    _show_and_speak "SEARCH RESULT" "🔍" "$search_result" "$SEARCH_AUDIO"
+    _search_done=1
 }
 
 # ─── Fact-check flow ──────────────────────────────────────────────────────────
@@ -312,7 +314,7 @@ _factcheck_flow() {
     _header "FACT-CHECK" "🔬"
     echo ""
     _info "Verify a specific claim, or check the whole article?"
-    printf "  ${C_BOLD}[v]${C_RESET} Voice  ${C_BOLD}[t]${C_RESET} Type  ${C_DIM}[Enter] Whole article${C_RESET}: "
+    printf "  ${C_BOLD}[v]${C_RESET} Voice  ${C_BOLD}[t]${C_RESET} Type  ${C_BOLD}[m]${C_RESET} Back  ${C_DIM}[Enter] Whole article${C_RESET}: "
     read -r _fc_mode
 
     export INSIGHT_QUERY=""
@@ -336,13 +338,18 @@ _factcheck_flow() {
                 export INSIGHT_QUERY
             fi
             ;;
+        m|M)
+            return
+            ;;
     esac
 
     echo ""
-    _process "Running fact-check (Perplexity + Grok in parallel)..."
+    _process "Running fact-check..."
     echo ""
 
     factcheck_result=$(printf '%s' "$summary_text" | \
+        INSIGHT_SEARCH_ENGINE="$_SETTING_FACTCHECK_ENGINE" \
+        INSIGHT_SYNTHESIS_REASONING="$_SETTING_SYNTHESIS_REASONING" \
         "$VENV_PYTHON" -m src.insight factcheck 2>&3)
 
     if [ -z "$factcheck_result" ]; then
@@ -350,57 +357,110 @@ _factcheck_flow() {
         return
     fi
 
-    _show_and_speak "FACT-CHECK RESULT" "🔬" "$factcheck_result" "$FACTCHECK_AUDIO" "insight-factcheck"
+    _show_and_speak "FACT-CHECK RESULT" "🔬" "$factcheck_result" "$FACTCHECK_AUDIO"
+    _factcheck_done=1
 
-    # Post-factcheck menu
-    while true; do
+    # Show source details if both present (synthesis mode)
+    if [ -s "$INSIGHT_PERPLEXITY_FILE" ] && [ -s "$INSIGHT_GROK_FILE" ]; then
         echo ""
-        _sep
-        # Build options dynamically — detail buttons only shown when BOTH sources
-        # are present (synthesis mode); single-source result = replay is sufficient.
-        _fc_opts="${C_BOLD}[r]${C_RESET} Replay  ${C_BOLD}[d]${C_RESET} Save"
-        if [ -s "$INSIGHT_PERPLEXITY_FILE" ] && [ -s "$INSIGHT_GROK_FILE" ]; then
-            _fc_opts="$_fc_opts  ${C_BOLD}[w]${C_RESET} Perplexity details  ${C_BOLD}[x]${C_RESET} Grok details"
-        fi
-        _fc_opts="$_fc_opts  ${C_BOLD}[p]${C_RESET} Search  ${C_BOLD}[f]${C_RESET} New fact-check  ${C_BOLD}[s]${C_RESET} Replay summary  ${C_BOLD}[l]${C_RESET} Read full  ${C_DIM}[Enter] Back${C_RESET}"
-        printf "  %b: " "$_fc_opts"
-        read -r _fc_action
-        case "$_fc_action" in
-            r|R)
-                _play_audio "$FACTCHECK_AUDIO"
-                ;;
-            d|D)
-                _save_audio_to_downloads "$FACTCHECK_AUDIO" "$factcheck_result" "insight-factcheck"
-                ;;
+        printf "  ${C_BOLD}[w]${C_RESET} Perplexity details  ${C_BOLD}[x]${C_RESET} Grok details  ${C_DIM}[Enter] Continue${C_RESET}: "
+        read -r _detail_choice
+        case "$_detail_choice" in
             w|W)
-                if [ -s "$INSIGHT_PERPLEXITY_FILE" ]; then
-                    _detail="$(cat "$INSIGHT_PERPLEXITY_FILE")"
-                    _show_and_speak "WEB DETAILS — PERPLEXITY" "🌐" "$_detail" "$INSIGHT_DIR/perplexity_detail.mp3" "insight-perplexity"
-                fi
+                _detail="$(cat "$INSIGHT_PERPLEXITY_FILE")"
+                _show_and_speak "WEB DETAILS — PERPLEXITY" "🌐" "$_detail" "$INSIGHT_DIR/perplexity_detail.mp3"
                 ;;
             x|X)
-                if [ -s "$INSIGHT_GROK_FILE" ]; then
-                    _detail="$(cat "$INSIGHT_GROK_FILE")"
-                    _show_and_speak "X DETAILS — GROK" "𝕏" "$_detail" "$INSIGHT_DIR/grok_detail.mp3" "insight-grok"
-                fi
+                _detail="$(cat "$INSIGHT_GROK_FILE")"
+                _show_and_speak "X DETAILS — GROK" "𝕏" "$_detail" "$INSIGHT_DIR/grok_detail.mp3"
                 ;;
-            p|P) _search_flow; return ;;
-            f|F) _factcheck_flow; return ;;
-            s|S) _play_audio "$SUMMARY_AUDIO" ;;
-            l|L) _read_full_article; return ;;
-            *) return ;;
         esac
-    done
+    fi
 }
 
 # ─── Read full article ────────────────────────────────────────────────────────
 
 _read_full_article() {
-    # Launch Selection to Voice with the original selected text pre-loaded in
-    # the primary clipboard so it picks it up immediately.
     printf '%s' "$selected_text" | xclip -selection primary 2>/dev/null || true
     printf '%s' "$selected_text" | xclip -selection clipboard 2>/dev/null || true
-    exec "$SCRIPT_DIR/selection_to_voice.sh"
+    VOXREFINER_MENU=1 "$SCRIPT_DIR/selection_to_voice.sh"
+    [ -f "$FULL_ARTICLE_AUDIO" ] && _article_done=1
+}
+
+# ─── Settings sub-menu ────────────────────────────────────────────────────────
+
+_settings_flow() {
+    while true; do
+        echo ""
+        _header "SETTINGS — Selection to Insight" "⚙"
+        echo ""
+
+        # ── API key status ────────────────────────────────────────────────────
+        if [ -n "${PERPLEXITY_API_KEY:-}" ]; then
+            _perplexity_status="${C_BGREEN}✓ key set${C_RESET}"
+        else
+            _perplexity_status="${C_RED}✗ key missing${C_RESET}"
+        fi
+        if [ -n "${XAI_API_KEY:-}" ]; then
+            _grok_status="${C_BGREEN}✓ key set${C_RESET}"
+        else
+            _grok_status="${C_RED}✗ key missing${C_RESET}"
+        fi
+        printf "  Perplexity : %b\n" "$_perplexity_status"
+        printf "  Grok       : %b\n" "$_grok_status"
+        echo ""
+
+        printf "  ${C_DIM}Summary${C_RESET}\n"
+        printf "  ${C_BOLD}[1]${C_RESET} Reasoning (summary)   : ${C_BOLD}%s${C_RESET}  ${C_DIM}(standard · high)${C_RESET}\n" "$_SETTING_SUMMARY_REASONING"
+        echo ""
+        printf "  ${C_DIM}Search${C_RESET}\n"
+        printf "  ${C_BOLD}[2]${C_RESET} Search engine          : ${C_BOLD}%s${C_RESET}  ${C_DIM}(auto · perplexity · grok · both)${C_RESET}\n" "$_SETTING_SEARCH_ENGINE"
+        echo ""
+        printf "  ${C_DIM}Fact-check${C_RESET}\n"
+        printf "  ${C_BOLD}[3]${C_RESET} Fact-check engines     : ${C_BOLD}%s${C_RESET}  ${C_DIM}(both · perplexity · grok)${C_RESET}\n" "$_SETTING_FACTCHECK_ENGINE"
+        printf "  ${C_BOLD}[4]${C_RESET} Reasoning (synthesis)  : ${C_BOLD}%s${C_RESET}  ${C_DIM}(standard · high) — only when both engines active${C_RESET}\n" "$_SETTING_SYNTHESIS_REASONING"
+        echo ""
+        printf "  ${C_BOLD}[m]${C_RESET} Back\n"
+        printf "  ${C_BGREEN}▸${C_RESET} "
+        read -r _set_choice
+        case "$_set_choice" in
+            1)
+                if [ "$_SETTING_SUMMARY_REASONING" = "standard" ]; then
+                    _SETTING_SUMMARY_REASONING="high"
+                else
+                    _SETTING_SUMMARY_REASONING="standard"
+                fi
+                _success "Summary reasoning → $_SETTING_SUMMARY_REASONING"
+                ;;
+            2)
+                case "$_SETTING_SEARCH_ENGINE" in
+                    auto)        _SETTING_SEARCH_ENGINE="perplexity" ;;
+                    perplexity)  _SETTING_SEARCH_ENGINE="grok" ;;
+                    grok)        _SETTING_SEARCH_ENGINE="both" ;;
+                    *)           _SETTING_SEARCH_ENGINE="auto" ;;
+                esac
+                _success "Search engine → $_SETTING_SEARCH_ENGINE"
+                ;;
+            3)
+                case "$_SETTING_FACTCHECK_ENGINE" in
+                    both)        _SETTING_FACTCHECK_ENGINE="perplexity" ;;
+                    perplexity)  _SETTING_FACTCHECK_ENGINE="grok" ;;
+                    grok)        _SETTING_FACTCHECK_ENGINE="both" ;;
+                    *)           _SETTING_FACTCHECK_ENGINE="both" ;;
+                esac
+                _success "Fact-check engines → $_SETTING_FACTCHECK_ENGINE"
+                ;;
+            4)
+                if [ "$_SETTING_SYNTHESIS_REASONING" = "standard" ]; then
+                    _SETTING_SYNTHESIS_REASONING="high"
+                else
+                    _SETTING_SYNTHESIS_REASONING="standard"
+                fi
+                _success "Synthesis reasoning → $_SETTING_SYNTHESIS_REASONING"
+                ;;
+            m|M) return ;;
+        esac
+    done
 }
 
 # ─── Main menu ────────────────────────────────────────────────────────────────
@@ -408,15 +468,39 @@ _read_full_article() {
 while true; do
     echo ""
     _sep
-    printf "  ${C_BOLD}[l]${C_RESET} Read full  ${C_BOLD}[p]${C_RESET} Search  ${C_BOLD}[f]${C_RESET} Fact-check  ${C_BOLD}[s]${C_RESET} Replay summary  ${C_BOLD}[g]${C_RESET} Re-read summary  ${C_BOLD}[d]${C_RESET} Save summary  ${C_DIM}[Enter] Quit${C_RESET}: "
+    # Build menu line dynamically — replay buttons only shown when audio exists.
+    _menu_line="  ${C_BOLD}[l]${C_RESET} Read full  ${C_BOLD}[p]${C_RESET} Search  ${C_BOLD}[f]${C_RESET} Fact-check"
+    _menu_line="$_menu_line  ${C_BOLD}[r]${C_RESET} Replay summary  ${C_BOLD}[g]${C_RESET} Re-read summary"
+    [ "$_search_done"   -eq 1 ] && _menu_line="$_menu_line  ${C_BOLD}[e]${C_RESET} Replay search"
+    [ "$_factcheck_done" -eq 1 ] && _menu_line="$_menu_line  ${C_BOLD}[c]${C_RESET} Replay fact-check"
+    [ "$_article_done"  -eq 1 ] && _menu_line="$_menu_line  ${C_BOLD}[a]${C_RESET} Replay article"
+    _menu_line="$_menu_line  ${C_BOLD}[d]${C_RESET} Save  ${C_BOLD}[s]${C_RESET} Settings  ${C_BOLD}[m]${C_RESET} VoxRefiner menu"
+    printf "  %b: " "$_menu_line"
     read -r _main_action
     case "$_main_action" in
         l|L) _read_full_article ;;
         p|P) _search_flow ;;
         f|F) _factcheck_flow ;;
-        s|S) _play_audio "$SUMMARY_AUDIO" ;;
+        r|R) _play_audio "$SUMMARY_AUDIO" ;;
         g|G) _process "Re-generating summary audio..."; _tts_speak "$summary_text" "$SUMMARY_AUDIO" ;;
-        d|D) _save_audio_to_downloads "$SUMMARY_AUDIO" "$summary_text" "insight-summary" ;;
-        *)   break ;;
+        e|E) [ "$_search_done"    -eq 1 ] && _play_audio "$SEARCH_AUDIO" ;;
+        c|C) [ "$_factcheck_done" -eq 1 ] && _play_audio "$FACTCHECK_AUDIO" ;;
+        a|A) [ "$_article_done"   -eq 1 ] && _play_audio "$FULL_ARTICLE_AUDIO" ;;
+        d|D)
+            # Save the most contextually relevant audio:
+            # article > factcheck > search > summary, in priority order.
+            if   [ "$_article_done"   -eq 1 ] && [ -f "$FULL_ARTICLE_AUDIO" ]; then
+                _save_audio_to_downloads "$FULL_ARTICLE_AUDIO" "$selected_text" "insight-full-article"
+            elif [ "$_factcheck_done" -eq 1 ] && [ -f "$FACTCHECK_AUDIO" ]; then
+                _save_audio_to_downloads "$FACTCHECK_AUDIO" "$summary_text" "insight-factcheck"
+            elif [ "$_search_done"    -eq 1 ] && [ -f "$SEARCH_AUDIO" ]; then
+                _save_audio_to_downloads "$SEARCH_AUDIO" "$summary_text" "insight-search"
+            else
+                _save_audio_to_downloads "$SUMMARY_AUDIO" "$summary_text" "insight-summary"
+            fi
+            ;;
+        s|S) _settings_flow ;;
+        m|M) exec "$SCRIPT_DIR/vox-refiner-menu.sh" ;;
+        *)   ;;  # [Enter] and anything else: no-op, redisplay menu
     esac
 done

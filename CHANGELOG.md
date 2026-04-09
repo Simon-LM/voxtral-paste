@@ -13,6 +13,66 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ---
 
+## [4.0.1] — 2026-04-09
+
+### Added
+
+- **`selection_to_insight.sh` — `[s] Settings` sub-menu:** session-only settings
+  accessible from the main menu at any time:
+  - `[1]` Reasoning (summary): `standard` ↔ `high` — controls `reasoning_effort`
+    for the Mistral summary call.
+  - `[2]` Search engine: cycles `auto → perplexity → grok → both` — overrides
+    `INSIGHT_SEARCH_ENGINE` for the session.
+  - `[3]` Fact-check engines: cycles `both → perplexity → grok` — controls which
+    sources are queried in fact-check.
+  - `[4]` Reasoning (synthesis): `standard` ↔ `high` — controls `reasoning_effort`
+    for Mistral fact-check synthesis (only active when both engines return results).
+  - API key status shown at the top of the settings screen: Perplexity and Grok
+    each display `✓ key set` (green) or `✗ key missing` (red).
+  - Current value shown in bold; available cycle values shown in dim parentheses.
+- **`src/insight.py` — `INSIGHT_SUMMARY_REASONING`:** new env var (`standard` /
+  `high`). Previously `reasoning_effort: "high"` was hardcoded in `summarize()`;
+  it is now opt-in (default: `standard`).
+- **`src/insight.py` — `INSIGHT_FACTCHECK_ENGINE`:** new env var (`both` /
+  `perplexity` / `grok`) to restrict which sources are queried in `factcheck()`,
+  independently of `INSIGHT_SEARCH_ENGINE`.
+
+### Changed
+
+- **`selection_to_insight.sh` — main menu redesigned:**
+  - `[Enter]` is now a no-op (rebouces menu) — no accidental exit.
+  - `[m]` exits to the VoxRefiner main menu (explicit, never accidental).
+  - Replay buttons are **dynamic**: `[e] Replay search`, `[c] Replay fact-check`,
+    `[a] Replay article` appear only after the corresponding action has been
+    performed in the session.
+  - `[r]` replays the summary; `[g]` re-generates it via TTS.
+  - Post-search and post-factcheck sub-menus removed — results return directly
+    to the main menu, keeping full session context always accessible.
+  - `[d] Save` saves the most contextually relevant audio of the session
+    (article > fact-check > search > summary, in priority order).
+  - Input prompts for voice/text query now use `[m] Back` instead of
+    `[Enter] Cancel` to avoid accidental dismissal.
+- **`selection_to_insight.sh` — `[l] Read full`:** calls `selection_to_voice.sh`
+  with `VOXREFINER_MENU=1` so Feature 4's own post-playback menu is suppressed
+  and control returns directly to Feature 5's main menu.
+- **`selection_to_voice.sh` — post-playback menu:** guarded by
+  `VOXREFINER_MENU != 1` so it is skipped when called from Feature 5.
+- **`record_and_transcribe_local.sh` — mic health check rewritten:**
+  pre-launch device check via `pactl` (~10–50ms); `trap 'exit 0' SIGINT` set
+  before any device check; `stop_recording` trap set immediately after `rec`
+  starts — no window without a Ctrl+C handler. `_try_reset_mic()` removed.
+- **`record_and_transcribe_local.sh` — PipeWire restart sleep:** 1s → 2s.
+
+### Fixed
+
+- **`src/tts.py` — number-text collision:** `_merge_split_identifiers` regex
+  fixed with `(?<!\w)` lookbehind — word-final letters (e.g. `l` in `avril 2026`)
+  no longer merged with adjacent numbers.
+- **`selection_to_insight.sh` — settings prompt:** replaced `→` with `▸` (green)
+  to match the VoxRefiner main menu prompt style.
+
+---
+
 ## [4.0.0] — 2026-04-09
 
 ### Added

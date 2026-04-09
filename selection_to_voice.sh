@@ -274,19 +274,23 @@ if [ "${#_FAILED_CHUNKS[@]}" -gt 0 ] 2>/dev/null; then
 fi
 
 # ─── Post-action mini-menu ───────────────────────────────────────────────────
+# Skipped when called from another feature (VOXREFINER_MENU=1) so the caller's
+# menu takes over immediately after playback.
 
-while true; do
-    echo ""
-    _sep
-    printf "  ${C_BOLD}[l]${C_RESET} Réecouter  ${C_BOLD}[d]${C_RESET} Sauvegarder  ${C_DIM}[Entrée] Quitter${C_RESET} : "
-    read -r _action
-    case "$_action" in
-        l|L)
-            _play_audio "$TTS_OUTPUT"
-            ;;
-        d|D)
-            _save_audio_to_downloads "$TTS_OUTPUT" "$selected_text" "selection-to-voice"
-            ;;
-        *) break ;;
-    esac
-done
+if [ "${VOXREFINER_MENU:-}" != "1" ]; then
+    while true; do
+        echo ""
+        _sep
+        printf "  ${C_BOLD}[l]${C_RESET} Réecouter  ${C_BOLD}[d]${C_RESET} Sauvegarder  ${C_DIM}[Entrée] Quitter${C_RESET} : "
+        read -r _action
+        case "$_action" in
+            l|L)
+                _play_audio "$TTS_OUTPUT"
+                ;;
+            d|D)
+                _save_audio_to_downloads "$TTS_OUTPUT" "$selected_text" "selection-to-voice"
+                ;;
+            *) break ;;
+        esac
+    done
+fi

@@ -33,7 +33,9 @@ Environment variables (loaded from .env):
   INSIGHT_GROK_MODEL           — Grok model (default: grok-3)
   INSIGHT_SEARCH_ENGINE        — search engine: auto | perplexity | grok | both
                                   auto = Perplexity if available, else Grok (default)
-  INSIGHT_SYNTHESIS_REASONING  — factcheck synthesis: standard | high (default: standard)
+  INSIGHT_FACTCHECK_ENGINE     — fact-check sources: both | perplexity | grok (default: both)
+  INSIGHT_SUMMARY_REASONING    — summary reasoning effort: standard | high (default: standard)
+  INSIGHT_SYNTHESIS_REASONING  — factcheck synthesis reasoning: standard | high (default: standard)
 """
 
 import os
@@ -64,8 +66,10 @@ _PERPLEXITY_KEY = os.environ.get("PERPLEXITY_API_KEY", "")
 _XAI_KEY        = os.environ.get("XAI_API_KEY",        "")
 
 # ── Behaviour flags ───────────────────────────────────────────────────────────
-_SEARCH_ENGINE       = os.environ.get("INSIGHT_SEARCH_ENGINE",       "auto")
-_SYNTHESIS_REASONING = os.environ.get("INSIGHT_SYNTHESIS_REASONING", "standard")
+_SEARCH_ENGINE        = os.environ.get("INSIGHT_SEARCH_ENGINE",        "auto")
+_FACTCHECK_ENGINE     = os.environ.get("INSIGHT_FACTCHECK_ENGINE",     "both")
+_SUMMARY_REASONING    = os.environ.get("INSIGHT_SUMMARY_REASONING",    "standard")
+_SYNTHESIS_REASONING  = os.environ.get("INSIGHT_SYNTHESIS_REASONING",  "standard")
 
 # ── Timeouts ──────────────────────────────────────────────────────────────────
 _SUMMARY_TIMEOUT    = 30
@@ -253,21 +257,23 @@ def summarize(text: str, content_type: str = "generic") -> str:
     user_content = type_hint + text
 
     print("✨ Generating summary...", file=sys.stderr)
+    payload: dict = {
+        "model": _SUMMARY_MODEL,
+        "messages": [
+            {"role": "system", "content": _SUMMARY_SYSTEM},
+            {"role": "user",   "content": user_content},
+        ],
+        "temperature": 0.3,
+    }
+    if _SUMMARY_REASONING == "high":
+        payload["reasoning_effort"] = "high"
     body = _post_json(
         _MISTRAL_URL,
         headers={
             "Authorization": f"Bearer {_MISTRAL_KEY}",
             "Content-Type": "application/json",
         },
-        payload={
-            "model": _SUMMARY_MODEL,
-            "messages": [
-                {"role": "system", "content": _SUMMARY_SYSTEM},
-                {"role": "user",   "content": user_content},
-            ],
-            "reasoning_effort": "high",
-            "temperature": 0.3,
-        },
+        payload=payload,
         timeout=_SUMMARY_TIMEOUT,
         label="Mistral summarize",
     )
@@ -508,14 +514,28 @@ def factcheck(
     perplexity_result: str = ""
     grok_result: str = ""
 
+    # ── Engine selection (INSIGHT_FACTCHECK_ENGINE: both / perplexity / grok) ───
+    _use_perplexity = _PERPLEXITY_KEY and _FACTCHECK_ENGINE in ("both", "perplexity", "auto")
+    _use_grok       = _XAI_KEY        and _FACTCHECK_ENGINE in ("both", "grok",       "auto")
+    # "auto" falls back: if preferred source missing, use the other
+    if _FACTCHECK_ENGINE == "auto":
+        _use_perplexity = bool(_PERPLEXITY_KEY)
+        _use_grok       = bool(_XAI_KEY)
+
+    if not _use_perplexity and not _use_grok:
+        raise RuntimeError(
+            f"No fact-check source available for engine '{_FACTCHECK_ENGINE}'. "
+            "Check API keys and INSIGHT_FACTCHECK_ENGINE setting."
+        )
+
     # ── Parallel fetch ────────────────────────────────────────────────────────
     with ThreadPoolExecutor(max_workers=2) as pool:
         tasks: dict = {}
-        if _PERPLEXITY_KEY:
+        if _use_perplexity:
             tasks["perplexity"] = pool.submit(
                 search_perplexity, query, context_summary
             )
-        if _XAI_KEY:
+        if _use_grok:
             tasks["grok"] = pool.submit(
                 search_grok, query, context_summary, _FACTCHECK_GROK_SYSTEM
             )
@@ -535,10 +555,10 @@ def factcheck(
             "All fact-check sources failed. Check API keys and connection."
         )
 
-    if not _PERPLEXITY_KEY:
-        print("ℹ️  PERPLEXITY_API_KEY not set — skipping web fact-check.", file=sys.stderr)
-    if not _XAI_KEY:
-        print("ℹ️  XAI_API_KEY not set — skipping Grok fact-check.", file=sys.stderr)
+    if not _use_perplexity:
+        print(f"ℹ️  Perplexity skipped (engine: {_FACTCHECK_ENGINE}).", file=sys.stderr)
+    if not _use_grok:
+        print(f"ℹ️  Grok skipped (engine: {_FACTCHECK_ENGINE}).", file=sys.stderr)
 
     # ── Single source: return directly (no synthesis overhead) ────────────────
     if not (perplexity_result and grok_result):
