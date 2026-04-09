@@ -7,9 +7,11 @@ cd "$(dirname "$0")"
 SCRIPT_DIR="$(pwd)"
 VENV_PYTHON="$SCRIPT_DIR/.venv/bin/python"
 
-# ─── Shared UI ───────────────────────────────────────────────────────────────
+# ─── Shared UI + helpers ─────────────────────────────────────────────────────
 # shellcheck disable=SC1091
 source "$SCRIPT_DIR/src/ui.sh"
+# shellcheck disable=SC1091
+source "$SCRIPT_DIR/src/save_audio.sh"
 
 if [ ! -x "$VENV_PYTHON" ]; then
     echo "❌ Missing .venv Python interpreter: $VENV_PYTHON"
@@ -188,47 +190,9 @@ _record_voice_profile() {
 # ─── Save audio to Downloads/VoxRefiner/ ────────────────────────────────────
 
 _save_audio() {
+    # Wrapper: delegates to the shared _save_audio_to_downloads helper.
     # Requires: REC_TTS_OUTPUT, raw_transcription — set by voice_translate()
-    if [ ! -f "$REC_TTS_OUTPUT" ]; then
-        _warn "No audio file to save."
-        return 1
-    fi
-
-    # Resolve Downloads folder (handles Téléchargements, Downloads, etc.)
-    DOWNLOADS_DIR="$(xdg-user-dir DOWNLOAD 2>/dev/null || echo "$HOME/Downloads")"
-    SAVE_DIR="$DOWNLOADS_DIR/VoxRefiner"
-    mkdir -p "$SAVE_DIR"
-
-    # Generate timestamp prefix: 2026-03-31_14h32
-    TIMESTAMP="$(date '+%Y-%m-%d_%Hh%M')"
-
-    # Generate slug via Mistral (from raw transcription, not translation)
-    echo ""
-    _info "🏷️  Generating filename..."
-    suggested_slug=$(printf '%s' "$raw_transcription" | "$VENV_PYTHON" -m src.slug 2>&3)
-    suggested_slug="${suggested_slug:-voice-translate}"
-
-    # Ask user to confirm or override
-    echo ""
-    printf "  ${C_BOLD}Suggested name:${C_RESET} ${C_CYAN}%s${C_RESET}\n" "$suggested_slug"
-    printf "  Press Enter to confirm, or type a new name: "
-    read -r _custom_name
-
-    if [ -n "$_custom_name" ]; then
-        # Sanitise manual input: lowercase, spaces → hyphens, strip unsafe chars
-        final_slug=$(printf '%s' "$_custom_name" | tr '[:upper:]' '[:lower:]' | tr ' ' '-' | tr -cd 'a-z0-9-')
-        final_slug="${final_slug:-voice-translate}"
-    else
-        final_slug="$suggested_slug"
-    fi
-
-    DEST="$SAVE_DIR/${TIMESTAMP}_${final_slug}.mp3"
-    if cp "$REC_TTS_OUTPUT" "$DEST"; then
-        echo ""
-        _success "Saved: $DEST"
-    else
-        _warn "Could not save file to $DEST"
-    fi
+    _save_audio_to_downloads "$REC_TTS_OUTPUT" "$raw_transcription" "voice-translate"
 }
 
 # ─── Translate + TTS + Play (reusable for retry) ────────────────────────────

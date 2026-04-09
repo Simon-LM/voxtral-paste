@@ -192,6 +192,10 @@ repair_exec_bits() {
     if [ -f "uninstall.sh" ]; then
         chmod +x uninstall.sh
     fi
+
+    if [ -f "selection_to_insight.sh" ]; then
+        chmod +x selection_to_insight.sh
+    fi
 }
 
 run_check() {

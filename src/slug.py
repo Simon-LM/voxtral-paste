@@ -25,11 +25,14 @@ load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 from src.common import call_model  # noqa: E402
 
-_MODEL_PRIMARY  = "mistral-small-latest"
-_MODEL_FALLBACK = "mistral-medium-latest"
-_FALLBACK_SLUG  = "voice-translate"
+_MODEL_PRIMARY      = "mistral-small-latest"
+_MODEL_FALLBACK     = "mistral-medium-latest"
+_DEFAULT_FALLBACK   = "voice-translate"
 _TIMEOUT        = 5   # slug is short — 5s is more than enough
 _RETRY_DELAY    = 1.5
+
+
+_FALLBACK_SLUG = _DEFAULT_FALLBACK  # may be overridden by CLI --fallback
 
 
 def _build_prompt(text: str, lang: str) -> str:
@@ -102,6 +105,14 @@ def generate_slug(text: str, lang: str = "auto") -> str:
 
 
 def main() -> None:
+    global _FALLBACK_SLUG
+    import argparse  # noqa: PLC0415
+    parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument("--fallback", default=None)
+    args, _ = parser.parse_known_args()
+    if args.fallback:
+        _FALLBACK_SLUG = args.fallback
+
     text = sys.stdin.read().strip()
     if not text:
         print(_FALLBACK_SLUG)

@@ -59,11 +59,31 @@ fi
 # ─── Recording / Audio processing ───────────────────────────────────────────
 
 if [ "$RETRY_MODE" = "false" ]; then
+    # Ctrl+C works from the very start, before any device check or rec launch.
+    trap 'echo ""; exit 0' SIGINT
+
+    # ── Pre-launch mic check (~10-50ms via pactl) ─────────────────────────────
+    _check_mic() {
+        if pactl list sources short 2>/dev/null | grep -qv '\.monitor'; then
+            return 0
+        fi
+        _warn "Aucun micro détecté — redémarrage audio en cours..."
+        systemctl --user restart pipewire pipewire-pulse 2>/dev/null || true
+        sleep 2
+        if pactl list sources short 2>/dev/null | grep -qv '\.monitor'; then
+            _success "Micro récupéré."
+            return 0
+        fi
+        _error "Aucun micro détecté. Vérifiez vos paramètres audio."
+        exit 1
+    }
+    _check_mic
+
     # Always start from clean audio artifacts to avoid reusing corrupted files
     # after an interrupted/incorrect shutdown.
     rm -f "$REC_DIR/source.wav" "$REC_DIR/source.mp3"
 
-    # ── B. Kill orphan VoxRefiner rec processes from previous interrupted runs ──
+    # Kill orphan VoxRefiner rec processes from previous interrupted runs.
     # Pattern is specific enough to never match visio/webcam/other apps.
     pkill -f "rec.*source.wav" 2>/dev/null || true
 
@@ -73,42 +93,36 @@ if [ "$RETRY_MODE" = "false" ]; then
     printf "  ${C_BBLUE}Press Ctrl+C to stop.${C_RESET}\n"
     echo ""
 
-    # ── C. No setsid — keep rec in the same session so PulseAudio/PipeWire
-    #    grants microphone access when launched from a keyboard shortcut. ────────
+    # No setsid — keep rec in the same session so PulseAudio/PipeWire
+    # grants microphone access when launched from a keyboard shortcut.
     rec -c 1 -r 16000 "$REC_DIR/source.wav" &
     REC_PID=$!
-
-    # ── A. Post-launch mic health check ──────────────────────────────────────────
-    # Wait briefly then verify rec is still alive. When the mic is inaccessible,
-    # rec dies immediately — no need to check file size (SoX buffers audio data
-    # and the file stays header-only for ~2s even when recording normally).
-    sleep 0.3
-    if ! kill -0 "$REC_PID" 2>/dev/null; then
-        _warn "Microphone inaccessible, attempting audio reset..."
-        systemctl --user restart pipewire pipewire-pulse 2>/dev/null || true
-        sleep 1
-        rm -f "$REC_DIR/source.wav"
-        rec -c 1 -r 16000 "$REC_DIR/source.wav" &
-        REC_PID=$!
-        sleep 0.3
-        if ! kill -0 "$REC_PID" 2>/dev/null; then
-            _error "Microphone still inaccessible after reset. Check your audio settings."
-            exit 1
-        fi
-        _success "Microphone recovered."
-    fi
 
     stop_recording() {
         trap '' SIGINT  # Ignore further Ctrl+C during cleanup — prevents re-entry
         echo ""
         printf "  ${C_DIM}⏹  Stopping recording...${C_RESET}\n"
         kill -INT "$REC_PID" 2>/dev/null
+        # Wait up to 1s for rec to stop cleanly, then force-kill.
+        # Prevents a hang when rec is stuck in an ALSA error state.
+        local _i=0
+        while kill -0 "$REC_PID" 2>/dev/null && [ "$_i" -lt 5 ]; do
+            sleep 0.2; _i=$((_i + 1))
+        done
+        kill -0 "$REC_PID" 2>/dev/null && kill -KILL "$REC_PID" 2>/dev/null
         wait "$REC_PID" 2>/dev/null
         echo ""
         _success "Recording stopped."
     }
-
     trap stop_recording SIGINT
+
+    # Minimal sanity check — rec crashed immediately despite device check.
+    sleep 0.5
+    if ! kill -0 "$REC_PID" 2>/dev/null; then
+        _error "Recording failed to start. Check your audio settings."
+        exit 1
+    fi
+
     wait "$REC_PID"
 
     if [ ! -f "$REC_DIR/source.wav" ]; then

@@ -258,10 +258,16 @@ _submenu_api_keys() {
     while true; do
         _header "API KEYS" "🔑"
         echo ""
-        printf "  Mistral API key: ${C_CYAN}%s${C_RESET}\n" "$(_mask_key "${MISTRAL_API_KEY:-}")"
+        printf "  ${C_BOLD}Mistral${C_RESET}    (required)  : ${C_CYAN}%s${C_RESET}\n" "$(_mask_key "${MISTRAL_API_KEY:-}")"
+        printf "  ${C_BOLD}Perplexity${C_RESET} (optional)  : ${C_CYAN}%s${C_RESET}\n" "$(_mask_key "${PERPLEXITY_API_KEY:-}")"
+        printf "  ${C_BOLD}xAI / Grok${C_RESET} (optional)  : ${C_CYAN}%s${C_RESET}\n" "$(_mask_key "${XAI_API_KEY:-}")"
         echo ""
-        printf "  ${C_BOLD}[t]${C_RESET}  Test key\n"
-        printf "  ${C_BOLD}[e]${C_RESET}  Edit key\n"
+        printf "  ${C_DIM}Perplexity + xAI unlock [5] Selection to Insight${C_RESET}\n"
+        echo ""
+        printf "  ${C_BOLD}[t]${C_RESET}  Test Mistral key\n"
+        printf "  ${C_BOLD}[m]${C_RESET}  Edit Mistral key\n"
+        printf "  ${C_BOLD}[p]${C_RESET}  Edit Perplexity key\n"
+        printf "  ${C_BOLD}[x]${C_RESET}  Edit xAI / Grok key\n"
         echo ""
         printf "  ${C_DIM}Press Enter to return...${C_RESET} "
         read -r _key_action
@@ -273,6 +279,60 @@ _submenu_api_keys() {
                 printf "  ${C_DIM}Press Enter to continue...${C_RESET}"
                 read -r
                 ;;
+            m|M)
+                echo ""
+                printf "  Enter new Mistral API key: "
+                _read_masked
+                _new_key="$_MASKED_INPUT"
+                if [ -z "$_new_key" ]; then
+                    _warn "No key entered — unchanged."
+                else
+                    _set_env_var "MISTRAL_API_KEY" "$_new_key"
+                    export MISTRAL_API_KEY="$_new_key"
+                    set -a; source .env; set +a
+                    _success "Key saved."
+                    echo ""
+                    _test_mistral_key "$_new_key"
+                fi
+                echo ""
+                printf "  ${C_DIM}Press Enter to continue...${C_RESET}"
+                read -r
+                ;;
+            p|P)
+                echo ""
+                printf "  Enter new Perplexity API key: "
+                _read_masked
+                _new_key="$_MASKED_INPUT"
+                if [ -z "$_new_key" ]; then
+                    _warn "No key entered — unchanged."
+                else
+                    _set_env_var "PERPLEXITY_API_KEY" "$_new_key"
+                    export PERPLEXITY_API_KEY="$_new_key"
+                    set -a; source .env; set +a
+                    _success "Perplexity key saved."
+                fi
+                echo ""
+                printf "  ${C_DIM}Press Enter to continue...${C_RESET}"
+                read -r
+                ;;
+            x|X)
+                echo ""
+                printf "  Enter new xAI / Grok API key: "
+                _read_masked
+                _new_key="$_MASKED_INPUT"
+                if [ -z "$_new_key" ]; then
+                    _warn "No key entered — unchanged."
+                else
+                    _set_env_var "XAI_API_KEY" "$_new_key"
+                    export XAI_API_KEY="$_new_key"
+                    set -a; source .env; set +a
+                    _success "xAI key saved."
+                fi
+                echo ""
+                printf "  ${C_DIM}Press Enter to continue...${C_RESET}"
+                read -r
+                ;;
+            # Keep backward compat: old [e] shortcut still edits Mistral
             e|E)
                 echo ""
                 printf "  Enter new Mistral API key: "
@@ -283,7 +343,6 @@ _submenu_api_keys() {
                 else
                     _set_env_var "MISTRAL_API_KEY" "$_new_key"
                     export MISTRAL_API_KEY="$_new_key"
-                    # Reload .env
                     set -a; source .env; set +a
                     _success "Key saved."
                     echo ""
@@ -705,8 +764,7 @@ while true; do
             ./selection_to_voice.sh
             ;;
         5)
-            _coming_soon "Selection to Insight" \
-                "Select text, get an audio summary — then dive deeper or search via Perplexity."
+            ./selection_to_insight.sh
             ;;
         6)
             _coming_soon "Screen to Text" \

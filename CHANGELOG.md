@@ -13,6 +13,96 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ---
 
+## [4.0.0] — 2026-04-09
+
+### Added
+
+- **`[5] Selection to Insight`:** new feature — select any text, get an instant
+  audio bullet-point summary, then search or fact-check from the same session.
+  - **`selection_to_insight.sh`:** orchestration script. Captures selected text
+    (primary selection → clipboard fallback), calls `src/insight.py summarize`,
+    reads the summary aloud via TTS, then presents a main menu:
+    `[l]` read full article · `[p]` search · `[f]` fact-check · `[s]` replay ·
+    `[g]` re-read · `[d]` save summary · `[Enter]` quit.
+  - **Search flow (`[p]`):** user dictates (Feature 1 component) or types a question;
+    sent to the active search engine with the summary as context. Result is read aloud.
+    Post-search menu: `[r]` replay · `[d]` save · `[p]` new search · `[f]` fact-check ·
+    `[s]` replay summary · `[l]` read full.
+  - **Fact-check flow (`[f]`):** user can optionally target a specific claim (voice or
+    text); Perplexity (web) and Grok (`web_search + x_search`) run in **parallel**;
+    Mistral synthesises a verdict when both sources are present. Post-factcheck menu
+    offers `[w]`/`[x]` source-detail buttons — only shown when both sources returned
+    results.
+  - **`[l] Read full article`:** pre-loads the original text into both clipboards and
+    calls `selection_to_voice.sh` seamlessly — no re-selection required.
+  - **Adaptive search engine** (`INSIGHT_SEARCH_ENGINE`: `auto` / `perplexity` /
+    `grok` / `both`): in `auto` mode, Perplexity is prioritised; Grok (`grok-4-fast`)
+    is used as fallback. Fact-check synthesis via Mistral only when both sources are
+    present simultaneously.
+  - API key warnings at startup; Mistral-only users can still use the summary;
+    Perplexity and/or xAI keys unlock search and fact-check.
+- **`src/insight.py`:** new Python module.
+  - `summarize(text)` — `mistral-small-latest` with `reasoning_effort: high`.
+  - `search_perplexity(query, context_summary)` — Perplexity `sonar-pro`.
+  - `search_grok(query, context_summary, system)` — xAI SDK with `web_search +
+    x_search` server-side tools (requires `grok-4` family; default `grok-4-fast`).
+  - `search()` dispatcher — routes to Perplexity, Grok, or both based on
+    `INSIGHT_SEARCH_ENGINE` and available API keys.
+  - `factcheck(summary, query_hint)` — Perplexity + Grok in parallel via
+    `ThreadPoolExecutor`; Mistral synthesis with `INSIGHT_SYNTHESIS_REASONING`
+    (`standard` / `high`) when both sources succeed; single-source graceful degradation.
+  - CLI subcommands: `summarize`, `search`, `factcheck` (stdin/stdout protocol).
+- **`src/save_audio.sh`:** new shared component — `_save_audio_to_downloads()` helper
+  used by `voice_translate.sh`, `selection_to_voice.sh`, and `selection_to_insight.sh`.
+  Single point of change for save-audio behaviour across all features.
+- **`src/tts.py` — `detect_content_type()`:** extracted as a public importable
+  function, reused by `src/insight.py`.
+- **`src/slug.py` — `--fallback` CLI argument:** allows callers to override the
+  default fallback filename at runtime without modifying the module.
+- **`vox-refiner-menu.sh` — API Keys submenu:** shows and allows editing of
+  `PERPLEXITY_API_KEY` and `XAI_API_KEY` alongside Mistral.
+- **`.env.example`:** added `PERPLEXITY_API_KEY`, `XAI_API_KEY`, `INSIGHT_SEARCH_ENGINE`,
+  `INSIGHT_SYNTHESIS_REASONING`, and advanced model overrides (`INSIGHT_SUMMARY_MODEL`,
+  `INSIGHT_SYNTHESIS_MODEL`, `INSIGHT_PERPLEXITY_MODEL`, `INSIGHT_GROK_MODEL`).
+- **`requirements.txt`:** added `xai-sdk==1.11.0` (only `grok-4` family supports
+  server-side tools; `grok-4-fast` is the default).
+- **Tests:** 34 unit tests in `tests/unit/test_insight.py` covering all public
+  functions, adaptive engine routing, graceful degradation, and API key guards.
+
+### Changed
+
+- **`selection_to_insight.sh` — voice query (search & fact-check):** now calls
+  `record_and_transcribe_local.sh` directly (reusing Feature 1 as a component) and
+  reads the result from the clipboard, instead of a `$(...)` subshell capture.
+- **`record_and_transcribe_local.sh` — mic health check rewritten:**
+  - Replaced two-stage post-launch WAV-size check (~1s latency) with a fast
+    pre-launch device check via `pactl list sources short` (~10–50ms).
+  - If no device found: restarts PipeWire once, waits 2s, re-checks with clear
+    on-screen message.
+  - Ctrl+C trap set in two phases: `trap 'exit 0' SIGINT` before the device check,
+    then `trap stop_recording SIGINT` immediately after `rec` starts — no window
+    without a trap, ever. Removed `_try_reset_mic()` and its `trap '' SIGINT` dance.
+  - `stop_recording` kill timeout reduced from 3s to 1s.
+- **`voice_translate.sh` / `selection_to_voice.sh`:** save-audio logic replaced by
+  shared `_save_audio_to_downloads` from `src/save_audio.sh`.
+- **`launch-vox-refiner.sh`:** added `--selection-insight` flag.
+- **`vox-refiner-menu.sh` — Feature 5:** replaced `_coming_soon` placeholder with
+  actual call to `./selection_to_insight.sh`.
+- **`install.sh` / `vox-refiner-update.sh`:** `selection_to_insight.sh` added to
+  `chmod +x` and `repair_exec_bits`.
+- **`Readme.md`:** added Selection to Insight documentation and
+  `--selection-insight` flag.
+
+### Fixed
+
+- **`src/tts.py` — number-text collision:** `_merge_split_identifiers` regex was
+  stripping spaces between word-final letters and following numbers
+  (e.g. `"avril 2026"` → `"avril2026"`, `"de 55 ans"` → `"de55 ans"`).
+  Fixed with `(?<!\w)` lookbehind — only word-initial single-letter math identifiers
+  (e.g. `C 1`) are merged.
+
+---
+
 ## [3.9.0] — 2026-04-07
 
 ### Added

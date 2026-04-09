@@ -80,8 +80,8 @@ if [ ! -f "context.txt" ]; then
 fi
 
 chmod +x record_and_transcribe_local.sh launch-vox-refiner.sh voice_translate.sh \
-         selection_to_voice.sh vox-refiner-menu.sh vox-refiner-update.sh install.sh \
-         uninstall.sh
+         selection_to_voice.sh selection_to_insight.sh vox-refiner-menu.sh \
+         vox-refiner-update.sh install.sh uninstall.sh
 
 echo ""
 echo "✅ Installation complete."

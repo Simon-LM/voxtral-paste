@@ -7,9 +7,11 @@ cd "$(dirname "$0")"
 SCRIPT_DIR="$(pwd)"
 VENV_PYTHON="$SCRIPT_DIR/.venv/bin/python"
 
-# ─── Shared UI ───────────────────────────────────────────────────────────────
+# ─── Shared UI + helpers ─────────────────────────────────────────────────────
 # shellcheck disable=SC1091
 source "$SCRIPT_DIR/src/ui.sh"
+# shellcheck disable=SC1091
+source "$SCRIPT_DIR/src/save_audio.sh"
 
 if [ ! -x "$VENV_PYTHON" ]; then
     echo "❌ Missing .venv Python interpreter: $VENV_PYTHON"
@@ -283,17 +285,7 @@ while true; do
             _play_audio "$TTS_OUTPUT"
             ;;
         d|D)
-            DOWNLOADS_DIR="$(xdg-user-dir DOWNLOAD 2>/dev/null || echo "$HOME/Downloads")"
-            SAVE_DIR="$DOWNLOADS_DIR/VoxRefiner"
-            mkdir -p "$SAVE_DIR"
-            TIMESTAMP="$(date '+%Y-%m-%d_%Hh%M')"
-            DEST="$SAVE_DIR/${TIMESTAMP}_selection-to-voice.mp3"
-            if cp "$TTS_OUTPUT" "$DEST"; then
-                echo ""
-                _success "Sauvegardé : $DEST"
-            else
-                _warn "Impossible de sauvegarder vers $DEST"
-            fi
+            _save_audio_to_downloads "$TTS_OUTPUT" "$selected_text" "selection-to-voice"
             ;;
         *) break ;;
     esac

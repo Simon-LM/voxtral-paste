@@ -179,6 +179,53 @@ Both the reading voice and the citation voice are configurable from the settings
 
 ---
 
+## Selection to Insight
+
+Get an instant audio summary of any selected text, then search or fact-check without leaving the session.
+
+1. Select text in any application (browser, editor, PDF viewer…)
+2. Press your `--selection-insight` shortcut (or choose **Selection to Insight** from the menu)
+3. VoxRefiner detects the content type, generates a bullet-point summary, and reads it aloud
+4. From the post-summary menu, choose what to do next
+
+**Post-summary menu:**
+
+| Key | Action |
+| --- | ------ |
+| `[l]` | Read the full original text aloud (hands off to Selection to Voice) |
+| `[p]` | Search via Perplexity |
+| `[f]` | Fact-check (Perplexity + Grok) |
+| `[s]` | Replay the summary |
+| `[q]` | Quit |
+
+**Perplexity search (`[p]`):**
+
+1. Dictate `[v]` or type `[t]` your question
+2. The question is sent to Perplexity with the summary as context
+3. The answer is read aloud
+4. Post-search menu: replay the answer · replay the summary · read full article · new search
+
+**Fact-check (`[f]`):**
+
+1. Optionally target a specific claim — dictate `[v]` or type `[t]` (press Enter to verify the full article)
+2. Perplexity (web sources) and Grok (X / Twitter reactions) run **in parallel**
+3. Mistral synthesises a verdict: reliability label + 2-sentence synthesis + one line per source
+4. The verdict is read aloud
+5. Post-factcheck menu: replay verdict · web details · X details · replay summary · read full article
+
+**API keys required:**
+
+| Feature | Key needed |
+| ------- | ---------- |
+| Summary | `MISTRAL_API_KEY` (already required for core features) |
+| Search | `PERPLEXITY_API_KEY` (optional) |
+| Fact-check | `PERPLEXITY_API_KEY` + `XAI_API_KEY` (both optional; one is enough) |
+
+Add optional keys to your `.env` or configure them via **Settings → API Keys** in the interactive menu.
+A warning is displayed at launch if keys are missing — the summary still works with Mistral alone.
+
+---
+
 ## Advanced options
 
 ### Voxtral-only mode (no AI refinement)
@@ -307,6 +354,9 @@ cd ~/.local/bin/vox-refiner
 #   Selection to Voice (read selected or clipboard text aloud):
 #   /home/your-username/.local/bin/vox-refiner/launch-vox-refiner.sh --selection-voice
 #
+#   Selection to Insight (summary + search + fact-check):
+#   /home/your-username/.local/bin/vox-refiner/launch-vox-refiner.sh --selection-insight
+#
 #   Interactive menu (all features):
 #   /home/your-username/.local/bin/vox-refiner/launch-vox-refiner.sh
 
@@ -353,12 +403,13 @@ To force a specific terminal, set `VOXREFINER_TERMINAL` in your environment.
 
 **Available launch flags:**
 
-| Flag                | What it does                                              |
-| ------------------- | --------------------------------------------------------- |
-| `--speak-refine`    | Record, AI refines, copies to clipboard (most common)     |
-| `--speak-translate` | Record, translate, play in your own voice                 |
-| `--selection-voice` | Read selected or clipboard text aloud                     |
-| _(no flag)_         | Open the interactive menu                                 |
+| Flag                  | What it does                                              |
+| --------------------- | --------------------------------------------------------- |
+| `--speak-refine`      | Record, AI refines, copies to clipboard (most common)     |
+| `--speak-translate`   | Record, translate, play in your own voice                 |
+| `--selection-voice`   | Read selected or clipboard text aloud                     |
+| `--selection-insight` | Summarise selected text, search, or fact-check            |
+| _(no flag)_           | Open the interactive menu                                 |
 
 **Configure your shortcuts:**
 
@@ -380,6 +431,9 @@ Example commands to bind (replace `your-username` with your actual username):
 
 # Selection to Voice — bind to e.g. Super+R
 /home/your-username/.local/bin/vox-refiner/launch-vox-refiner.sh --selection-voice
+
+# Selection to Insight — bind to e.g. Super+I
+/home/your-username/.local/bin/vox-refiner/launch-vox-refiner.sh --selection-insight
 ```
 
 Compatibility note:

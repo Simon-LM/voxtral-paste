@@ -4,10 +4,11 @@
 # Bind this file to a keyboard shortcut or use it from the .desktop file.
 #
 # Launch modes:
-#   (no flag)           → interactive menu (vox-refiner-menu.sh)
-#   --speak-refine      → record & refine to clipboard (best for keyboard shortcut)
-#   --speak-translate   → record & translate to audio  (best for keyboard shortcut)
-#   --selection-voice   → read selected/clipboard text aloud (best for keyboard shortcut)
+#   (no flag)             → interactive menu (vox-refiner-menu.sh)
+#   --speak-refine        → record & refine to clipboard (best for keyboard shortcut)
+#   --speak-translate     → record & translate to audio  (best for keyboard shortcut)
+#   --selection-voice     → read selected/clipboard text aloud (best for keyboard shortcut)
+#   --selection-insight   → summarise selected text, search, or fact-check
 #
 # Optional: set VOXREFINER_TERMINAL in your environment to force a specific
 # terminal emulator (mate-terminal, gnome-terminal, xfce4-terminal, konsole, xterm).
@@ -32,6 +33,9 @@ case "${1:-}" in
         ;;
     --selection-voice)
         SCRIPT_PATH="$INSTALL_DIR/selection_to_voice.sh"
+        ;;
+    --selection-insight)
+        SCRIPT_PATH="$INSTALL_DIR/selection_to_insight.sh"
         ;;
     *)
         SCRIPT_PATH="$INSTALL_DIR/vox-refiner-menu.sh"

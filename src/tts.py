@@ -143,17 +143,35 @@ _CLEAN_RULES: dict[str, str] = {
     "news_article": textwrap.dedent("""
         DETECTED TYPE: press article
 
+        DATE REFORMATTING (apply everywhere in the output):
+        Rewrite ALL dates and times into natural spoken French — never leave
+        numeric separators (/, :) that the TTS engine would read as "slash" or
+        "deux-points":
+        - DD/MM/YYYY  → "D mois YYYY"  (e.g. 08/04/2026 → "8 avril 2026")
+        - HH:MM       → "HhMM"         (e.g. 06:24 → "6h24", 10:13 → "10h13")
+        - DD/MM       → "D mois"       (e.g. 08/04 → "8 avril")
+        Apply this rule to the source line, timestamps, and every date in the body.
+
         OUTPUT ORDER (strictly):
-        1. Media name and publication date, on one line, formatted as:
+        1. Media name and publication/update info, on one line, formatted as:
            "[Media], publié le [date] à [heure]." — only if present in the selection.
            If media name is absent: "Publié le [date] à [heure]."
-           If both published and updated times: "…publié le [date] à [heure], mis à jour à [heure]."
+           If both published and updated times are present:
+           "[Media], publié le [date] à [heure], mis à jour à [heure]."
            This gives essential context before anything else.
         2. Main title (keep verbatim, mandatory)
         3. Chapeau / lead paragraph: the short summary text that appears just below
            the title and above the body — keep it verbatim, it is editorial content.
         4. Author name, on its own line as "Par [name]." — only if present.
         5. Full body text (all paragraphs without exception)
+
+        LIVE BLOG / DIRECT (when the article contains timestamped entries):
+        If the article is a live blog (entries prefixed with a time like "10:12"
+        or "09:43"), treat each entry as follows:
+        - Introduce each entry with: "À [heure], [title if present]."
+          e.g. "10:12\nISRAËL : L'ARMÉE OBSERVE…" → "À 10h12, Israël : l'armée observe…"
+        - Keep the full text of each entry.
+        - This ensures the listener can follow the chronology without visual timestamps.
 
         REMOVE IN ADDITION:
         - "Lire aussi : [title]", "Sur le même sujet", "À lire aussi", "À voir aussi" blocks
@@ -552,7 +570,9 @@ def _merge_split_identifiers(text: str) -> str:
         text,
     )
     # Merge letter + digit: "C 1" → "C1", "C 2" → "C2"
-    text = re.sub(r'([A-Za-z]) (\d+)', r'\1\2', text)
+    # (?<!\w) ensures we only merge word-initial single letters (math identifiers),
+    # not word-final letters like "l" in "avril 2026" or "e" in "de 55 ans".
+    text = re.sub(r'(?<!\w)([A-Za-z]) (\d+)', r'\1\2', text)
     return text
 
 
@@ -584,6 +604,40 @@ def _strip_markdown(text: str) -> str:
     return text
 
 
+def detect_content_type(text: str, api_key: str) -> str:
+    """Detect the content type of the given text using Mistral.
+
+    Returns one of the keys in _CLEAN_RULES:
+      news_article, email, wikipedia, social_media, documentation,
+      assistant_response, generic
+
+    Falls back to "generic" on any error.
+    """
+    try:
+        headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+        resp = requests.post(
+            "https://api.mistral.ai/v1/chat/completions",
+            headers=headers,
+            json={
+                "model": _DETECT_MODEL,
+                "messages": [
+                    {"role": "system", "content": _DETECT_SYSTEM},
+                    {"role": "user",   "content": text[:2000]},
+                ],
+                "max_tokens": 10,
+                "temperature": 0.0,
+            },
+            timeout=15,
+        )
+        resp.raise_for_status()
+        detected = resp.json()["choices"][0]["message"]["content"].strip().lower()
+        if detected in _CLEAN_RULES:
+            return detected
+    except Exception as exc:
+        print(f"\u26a0\ufe0f  Type detection failed ({exc}), using generic.", file=sys.stderr)
+    return "generic"
+
+
 def _ai_clean_text(text: str) -> str:
     """Detect content type then clean with a specialized prompt.
 
@@ -608,24 +662,7 @@ def _ai_clean_text(text: str) -> str:
     content_type = "generic"
     try:
         print("\U0001f50d Detecting content type...", file=sys.stderr)
-        resp = requests.post(
-            "https://api.mistral.ai/v1/chat/completions",
-            headers=headers,
-            json={
-                "model": _DETECT_MODEL,
-                "messages": [
-                    {"role": "system", "content": _DETECT_SYSTEM},
-                    {"role": "user",   "content": text[:2000]},  # sample is enough for detection
-                ],
-                "max_tokens": 10,
-                "temperature": 0.0,
-            },
-            timeout=15,
-        )
-        resp.raise_for_status()
-        detected = resp.json()["choices"][0]["message"]["content"].strip().lower()
-        if detected in _CLEAN_RULES:
-            content_type = detected
+        content_type = detect_content_type(text, api_key)
         print(f"\U0001f4c4 Type: {content_type}", file=sys.stderr)
     except Exception as exc:
         print(f"\u26a0\ufe0f  Type detection failed ({exc}), using generic.", file=sys.stderr)
@@ -805,11 +842,13 @@ def _isolate_quotes(text: str) -> str:
         if not _QUOTE_PATTERN.search(para):
             result.append(para)
             continue
-        # Split on citation boundaries; the capturing group keeps the citations
+        # Split on citation boundaries; the capturing group keeps the citations.
+        # Discard fragments that contain no alphanumeric character (e.g. lone
+        # ".", ",", "…") — they cause TTS hallucinations on empty-ish inputs.
         parts = _QUOTE_PATTERN.split(para)
         for part in parts:
             part = part.strip()
-            if part:
+            if part and re.search(r'\w', part):
                 result.append(part)
 
     return "\n\n".join(result)
@@ -1071,7 +1110,13 @@ if __name__ == "__main__":
             print("\u274c No input text received.", file=sys.stderr)
             sys.exit(1)
 
-        text = _strip_markdown(_isolate_quotes(_expand_function_calls(_expand_math_symbols(_ai_clean_text(text)))))
+        # TTS_SKIP_AI_CLEAN=1: skip the two-call Mistral detection+cleaning step.
+        # Use this when the text is already clean (e.g. AI-generated summaries).
+        # _clean_text() + _isolate_quotes() still run so quote voice switching works.
+        if os.environ.get("TTS_SKIP_AI_CLEAN") == "1":
+            text = _strip_markdown(_isolate_quotes(_expand_function_calls(_expand_math_symbols(_clean_text(text)))))
+        else:
+            text = _strip_markdown(_isolate_quotes(_expand_function_calls(_expand_math_symbols(_ai_clean_text(text)))))
         if not text:
             print("\u274c Text is empty after cleaning.", file=sys.stderr)
             sys.exit(1)
