@@ -34,6 +34,8 @@ fi
 _PRE_OUTPUT_PROFILE="${OUTPUT_PROFILE:-}"
 _PRE_OUTPUT_LANG="${OUTPUT_LANG:-}"
 _PRE_COMPARE="${REFINE_COMPARE_MODELS:-}"
+_PRE_ENABLE_REFINE="${ENABLE_REFINE:-}"
+_PRE_ENABLE_HISTORY="${ENABLE_HISTORY:-}"
 
 # Load .env if present (for AUDIO_TEMPO and other variables)
 if [ -f .env ]; then
@@ -42,9 +44,11 @@ if [ -f .env ]; then
 fi
 
 # Restore caller-provided values so they take precedence over .env defaults.
-[ -n "$_PRE_OUTPUT_PROFILE" ]  && { OUTPUT_PROFILE="$_PRE_OUTPUT_PROFILE";       export OUTPUT_PROFILE; }
-[ -n "$_PRE_OUTPUT_LANG" ]     && { OUTPUT_LANG="$_PRE_OUTPUT_LANG";             export OUTPUT_LANG; }
-[ -n "$_PRE_COMPARE" ]         && { REFINE_COMPARE_MODELS="$_PRE_COMPARE";       export REFINE_COMPARE_MODELS; }
+[ -n "$_PRE_OUTPUT_PROFILE" ]   && { OUTPUT_PROFILE="$_PRE_OUTPUT_PROFILE";       export OUTPUT_PROFILE; }
+[ -n "$_PRE_OUTPUT_LANG" ]      && { OUTPUT_LANG="$_PRE_OUTPUT_LANG";             export OUTPUT_LANG; }
+[ -n "$_PRE_COMPARE" ]          && { REFINE_COMPARE_MODELS="$_PRE_COMPARE";       export REFINE_COMPARE_MODELS; }
+[ -n "$_PRE_ENABLE_REFINE" ]    && { ENABLE_REFINE="$_PRE_ENABLE_REFINE";         export ENABLE_REFINE; }
+[ -n "$_PRE_ENABLE_HISTORY" ]   && { ENABLE_HISTORY="$_PRE_ENABLE_HISTORY";       export ENABLE_HISTORY; }
 
 # Speed multiplier applied to the recorded audio before transcription.
 # Lower values reduce transcription errors (1.0 = no change, 1.5 = default).
@@ -181,6 +185,9 @@ if [ -z "$raw_transcription" ]; then
     echo "❌ Empty transcription."
     exit 1
 fi
+
+# Persist raw transcription for on-demand refine (Feature 0 — Speak & Transcribe).
+printf '%s' "$raw_transcription" > "$REC_DIR/.raw_transcription"
 
 # ─── Step 2: Text refinement (Mistral chat) ──────────────────────────────────
 

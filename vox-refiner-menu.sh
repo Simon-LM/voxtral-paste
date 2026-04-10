@@ -8,6 +8,10 @@ SCRIPT_DIR="$(pwd)"
 VENV_PYTHON="$SCRIPT_DIR/.venv/bin/python"
 export VOXREFINER_MENU=1  # suppress hints in record_and_transcribe_local.sh
 
+# Save stderr so Python progress messages reach the terminal even when stdout
+# is captured by $() substitution (used by on-demand refine in F0).
+exec 3>&2
+
 if [ ! -x "$VENV_PYTHON" ]; then
     echo "❌ Missing .venv Python interpreter: $VENV_PYTHON"
     echo "Run ./install.sh first."
@@ -406,6 +410,7 @@ show_menu() {
     echo "╠═══════════════════════════════════════════════════════════════════════╣"
     echo "║  🎙 VOICE                                                              ║"
     echo "║                                                                       ║"
+    printf "║  ${C_BOLD}[0]${C_RESET}  🎙→📋  ${C_BOLD}Speak & Transcribe${C_RESET} ${C_DIM}raw Voxtral text, refine on demand${C_RESET}    ║\n"
     printf "║  ${C_BOLD}[1]${C_RESET}  🎙→📋  ${C_BOLD}Speak & Refine${C_RESET}     ${C_DIM}speak, AI cleans it, paste${C_RESET}             ║\n"
     printf "║  ${C_BOLD}[2]${C_RESET}  🎙→🔊  ${C_BOLD}Speak & Translate${C_RESET}  ${C_DIM}hear your voice in another language${C_RESET}    ║\n"
     printf "║  ${C_BOLD}[3]${C_RESET}  🎙→📱  ${C_BOLD}Speak & Post${C_RESET}       ${C_DIM}generate a tweet or LinkedIn post${C_RESET}      ║\n"
@@ -443,6 +448,86 @@ while true; do
     read -r choice
 
     case "$choice" in
+        0)
+            # ── Speak & Transcribe — record immediately, no sub-menu ──────
+            _f0_refined=0
+            ENABLE_REFINE=false ENABLE_HISTORY=false \
+                ./record_and_transcribe_local.sh
+            while true; do
+                echo ""
+                _sep
+                if [ "$_f0_refined" -eq 0 ]; then
+                    printf "  ${C_BOLD}[R]${C_RESET} Refine  ${C_BOLD}[n]${C_RESET} New recording  ${C_BOLD}[m]${C_RESET} Menu VoxRefiner: "
+                else
+                    printf "  ${C_BOLD}[r]${C_RESET} Retry refine  ${C_BOLD}[n]${C_RESET} New recording  ${C_BOLD}[v]${C_RESET} View history  ${C_BOLD}[e]${C_RESET} Edit history  ${C_BOLD}[m]${C_RESET} Menu VoxRefiner: "
+                fi
+                read -r _post_action
+                case "$_post_action" in
+                    r|R)
+                        _raw_text="$(cat "$SCRIPT_DIR/recordings/stt/.raw_transcription" 2>/dev/null)"
+                        if [ -z "$_raw_text" ]; then
+                            _warn "No raw transcription found."
+                        else
+                            echo ""
+                            _process "Refining with Mistral..."
+                            echo ""
+                            _refined=$(printf '%s' "$_raw_text" | \
+                                "$VENV_PYTHON" src/refine.py 2>&3)
+                            _final="${_refined:-$_raw_text}"
+                            printf '%s' "$_final" | xclip -selection clipboard
+                            printf '%s' "$_final" | xclip -selection primary
+                            echo ""
+                            _header "RAW TRANSCRIPTION — Voxtral" "📝"
+                            echo ""
+                            printf "${C_BG_CYAN} %s ${C_RESET}\n" "$_raw_text"
+                            echo ""
+                            _header "REFINED TEXT" "📝"
+                            _success "Copied to clipboard"
+                            echo ""
+                            printf "${C_BG_BLUE} %s ${C_RESET}\n" "$_final"
+                            echo ""
+                            if [ "${ENABLE_HISTORY:-false}" = "true" ]; then
+                                _wc=$(printf '%s' "$_raw_text" | wc -w)
+                                _thr="${REFINE_MODEL_THRESHOLD_SHORT:-90}"
+                                if [ "$_wc" -ge "$_thr" ]; then
+                                    printf '%s' "$_final" | "$VENV_PYTHON" src/refine.py --update-history 2>&3 &
+                                    echo "🔄 History context update running in background..."
+                                fi
+                            fi
+                            _f0_refined=1
+                        fi
+                        ;;
+                    n|N)
+                        ENABLE_REFINE=false ENABLE_HISTORY=false \
+                            ./record_and_transcribe_local.sh
+                        _f0_refined=0
+                        ;;
+                    v|V)
+                        if [ "$_f0_refined" -eq 1 ]; then
+                            if [ -f history.txt ]; then
+                                _header "HISTORY ($(wc -l < history.txt) lines)" "📜"
+                                echo ""
+                                cat history.txt
+                                echo ""
+                            else
+                                _warn "history.txt does not exist yet."
+                            fi
+                        fi
+                        ;;
+                    e|E)
+                        if [ "$_f0_refined" -eq 1 ]; then
+                            if [ -f history.txt ]; then
+                                ${EDITOR:-nano} history.txt
+                            else
+                                _warn "history.txt does not exist yet."
+                            fi
+                        fi
+                        ;;
+                    m|M) break ;;
+                    *) ;;
+                esac
+            done
+            ;;
         1)
             # ── Speak & Refine sub-menu ──────────────────────────────────
             while true; do

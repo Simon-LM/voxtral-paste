@@ -13,6 +13,28 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ---
 
+## [4.2.0] — 2026-04-10
+
+### Added
+
+- **`[0] Speak & Transcribe`:** new feature — press `[0]`, record, get raw Voxtral
+  text in clipboard immediately (no AI refinement). Refinement is available on demand
+  via `[R]`. After a first refine, `[r] Retry refine` re-runs refinement on the same
+  raw text without re-recording. History update triggered only after an explicit
+  refine with `ENABLE_HISTORY=true`. No sub-menu — records immediately using `.env`
+  defaults.
+  - **`vox-refiner-menu.sh` — case `0)`:** direct recording with `ENABLE_REFINE=false
+    ENABLE_HISTORY=false`. Dynamic post-action menu: `[R] Refine / [n] New / [m]`
+    before first refine; expands to `[r] Retry / [n] / [v] View history / [e] Edit /
+    [m]` after. `exec 3>&2` added so Python stderr reaches the terminal during
+    on-demand refine.
+  - **`record_and_transcribe_local.sh`:** raw transcription persisted to
+    `recordings/stt/.raw_transcription` after Voxtral. `ENABLE_REFINE` and
+    `ENABLE_HISTORY` now protected from `.env` override (saved before `source .env`,
+    restored after).
+
+---
+
 ## [4.1.0] — 2026-04-10
 
 ### Added
