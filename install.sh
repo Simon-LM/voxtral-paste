@@ -58,6 +58,13 @@ if ! command -v mate-terminal >/dev/null 2>&1 \
     echo "   Install one of: mate-terminal, gnome-terminal, xfce4-terminal, konsole, xterm"
 fi
 
+if ! command -v maim >/dev/null 2>&1 && ! command -v scrot >/dev/null 2>&1; then
+    echo "⚠️  No screenshot tool found (needed for Screen to Text / F8)."
+    echo "   Install one of:"
+    echo "     sudo apt install maim    (recommended)"
+    echo "     sudo apt install scrot   (fallback)"
+fi
+
 if [ ! -d ".venv" ]; then
     echo "🐍 Creating virtual environment (.venv)..."
     python3 -m venv .venv
@@ -80,8 +87,9 @@ if [ ! -f "context.txt" ]; then
 fi
 
 chmod +x record_and_transcribe_local.sh launch-vox-refiner.sh voice_translate.sh \
-         selection_to_voice.sh selection_to_insight.sh vox-refiner-menu.sh \
-         vox-refiner-update.sh install.sh uninstall.sh
+         selection_to_voice.sh selection_to_insight.sh selection_to_search.sh \
+         selection_to_factcheck.sh screen_to_text.sh \
+         vox-refiner-menu.sh vox-refiner-update.sh install.sh uninstall.sh
 
 echo ""
 echo "✅ Installation complete."

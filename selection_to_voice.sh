@@ -290,7 +290,7 @@ if [ "${VOXREFINER_MENU:-}" != "1" ]; then
             d|D)
                 _save_audio_to_downloads "$TTS_OUTPUT" "$selected_text" "selection-to-voice"
                 ;;
-            m|M) exec "$SCRIPT_DIR/vox-refiner-menu.sh" ;;
+            m|M) if [ -n "${VOXREFINER_MENU:-}" ]; then exit 0; fi; exec "$SCRIPT_DIR/vox-refiner-menu.sh" ;;
             *) ;;
         esac
     done

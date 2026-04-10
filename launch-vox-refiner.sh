@@ -5,13 +5,14 @@
 #
 # Launch modes:
 #   (no flag)               → interactive menu (vox-refiner-menu.sh)
-#   --speak-transcribe      → record & raw Voxtral text to clipboard, refine on demand
-#   --speak-refine          → record & refine to clipboard (best for keyboard shortcut)
-#   --speak-translate       → record & translate to audio  (best for keyboard shortcut)
-#   --selection-voice       → read selected/clipboard text aloud
-#   --selection-insight     → summarise selected text, search, or fact-check
-#   --selection-search      → search directly from selected text
-#   --selection-factcheck   → fact-check selected text
+#   --speak-transcribe      → [0] record & raw Voxtral text to clipboard, refine on demand
+#   --speak-refine          → [1] record & refine to clipboard
+#   --speak-translate       → [3] record & translate to audio
+#   --selection-voice       → [5] read selected/clipboard text aloud
+#   --selection-insight     → [6] summarise selected text, search, or fact-check
+#   --selection-search      → [7] search directly from selected text
+#   --selection-factcheck   → [8] fact-check selected text
+#   --screen-text           → [9] screenshot → OCR → clipboard
 #
 # Optional: set VOXREFINER_TERMINAL in your environment to force a specific
 # terminal emulator (mate-terminal, gnome-terminal, xfce4-terminal, konsole, xterm).
@@ -50,6 +51,9 @@ case "${1:-}" in
         ;;
     --selection-factcheck)
         SCRIPT_PATH="$INSTALL_DIR/selection_to_factcheck.sh"
+        ;;
+    --screen-text)
+        SCRIPT_PATH="$INSTALL_DIR/screen_to_text.sh"
         ;;
     *)
         SCRIPT_PATH="$INSTALL_DIR/vox-refiner-menu.sh"

@@ -405,36 +405,49 @@ _coming_soon() {
 show_menu() {
     clear
     echo ""
-    echo "╔═══════════════════════════════════════════════════════════════════════╗"
-    printf "║                             ${C_BGREEN} VoxRefiner ${C_RESET}                              ║\n"
-    echo "╠═══════════════════════════════════════════════════════════════════════╣"
-    echo "║  🎙 VOICE                                                              ║"
-    echo "║                                                                       ║"
-    printf "║  ${C_BOLD}[0]${C_RESET}  🎙→📋  ${C_BOLD}Speak & Transcribe${C_RESET} ${C_DIM}raw Voxtral text, refine on demand${C_RESET}    ║\n"
-    printf "║  ${C_BOLD}[1]${C_RESET}  🎙→📋  ${C_BOLD}Speak & Refine${C_RESET}     ${C_DIM}speak, AI cleans it, paste${C_RESET}             ║\n"
-    printf "║  ${C_BOLD}[2]${C_RESET}  🎙→🔊  ${C_BOLD}Speak & Translate${C_RESET}  ${C_DIM}hear your voice in another language${C_RESET}    ║\n"
-    printf "║  ${C_BOLD}[3]${C_RESET}  🎙→📱  ${C_BOLD}Speak & Post${C_RESET}       ${C_DIM}generate a tweet or LinkedIn post${C_RESET}      ║\n"
-    echo "║                                                                       ║"
-    echo "╠═══════════════════════════════════════════════════════════════════════╣"
-    echo "║  ⌨  SELECTION                                                         ║"
-    echo "║                                                                       ║"
-    printf "║  ${C_BOLD}[4]${C_RESET}  ⌨→🔊  ${C_BOLD}Selection to Voice${C_RESET}      ${C_DIM}selected text → read aloud instantly${C_RESET}  ║\n"
-    printf "║  ${C_BOLD}[5]${C_RESET}  ⌨→💡  ${C_BOLD}Selection to Insight${C_RESET}    ${C_DIM}summary + search                      ${C_RESET}  ║\n"
-    printf "║  ${C_BOLD}[6]${C_RESET}  ⌨→🔍  ${C_BOLD}Selection to Search${C_RESET}     ${C_DIM}selected text → search directly       ${C_RESET}  ║\n"
-    printf "║  ${C_BOLD}[7]${C_RESET}  ⌨→🔬  ${C_BOLD}Selection to Fact-check${C_RESET} ${C_DIM}selected text → fact-check            ${C_RESET}  ║\n"
-    echo "║                                                                       ║"
-    echo "╠═══════════════════════════════════════════════════════════════════════╣"
-    echo "║  🖼  SCREEN                                                            ║"
-    echo "║                                                                       ║"
-    printf "║  ${C_BOLD}[8]${C_RESET}  🖼→📋  ${C_BOLD}Screen to Text${C_RESET}       ${C_DIM}screenshot → OCR → clipboard${C_RESET}         ║\n"
-    printf "║  ${C_BOLD}[9]${C_RESET}  🖼→🔊  ${C_BOLD}Screen to Voice${C_RESET}      ${C_DIM}screenshot → OCR → audio${C_RESET}             ║\n"
-    echo "║                                                                       ║"
-    echo "╠═══════════════════════════════════════════════════════════════════════╣"
-    echo "║                                                                       ║"
-    printf "║  ${C_DIM}[s]${C_RESET}  Settings  ${C_DIM}[c]${C_RESET}  Context  ${C_DIM}[u]${C_RESET}  Update  ${C_DIM}[?]${C_RESET}  Help                  ║\n"
-    printf "║  ${C_DIM}[q]${C_RESET}  Quit                                                            ║\n"
-    echo "║                                                                       ║"
-    echo "╚═══════════════════════════════════════════════════════════════════════╝"
+    echo "╔════════════════════════════════════════════════════════════════════════════╗"
+    printf "║                             ${C_BGREEN}    VoxRefiner ${C_RESET}                                ║\n"
+    echo "╠════════════════════════════════════════════════════════════════════════════╣"
+    echo "║  🎙 VOICE                                                                   ║"
+    echo "║                                                                            ║"
+    printf "║  ${C_BOLD}[0]${C_RESET}  🎙→📋  ${C_BOLD}Speak & Transcribe${C_RESET} ${C_DIM}raw Voxtral text, refine on demand${C_RESET}          ║\n"
+    printf "║  ${C_BOLD}[1]${C_RESET}  🎙→📋  ${C_BOLD}Speak & Refine${C_RESET}     ${C_DIM}speak, AI cleans it, paste${C_RESET}                  ║\n"
+    printf "║  ${C_BOLD}[2]${C_RESET}  🎞→📋  ${C_BOLD}Media Translate${C_RESET}    ${C_DIM}audio/video file → translated text${C_RESET}          ║\n"
+    printf "║  ${C_BOLD}[3]${C_RESET}  🎙→🔊  ${C_BOLD}Speak & Translate${C_RESET}  ${C_DIM}hear your voice in another language${C_RESET}         ║\n"
+    printf "║  ${C_BOLD}[4]${C_RESET}  🎙→🔊  ${C_BOLD}Live Translate${C_RESET}     ${C_DIM}real-time bilingual conversation${C_RESET}            ║\n"
+    echo "║                                                                            ║"
+    echo "╠════════════════════════════════════════════════════════════════════════════╣"
+    echo "║  ⌨  SELECTION                                                              ║"
+    echo "║                                                                            ║"
+    printf "║  ${C_BOLD}[5]${C_RESET}  ⌨→🔊  ${C_BOLD}Selection to Voice${C_RESET}      ${C_DIM}selected text → read aloud instantly${C_RESET}   ║\n"
+    printf "║  ${C_BOLD}[6]${C_RESET}  ⌨→💡  ${C_BOLD}Selection to Insight${C_RESET}    ${C_DIM}summary + search                      ${C_RESET} ║\n"
+    printf "║  ${C_BOLD}[7]${C_RESET}  ⌨→🔍  ${C_BOLD}Selection to Search${C_RESET}     ${C_DIM}selected text → search directly       ${C_RESET} ║\n"
+    printf "║  ${C_BOLD}[8]${C_RESET}  ⌨→🔬  ${C_BOLD}Selection to Fact-check${C_RESET} ${C_DIM}selected text → fact-check            ${C_RESET} ║\n"
+    echo "║                                                                            ║"
+    echo "╠════════════════════════════════════════════════════════════════════════════╣"
+    echo "║  🖼  SCREEN                                                                 ║"
+    echo "║                                                                            ║"
+    printf "║  ${C_BOLD}[9]${C_RESET}  🖼→📋  ${C_BOLD}Screen to Text${C_RESET}  ${C_DIM}screenshot → OCR → clipboard + search/voice${C_RESET}    ║\n"
+    echo "║                                                                            ║"
+    echo "╠════════════════════════════════════════════════════════════════════════════╣"
+    echo "╠════════════════════════════════════════════════════════════════════════════╣"
+    echo "║  🔧 WORKFLOWS                                                              ║"
+    echo "║                                                                            ║"
+    printf "║  ${C_BOLD}[W1]${C_RESET} 🎙→📱  ${C_BOLD}Speak & Post${C_RESET}  ${C_DIM}generate a tweet or LinkedIn post${C_RESET}                ║\n"
+    echo "║                                                                            ║"
+    echo "╠════════════════════════════════════════════════════════════════════════════╣"
+    echo "║  ✦  YOUR WORKFLOWS                                                         ║"
+    echo "║                                                                            ║"
+    printf "║  ${C_BOLD}[P0]${C_RESET} ℹ  ${C_BOLD}Your Workflows${C_RESET}  ${C_DIM}about personalisation + your custom workflows${C_RESET}     ║\n"
+    printf "║  ${C_BOLD}[+]${C_RESET}  ✚  ${C_BOLD}Create a workflow${C_RESET}                                                 ║\n"
+    echo "║                                                                            ║"
+    echo "╠════════════════════════════════════════════════════════════════════════════╣"
+    echo "╠════════════════════════════════════════════════════════════════════════════╣"
+    echo "║                                                                            ║"
+    printf "║  ${C_DIM}[s]${C_RESET}  Settings  ${C_DIM}[c]${C_RESET}  Context  ${C_DIM}[u]${C_RESET}  Update  ${C_DIM}[?]${C_RESET}  Help                       ║\n"
+    printf "║  ${C_DIM}[q]${C_RESET}  Quit                                                                 ║\n"
+    echo "║                                                                            ║"
+    echo "╚════════════════════════════════════════════════════════════════════════════╝"
     echo ""
 }
 
@@ -778,6 +791,10 @@ while true; do
             done
             ;;
         2)
+            _coming_soon "Media Translate" \
+                "Extract audio from a video or audio file, then translate it to text."
+            ;;
+        3)
             # ── Speak & Translate submenu ─────────────────────────────────
             while true; do
                 # Resolve profile status
@@ -827,29 +844,36 @@ while true; do
                 esac
             done
             ;;
-        3)
+        4)
+            _coming_soon "Live Translate" \
+                "Real-time bilingual conversation mode — translate both speakers instantly."
+            ;;
+        5)
+            VOXREFINER_MENU=0 ./selection_to_voice.sh
+            ;;
+        6)
+            ./selection_to_insight.sh
+            ;;
+        7)
+            ./selection_to_search.sh
+            ;;
+        8)
+            ./selection_to_factcheck.sh
+            ;;
+        9)
+            VOXREFINER_MENU=0 ./screen_to_text.sh
+            ;;
+        W1|w1)
             _coming_soon "Speak & Post" \
                 "Speak, then get a generated tweet or LinkedIn post — with context per platform."
             ;;
-        4)
-            VOXREFINER_MENU=0 ./selection_to_voice.sh
+        P0|p0)
+            _coming_soon "Your Workflows" \
+                "Create and manage your own custom workflows by combining VoxRefiner features."
             ;;
-        5)
-            ./selection_to_insight.sh
-            ;;
-        6)
-            ./selection_to_search.sh
-            ;;
-        7)
-            ./selection_to_factcheck.sh
-            ;;
-        8)
-            _coming_soon "Screen to Text" \
-                "Take a screenshot, run OCR, copy the result to your clipboard."
-            ;;
-        9)
-            _coming_soon "Screen to Voice" \
-                "Take a screenshot, run OCR, hear the content in your own voice."
+        "+")
+            _coming_soon "Create a workflow" \
+                "Workflow builder coming soon — chain features into your own personal pipeline."
             ;;
         s|S)
             while true; do

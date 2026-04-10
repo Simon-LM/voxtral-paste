@@ -13,6 +13,57 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ---
 
+## [4.3.0] — 2026-04-10
+
+### Added
+
+- **`[9] Screen to Text`** (was `[8]`): new feature — select a screen region,
+  extract text via Mistral OCR (`mistral-ocr-latest`), copy result to clipboard.
+  Post-action menu: `[r] Retry OCR  [n] New capture  [l] Read aloud  [i] Insight
+  [p] Search  [f] Fact-check  [m] Menu VoxRefiner`.
+  - **`screen_to_text.sh`:** captures a region with `maim -s` (preferred) or
+    `scrot -s` (fallback), pipes the PNG to `src/ocr.py`, copies extracted text
+    to both clipboards.
+  - **`src/ocr.py`:** new Python module — encodes image as base64, calls
+    `mistral-ocr-latest` (primary) with `pixtral-large-latest` as fallback via
+    `/v1/chat/completions`. Retries on transient errors (429, 5xx) with 2s delay.
+  - **`install.sh`:** warns if neither `maim` nor `scrot` is found.
+    `screen_to_text.sh`, `selection_to_search.sh`, `selection_to_factcheck.sh`
+    added to `chmod +x` list.
+  - **`launch-vox-refiner.sh`:** `--screen-text` flag added.
+
+### Changed
+
+- **Menu architecture overhaul** — features renumbered into stable 0-9 base
+  layer + Workflows + Your Workflows sections:
+  - `[2]` → `Media Translate` (coming soon)
+  - `[3]` → `Speak & Translate` (was `[2]`)
+  - `[4]` → `Live Translate` (coming soon)
+  - `[5]` → `Selection to Voice` (was `[4]`)
+  - `[6]` → `Selection to Insight` (was `[5]`)
+  - `[7]` → `Selection to Search` (was `[6]`)
+  - `[8]` → `Selection to Fact-check` (was `[7]`)
+  - `[9]` → `Screen to Text` (was `[8]`)
+  - `[W1]` → `Speak & Post` (coming soon, was `[3]`)
+  - `[P0]` → `Your Workflows` (coming soon)
+  - `[+]`  → `Create a workflow` (coming soon)
+
+- **`screen_to_text.sh` — post-action menu:** `[z] Summarise` replaces
+  `[i] Insight`; sub-scripts called with `VOXREFINER_MENU=1` so their
+  post-action menus are suppressed and control returns to `screen_to_text.sh`.
+  OCR text forced into primary selection before calling selection scripts.
+
+### Fixed
+
+- **`[m] Menu VoxRefiner` — stacked menus:** all feature scripts
+  (`screen_to_text.sh`, `selection_to_voice.sh`, `selection_to_insight.sh`,
+  `selection_to_search.sh`, `selection_to_factcheck.sh`,
+  `record_and_transcribe_local.sh`) now `exit 0` when `VOXREFINER_MENU` is
+  set, instead of `exec`-ing a new menu instance. This eliminates the stacked
+  menu bug where pressing `[q]` after `[m]` required multiple presses.
+
+---
+
 ## [4.2.2] — 2026-04-10
 
 ### Fixed

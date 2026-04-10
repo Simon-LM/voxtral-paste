@@ -301,7 +301,7 @@ if [ "${VOXREFINER_MENU:-}" != "1" ]; then
         case "$_action" in
             r|R) exec "$0" --retry ;;
             n|N) exec "$0" ;;
-            m|M) exec "$SCRIPT_DIR/vox-refiner-menu.sh" ;;
+            m|M) if [ -n "${VOXREFINER_MENU:-}" ]; then exit 0; fi; exec "$SCRIPT_DIR/vox-refiner-menu.sh" ;;
             *)   break ;;
         esac
     done

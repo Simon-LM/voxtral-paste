@@ -154,7 +154,7 @@ while true; do
             fi
             ;;
         s|S) _settings_flow ;;
-        m|M) exec "$SCRIPT_DIR/vox-refiner-menu.sh" ;;
+        m|M) if [ -n "${VOXREFINER_MENU:-}" ]; then exit 0; fi; exec "$SCRIPT_DIR/vox-refiner-menu.sh" ;;
         *)   ;;  # [Enter] and anything else: no-op, redisplay menu
     esac
 done
