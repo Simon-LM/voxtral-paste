@@ -25,6 +25,13 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   - `SCRIPT_ENV` variable added so inline env overrides are passed correctly
     into the terminal emulator command.
 
+### Fixed
+
+- **`uninstall.sh` — git filemode:** was committed as `100644` (non-executable)
+  while `repair_exec_bits()` in the update script set it to `755` after every
+  pull, creating a persistent `git diff` that blocked subsequent updates.
+  Corrected to `100755` in the git index.
+
 ---
 
 ## [4.2.0] — 2026-04-10
