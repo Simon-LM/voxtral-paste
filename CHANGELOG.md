@@ -13,6 +13,19 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ---
 
+## [4.3.3] — 2026-04-11
+
+### Fixed
+
+- **`vox-refiner-update.sh` — filemode drift blocks every update:** `repair_exec_bits()`
+  runs `chmod +x` on tracked scripts, producing a persistent `100644 → 100755`
+  diff that caused `ensure_clean_tracked_tree` to block `--apply` on every run.
+  New `fix_filemode_drift()` silently aligns the git index to match the
+  filesystem for mode-only changes before the clean-tree check; no real content
+  change is ever discarded.
+
+---
+
 ## [4.3.2] — 2026-04-11
 
 ### Fixed

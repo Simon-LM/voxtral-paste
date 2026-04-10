@@ -70,6 +70,20 @@ print_status() {
     fi
 }
 
+fix_filemode_drift() {
+    # Silently align the git index for tracked files whose only local change
+    # is an executable-bit addition (100644 → 100755). These phantom diffs are
+    # caused by repair_exec_bits() running chmod +x on files that the upstream
+    # repo already marks as executable, but whose index entry was stored as
+    # 100644 on this machine (e.g. after a clone with core.filemode quirks).
+    while IFS= read -r path; do
+        [ -z "$path" ] && continue
+        if git diff -- "$path" | grep -q '^old mode 100644'; then
+            git update-index --chmod=+x -- "$path"
+        fi
+    done < <(git diff --name-only)
+}
+
 ensure_clean_tracked_tree() {
     if ! git diff --quiet || ! git diff --cached --quiet; then
         echo "ERROR: Local tracked changes detected."
@@ -224,6 +238,7 @@ run_apply() {
 
     upstream="$(resolve_upstream)"
     fetch_remote "$upstream"
+    fix_filemode_drift
     auto_resolve_obsolete_deletions "$upstream"
     ensure_clean_tracked_tree
     behind="$(count_behind "$upstream")"
