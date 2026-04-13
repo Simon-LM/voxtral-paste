@@ -13,6 +13,30 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ---
 
+## [4.5.0] — 2026-04-11
+
+### Added
+
+- **`[t] Translate` in Screen to Text (F9):** translates OCR text using
+  `mistral-small-latest` (no reasoning). Result copied to both clipboards.
+  `[l] Read aloud` automatically reads the translation if one exists.
+  `[e] Replay translation` appears in the post-menu after a first translation.
+- **`src/translate.py`:** new standalone Python module — pure translation,
+  structure-preserving (line breaks, lists, paragraphs). Target language set
+  via `TRANSLATE_TARGET_LANG` in `.env` (default: `en`). Falls back to
+  `mistral-medium-latest` on transient errors. Reusable from any script via
+  stdin/stdout.
+- **`_translate_flow()` in `src/text_flows.sh`:** reusable shell helper —
+  calls `src/translate.py`, copies result to clipboard, displays it.
+  Any future feature or workflow can call `_translate_flow "$text"`.
+  Language choice (inline prompt or `[s] Settings → [5]`) is persisted
+  to `.env` (`TRANSLATE_TARGET_LANG`) and survives across sessions.
+- **`screen_to_text.sh`:** now sources `src/text_flows.sh`; `[s] Settings`
+  added to post-action menu, exposing all flow settings including translate
+  language (`[5]`).
+
+---
+
 ## [4.4.0] — 2026-04-11
 
 ### Changed

@@ -10,9 +10,9 @@
 #   INSIGHT_DIR, INSIGHT_META_FILE, INSIGHT_PERPLEXITY_FILE, INSIGHT_GROK_FILE
 #   SUMMARY_AUDIO, SEARCH_AUDIO, FACTCHECK_AUDIO, FULL_ARTICLE_AUDIO
 #   selected_text, summary_text (initialised to "" in F6/F7)
-#   _search_done, _factcheck_done, _article_done, _summary_done
+#   _search_done, _factcheck_done, _article_done, _summary_done, _translate_done
 #   _SETTING_SUMMARY_REASONING, _SETTING_SEARCH_ENGINE
-#   _SETTING_FACTCHECK_ENGINE, _SETTING_SYNTHESIS_REASONING
+#   _SETTING_FACTCHECK_ENGINE, _SETTING_SYNTHESIS_REASONING, _SETTING_TRANSLATE_LANG
 
 # ─── API key warnings ─────────────────────────────────────────────────────────
 
@@ -26,6 +26,30 @@ _warn_missing_keys() {
         _info "  Add either to your .env file to unlock Search and Fact-check."
         echo ""
     fi
+}
+
+# ─── Language helper ──────────────────────────────────────────────────────────
+
+_lang_name() {
+    # Return the display name for a language code, e.g. "fr" → "French".
+    case "$1" in
+        en) echo "English" ;;
+        fr) echo "French" ;;
+        de) echo "German" ;;
+        es) echo "Spanish" ;;
+        pt) echo "Portuguese" ;;
+        it) echo "Italian" ;;
+        nl) echo "Dutch" ;;
+        hi) echo "Hindi" ;;
+        ar) echo "Arabic" ;;
+        zh) echo "Chinese" ;;
+        ja) echo "Japanese" ;;
+        ko) echo "Korean" ;;
+        ru) echo "Russian" ;;
+        pl) echo "Polish" ;;
+        sv) echo "Swedish" ;;
+        *)  echo "$1" ;;
+    esac
 }
 
 # ─── Audio playback ───────────────────────────────────────────────────────────
@@ -48,109 +72,57 @@ _tts_speak() {
     # Generate TTS using the chunked pipeline (sequential: generate all, then play).
     # Skips AI cleaning (text is already clean Mistral output).
     # Usage: _tts_speak <text> <output_mp3_for_replay>
-    local text="$1" out="$2"
-    local voice="${TTS_SELECTION_VOICE_ID:-}"
-    local lang="${voice%%-*}"
+    local _text="$1"
+    local _out="$2"
 
-    rm -f "$out"
-
-    local chunks_dir concat_list
-    chunks_dir="$(dirname "$out")/chunks_$(basename "${out%.mp3}")"
-    concat_list="$(dirname "$out")/.concat_$(basename "${out%.mp3}").txt"
-    rm -rf "$chunks_dir"
-    mkdir -p "$chunks_dir"
-    : > "$concat_list"
-
-    local chunk_output
-    chunk_output=$(printf '%s' "$text" | \
-        TTS_SKIP_AI_CLEAN=1 \
-        TTS_VOICE_ID="$voice" TTS_LANG="$lang" \
-        "$VENV_PYTHON" -m src.tts --chunked "$chunks_dir" 2>&3)
-
-    if [ -z "$chunk_output" ]; then
-        _warn "TTS failed — text will not be read aloud."
-        return 1
-    fi
-
-    local tts_ok=1
-    local -a chunk_files=()
-    while IFS= read -r chunk_file; do
-        [ -n "$chunk_file" ] && chunk_files+=("$chunk_file")
-    done <<< "$chunk_output"
-
-    for chunk_file in "${chunk_files[@]}"; do
-        if [[ "$chunk_file" == CHUNK_FAILED:* ]]; then
-            _warn "A TTS passage failed — partial playback."
-            tts_ok=0
-            continue
-        fi
-        [ ! -s "$chunk_file" ] && { _warn "Empty/missing chunk: $chunk_file"; tts_ok=0; continue; }
-
-        local norm="${chunk_file%.mp3}_norm.mp3"
-        if ffmpeg -y -i "$chunk_file" \
-                -af "loudnorm=I=${TTS_LOUDNESS}:TP=-1.5:LRA=11,volume=${TTS_VOLUME}" \
-                -codec:a libmp3lame -b:a 128k "$norm" 2>/dev/null; then
-            mv "$norm" "$chunk_file"
-        fi
-        rm -f "$norm"
-
-        printf 'file %s\n' "$(realpath "$chunk_file")" >> "$concat_list"
-        _play_audio "$chunk_file"
-    done
-
-    if [ -s "$concat_list" ]; then
-        ffmpeg -y -f concat -safe 0 -i "$concat_list" \
-            -codec:a libmp3lame -b:a 128k "$out" 2>/dev/null || true
-    fi
-    rm -f "$concat_list"
-
-    [ "$tts_ok" -eq 1 ]
+    "$VENV_PYTHON" src/tts.py \
+        --loudness "${TTS_LOUDNESS:--16}" \
+        --volume   "${TTS_VOLUME:-2.0}"  \
+        --output   "$_out"               \
+        --no-clean                       \
+        <<< "$_text" 2>&3
 }
 
-# ─── Display + speak ──────────────────────────────────────────────────────────
+# ─── Show + speak helper ──────────────────────────────────────────────────────
 
 _show_and_speak() {
-    local header_label="$1" emoji="$2" result_text="$3" audio_file="$4"
-    _header "$header_label" "$emoji"
+    local label="$1" icon="$2" result_text="$3" audio_file="$4"
+    _header "$label" "$icon"
+    _success "Copied to clipboard"
     echo ""
     printf "${C_BG_BLUE} %s ${C_RESET}\n" "$result_text"
     echo ""
-    _process "Reading aloud..."
+    _process "Reading result..."
     _tts_speak "$result_text" "$audio_file"
 }
 
-# ─── Optional summary generation ─────────────────────────────────────────────
-# Sets globals: summary_text, _summary_done=1
-# Returns 1 on failure (non-fatal for F6/F7).
+# ─── Summary helpers ──────────────────────────────────────────────────────────
 
 _generate_summary() {
-    if [ -n "${summary_text:-}" ]; then
-        _header "SUMMARY" "💡"
-        echo ""
-        printf "${C_BG_BLUE} %s ${C_RESET}\n" "$summary_text"
-        echo ""
-        _process "Reading summary..."
-        _tts_speak "$summary_text" "$SUMMARY_AUDIO"
-        _summary_done=1
-        return 0
+    if [ "$_summary_done" -eq 1 ] && [ -n "$summary_text" ]; then
+        _info "Summary already generated."
+        return
     fi
     echo ""
     _header "SUMMARY" "💡"
     echo ""
     _process "Analysing and summarising..."
     echo ""
+
     summary_text=$(printf '%s' "$selected_text" | \
         INSIGHT_SUMMARY_REASONING="$_SETTING_SUMMARY_REASONING" \
         "$VENV_PYTHON" -m src.insight summarize 2>&3)
+
     if [ -z "$summary_text" ]; then
         _error "Summary failed — check your MISTRAL_API_KEY and connection."
-        summary_text=""
-        return 1
+        return
     fi
-    local content_type="generic"
-    if [ -s "${INSIGHT_META_FILE:-}" ]; then
+
+    content_type="generic"
+    if [ -s "$INSIGHT_META_FILE" ]; then
         content_type="$(cat "$INSIGHT_META_FILE")"
     fi
+
     _success "Type detected: $content_type"
     echo ""
     printf "${C_BG_BLUE} %s ${C_RESET}\n" "$summary_text"
@@ -160,14 +132,13 @@ _generate_summary() {
     _summary_done=1
 }
 
-# ─── Read full article ────────────────────────────────────────────────────────
-# Requires globals: $selected_text, $FULL_ARTICLE_AUDIO, $SCRIPT_DIR, $_article_done
-
 _read_full_article() {
-    printf '%s' "$selected_text" | xclip -selection primary 2>/dev/null || true
-    printf '%s' "$selected_text" | xclip -selection clipboard 2>/dev/null || true
-    VOXREFINER_MENU=1 "$SCRIPT_DIR/selection_to_voice.sh"
-    [ -f "$FULL_ARTICLE_AUDIO" ] && _article_done=1
+    echo ""
+    _header "READING FULL ARTICLE" "📖"
+    echo ""
+    _process "Reading..."
+    _tts_speak "$selected_text" "$FULL_ARTICLE_AUDIO"
+    _article_done=1
 }
 
 # ─── Search flow ──────────────────────────────────────────────────────────────
@@ -179,8 +150,8 @@ _search_flow() {
 
     if [ -z "${PERPLEXITY_API_KEY:-}" ] && [ -z "${XAI_API_KEY:-}" ]; then
         echo ""
-        _error "No search API key set — search unavailable."
-        _info "Add PERPLEXITY_API_KEY or XAI_API_KEY to your .env."
+        _error "Neither PERPLEXITY_API_KEY nor XAI_API_KEY is set."
+        _info "Add at least one to your .env to use search."
         echo ""
         return
     fi
@@ -188,34 +159,26 @@ _search_flow() {
     echo ""
     _header "SEARCH" "🔍"
     echo ""
-    _info "Ask your question:"
-    printf "  ${C_BOLD}[v]${C_RESET} Voice  ${C_BOLD}[t]${C_RESET} Type  ${C_BOLD}[m]${C_RESET} Back: "
-    read -r _input_mode
+    _info "What do you want to search for?"
+    printf "  ${C_BOLD}[v]${C_RESET} Voice  ${C_BOLD}[t]${C_RESET} Type  ${C_BOLD}[m]${C_RESET} Back  ${C_DIM}[Enter] Context summary${C_RESET}: "
+    read -r _search_mode
 
-    local query_text=""
-    case "$_input_mode" in
+    case "$_search_mode" in
+        m|M) return ;;
         v|V)
             echo ""
-            VOXREFINER_MENU=1 "$SCRIPT_DIR/record_and_transcribe_local.sh"
-            query_text="$(xclip -o -selection clipboard 2>/dev/null || true)"
-            if [ -z "$(printf '%s' "$query_text" | tr -d '[:space:]')" ]; then
-                _warn "No query recorded — search cancelled."
-                return
-            fi
-            echo ""
-            _info "Query: $query_text"
+            _process "Recording query..."
+            search_query=$(ENABLE_REFINE=false ENABLE_HISTORY=false \
+                "$SCRIPT_DIR/record_and_transcribe_local.sh" 2>&3)
+            [ -z "$search_query" ] && { _warn "No query recorded."; return; }
             ;;
         t|T)
-            echo ""
-            printf "  Type your question: "
-            read -r query_text
-            if [ -z "$query_text" ]; then
-                _warn "Empty query — search cancelled."
-                return
-            fi
+            printf "  ${C_DIM}Type your query:${C_RESET} "
+            read -r search_query
+            [ -z "$search_query" ] && { _warn "Empty query."; return; }
             ;;
         *)
-            return
+            search_query="$context_text"
             ;;
     esac
 
@@ -223,7 +186,7 @@ _search_flow() {
     _process "Searching..."
     echo ""
 
-    search_result=$(printf '%s\n%s' "$query_text" "$context_text" | \
+    search_result=$(printf '%s' "$search_query" | \
         INSIGHT_SEARCH_ENGINE="$_SETTING_SEARCH_ENGINE" \
         "$VENV_PYTHON" -m src.insight search 2>&3)
 
@@ -234,6 +197,67 @@ _search_flow() {
 
     _show_and_speak "SEARCH RESULT" "🔍" "$search_result" "$SEARCH_AUDIO"
     _search_done=1
+}
+
+# ─── Translate flow ───────────────────────────────────────────────────────────
+# Usage: _translate_flow <input_text>
+# Sets globals: translated_text, _translate_done=1 on success
+# Copies translation to both clipboards.
+# Target language: _SETTING_TRANSLATE_LANG (session) or TRANSLATE_TARGET_LANG (.env).
+
+_translate_flow() {
+    local input_text="$1"
+    local _lang_code _lang_display _input
+
+    # Use session setting, fall back to .env, then default to "en"
+    _lang_code="${_SETTING_TRANSLATE_LANG:-${TRANSLATE_TARGET_LANG:-en}}"
+    _lang_display="$(_lang_name "$_lang_code")"
+
+    echo ""
+    _header "TRANSLATE" "🌐"
+    echo ""
+    printf "  Target language: ${C_BOLD}%s (%s)${C_RESET}\n" "$_lang_display" "$_lang_code"
+    printf "  ${C_DIM}[Enter]${C_RESET} Confirm  or type a code ${C_DIM}(fr, en, de, es, it, pt, nl, ru, zh, ja…)${C_RESET}: "
+    read -r _input
+
+    if [ -n "$_input" ]; then
+        _lang_code="$_input"
+        _lang_display="$(_lang_name "$_lang_code")"
+        _SETTING_TRANSLATE_LANG="$_lang_code"
+        # Persist to .env so the choice survives across sessions.
+        local _env_file="$SCRIPT_DIR/.env"
+        if [ -f "$_env_file" ]; then
+            if grep -q "^TRANSLATE_TARGET_LANG=" "$_env_file"; then
+                sed -i "s/^TRANSLATE_TARGET_LANG=.*/TRANSLATE_TARGET_LANG=$_lang_code/" "$_env_file"
+            else
+                printf '\nTRANSLATE_TARGET_LANG=%s\n' "$_lang_code" >> "$_env_file"
+            fi
+        fi
+        _info "Language set to: $_lang_display ($_lang_code)  (saved to .env)"
+    fi
+
+    echo ""
+    _process "Translating to $_lang_display..."
+    echo ""
+
+    translated_text=$(printf '%s' "$input_text" | \
+        TRANSLATE_TARGET_LANG="$_lang_code" \
+        "$VENV_PYTHON" -m src.translate 2>&3)
+
+    if [ -z "$translated_text" ]; then
+        _error "Translation failed — check your MISTRAL_API_KEY and connection."
+        return
+    fi
+
+    printf '%s' "$translated_text" | xclip -selection clipboard
+    printf '%s' "$translated_text" | xclip -selection primary
+
+    _header "TRANSLATION → $_lang_display — mistral-small-latest" "🌐"
+    _success "Copied to clipboard"
+    echo ""
+    printf "${C_BG_BLUE} %s ${C_RESET}\n" "$translated_text"
+    echo ""
+    _translate_done=1
 }
 
 # ─── Fact-check flow ──────────────────────────────────────────────────────────
@@ -258,30 +282,22 @@ _factcheck_flow() {
     printf "  ${C_BOLD}[v]${C_RESET} Voice  ${C_BOLD}[t]${C_RESET} Type  ${C_BOLD}[m]${C_RESET} Back  ${C_DIM}[Enter] Whole text${C_RESET}: "
     read -r _fc_mode
 
-    export INSIGHT_QUERY=""
-    local fc_query=""
     case "$_fc_mode" in
+        m|M) return ;;
         v|V)
             echo ""
-            VOXREFINER_MENU=1 "$SCRIPT_DIR/record_and_transcribe_local.sh"
-            fc_query="$(xclip -o -selection clipboard 2>/dev/null || true)"
-            if [ -n "$(printf '%s' "$fc_query" | tr -d '[:space:]')" ]; then
-                INSIGHT_QUERY="$fc_query"
-                export INSIGHT_QUERY
-                _info "Verifying: $fc_query"
-            fi
+            _process "Recording claim..."
+            factcheck_claim=$(ENABLE_REFINE=false ENABLE_HISTORY=false \
+                "$SCRIPT_DIR/record_and_transcribe_local.sh" 2>&3)
+            [ -z "$factcheck_claim" ] && { _warn "No claim recorded."; return; }
             ;;
         t|T)
-            echo ""
-            printf "  Type the claim to verify: "
-            read -r fc_query
-            if [ -n "$fc_query" ]; then
-                INSIGHT_QUERY="$fc_query"
-                export INSIGHT_QUERY
-            fi
+            printf "  ${C_DIM}Type the claim to check:${C_RESET} "
+            read -r factcheck_claim
+            [ -z "$factcheck_claim" ] && { _warn "Empty claim."; return; }
             ;;
-        m|M)
-            return
+        *)
+            factcheck_claim="$input_text"
             ;;
     esac
 
@@ -289,7 +305,7 @@ _factcheck_flow() {
     _process "Running fact-check..."
     echo ""
 
-    factcheck_result=$(printf '%s' "$input_text" | \
+    factcheck_result=$(printf '%s' "$factcheck_claim" | \
         INSIGHT_SEARCH_ENGINE="$_SETTING_FACTCHECK_ENGINE" \
         INSIGHT_SYNTHESIS_REASONING="$_SETTING_SYNTHESIS_REASONING" \
         "$VENV_PYTHON" -m src.insight factcheck 2>&3)
@@ -300,25 +316,22 @@ _factcheck_flow() {
     fi
 
     _show_and_speak "FACT-CHECK RESULT" "🔬" "$factcheck_result" "$FACTCHECK_AUDIO"
-    _factcheck_done=1
 
-    if [ -s "${INSIGHT_PERPLEXITY_FILE:-}" ] && [ -s "${INSIGHT_GROK_FILE:-}" ]; then
+    # Show individual source details if available
+    if [ -s "${INSIGHT_PERPLEXITY_FILE:-}" ]; then
+        _detail="$(cat "$INSIGHT_PERPLEXITY_FILE")"
         echo ""
-        printf "  ${C_BOLD}[w]${C_RESET} Perplexity details  ${C_BOLD}[x]${C_RESET} Grok details  ${C_DIM}[Enter] Continue${C_RESET}: "
-        read -r _detail_choice
-        case "$_detail_choice" in
-            w|W)
-                local _detail
-                _detail="$(cat "$INSIGHT_PERPLEXITY_FILE")"
-                _show_and_speak "WEB DETAILS — PERPLEXITY" "🌐" "$_detail" "$INSIGHT_DIR/perplexity_detail.mp3"
-                ;;
-            x|X)
-                local _detail
-                _detail="$(cat "$INSIGHT_GROK_FILE")"
-                _show_and_speak "X DETAILS — GROK" "𝕏" "$_detail" "$INSIGHT_DIR/grok_detail.mp3"
-                ;;
-        esac
+        _show_and_speak "WEB DETAILS — PERPLEXITY" "🌐" "$_detail" "$INSIGHT_DIR/perplexity_detail.mp3"
+        rm -f "$INSIGHT_PERPLEXITY_FILE"
     fi
+    if [ -s "${INSIGHT_GROK_FILE:-}" ]; then
+        _detail="$(cat "$INSIGHT_GROK_FILE")"
+        echo ""
+        _show_and_speak "WEB DETAILS — GROK" "🌐" "$_detail" "$INSIGHT_DIR/grok_detail.mp3"
+        rm -f "$INSIGHT_GROK_FILE"
+    fi
+
+    _factcheck_done=1
 }
 
 # ─── Settings sub-menu ────────────────────────────────────────────────────────
@@ -352,6 +365,11 @@ _settings_flow() {
         printf "  ${C_DIM}Fact-check${C_RESET}\n"
         printf "  ${C_BOLD}[3]${C_RESET} Fact-check engines     : ${C_BOLD}%s${C_RESET}  ${C_DIM}(both · perplexity · grok)${C_RESET}\n" "$_SETTING_FACTCHECK_ENGINE"
         printf "  ${C_BOLD}[4]${C_RESET} Reasoning (synthesis)  : ${C_BOLD}%s${C_RESET}  ${C_DIM}(standard · high) — only when both engines active${C_RESET}\n" "$_SETTING_SYNTHESIS_REASONING"
+        echo ""
+        printf "  ${C_DIM}Translate${C_RESET}\n"
+        local _tl_code="${_SETTING_TRANSLATE_LANG:-${TRANSLATE_TARGET_LANG:-en}}"
+        printf "  ${C_BOLD}[5]${C_RESET} Target language        : ${C_BOLD}%s (%s)${C_RESET}  ${C_DIM}(type a code to change)${C_RESET}\n" \
+            "$(_lang_name "$_tl_code")" "$_tl_code"
         echo ""
         printf "  ${C_BOLD}[m]${C_RESET} Back\n"
         printf "  ${C_BGREEN}▸${C_RESET} "
@@ -390,6 +408,23 @@ _settings_flow() {
                     _SETTING_SYNTHESIS_REASONING="standard"
                 fi
                 _success "Synthesis reasoning → $_SETTING_SYNTHESIS_REASONING"
+                ;;
+            5)
+                printf "  Language code ${C_DIM}(en, fr, de, es, it, pt, nl, ru, zh, ja…)${C_RESET}: "
+                read -r _new_lang
+                if [ -n "$_new_lang" ]; then
+                    _SETTING_TRANSLATE_LANG="$_new_lang"
+                    # Persist to .env so the choice survives across sessions.
+                    local _env_file="$SCRIPT_DIR/.env"
+                    if [ -f "$_env_file" ]; then
+                        if grep -q "^TRANSLATE_TARGET_LANG=" "$_env_file"; then
+                            sed -i "s/^TRANSLATE_TARGET_LANG=.*/TRANSLATE_TARGET_LANG=$_new_lang/" "$_env_file"
+                        else
+                            printf '\nTRANSLATE_TARGET_LANG=%s\n' "$_new_lang" >> "$_env_file"
+                        fi
+                    fi
+                    _success "Translate language → $(_lang_name "$_new_lang") ($_new_lang)  (saved to .env)"
+                fi
                 ;;
             m|M) return ;;
             *) ;;
