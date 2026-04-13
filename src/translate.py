@@ -75,7 +75,11 @@ def translate(text: str) -> str:
     if not api_key:
         raise RuntimeError("MISTRAL_API_KEY is not set. Check your .env file.")
 
-    target_code = os.environ.get("TRANSLATE_TARGET_LANG", "en").strip().lower()
+    target_code = (
+        os.environ.get("TRANSLATE_TARGET_LANG")
+        or os.environ.get("OUTPUT_DEFAULT_LANG")
+        or "en"
+    ).strip().lower()
     target_language = _LANG_NAMES.get(target_code, target_code.capitalize())
 
     system_prompt = _SYSTEM_PROMPT.format(target_language=target_language)

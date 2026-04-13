@@ -13,6 +13,40 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ---
 
+## [4.6.0] — 2026-04-14
+
+### Added
+
+- **`OUTPUT_DEFAULT_LANG` (`.env`):** new master language variable. When set,
+  all AI-generated content (summaries, fact-check results, search answers,
+  translations) responds in the specified language, regardless of the input
+  text's language. When unset, the AI responds in the same language as the
+  input text (natural behaviour). Supported codes: `en`, `fr`, `de`, `es`,
+  `pt`, `it`, `nl`, `hi`, `ar`, `zh`, `ja`, `ko`, `ru`, `pl`, `sv`.
+  `TRANSLATE_TARGET_LANG` remains available as an explicit override for
+  translation only (takes precedence over `OUTPUT_DEFAULT_LANG`).
+
+### Fixed
+
+- **Summary source-line hallucination:** when no publication date or media
+  name was present in the article, the model generated placeholder text
+  (`Publié le jour mois 2024 à heure.`) instead of skipping the source line.
+  Prompt now explicitly forbids inventing or approximating values and uses
+  `[actual date]` / `[actual time]` labels to signal that real extracted
+  values are required.
+
+### Changed
+
+- **`src/translate.py`:** target language now resolved from
+  `TRANSLATE_TARGET_LANG` → `OUTPUT_DEFAULT_LANG` → `en` (was hardcoded
+  to `en` when `TRANSLATE_TARGET_LANG` was unset).
+- **`src/text_flows.sh`**, **`screen_to_text.sh`**,
+  **`selection_to_insight.sh`**, **`selection_to_search.sh`**,
+  **`selection_to_factcheck.sh`:** `_SETTING_TRANSLATE_LANG` initialisation
+  updated to the same three-level fallback chain.
+
+---
+
 ## [4.5.0] — 2026-04-11
 
 ### Added
