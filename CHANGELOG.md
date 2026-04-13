@@ -13,6 +13,21 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ---
 
+## [4.4.0] — 2026-04-11
+
+### Changed
+
+- **`src/insight_common.sh` → `src/text_flows.sh`:** renamed to reflect the
+  file's actual role as a general-purpose library of reusable text-processing
+  flow helpers (`_search_flow`, `_factcheck_flow`, `_generate_summary`,
+  `_tts_speak`, `_settings_flow`, …). The previous name implied a scope
+  limited to the Insight feature; the new name matches the file's real reach
+  across all text-based features and future workflows.
+  All consumers (`selection_to_insight.sh`, `selection_to_search.sh`,
+  `selection_to_factcheck.sh`) updated to source `src/text_flows.sh`.
+
+---
+
 ## [4.3.3] — 2026-04-11
 
 ### Fixed

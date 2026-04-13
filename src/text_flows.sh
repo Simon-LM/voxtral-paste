@@ -1,6 +1,8 @@
 #!/bin/bash
-# VoxRefiner — Shared helpers for Selection to Insight (F5),
-# Selection to Search (F6), and Selection to Fact-check (F7).
+# VoxRefiner — Reusable text-processing flow helpers.
+# Sourced by any feature or workflow that operates on text:
+#   Selection to Insight (F6), Selection to Search (F7),
+#   Selection to Fact-check (F8), Screen to Text (F9), future workflows.
 #
 # Source this file after ui.sh and save_audio.sh.
 # Requires globals set by the calling script:

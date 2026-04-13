@@ -13,7 +13,7 @@ source "$SCRIPT_DIR/src/ui.sh"
 # shellcheck disable=SC1091
 source "$SCRIPT_DIR/src/save_audio.sh"
 # shellcheck disable=SC1091
-source "$SCRIPT_DIR/src/insight_common.sh"
+source "$SCRIPT_DIR/src/text_flows.sh"
 
 if [ ! -x "$VENV_PYTHON" ]; then
     _error "Missing .venv Python interpreter: $VENV_PYTHON"
