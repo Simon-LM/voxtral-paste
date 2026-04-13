@@ -13,6 +13,21 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ---
 
+## [4.6.1] — 2026-04-14
+
+### Fixed
+
+- **`fix_filemode_drift()` created a staged change that blocked updates:**
+  `git update-index --chmod=+x` moved the mode drift from the working tree
+  into the index, which `ensure_clean_tracked_tree` caught as a staged change
+  → infinite "local tracked changes detected" loop. Fixed by using `chmod -x`
+  to normalize the filesystem to HEAD instead of staging a mode change.
+  `repair_exec_bits()` re-applies `+x` after the pull as intended.
+- **`uninstall.sh` tracked as `100644` in git:** caused a persistent
+  executable-bit drift on every update. Now tracked as `100755`.
+
+---
+
 ## [4.6.0] — 2026-04-14
 
 ### Added

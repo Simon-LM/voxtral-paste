@@ -71,15 +71,17 @@ print_status() {
 }
 
 fix_filemode_drift() {
-    # Silently align the git index for tracked files whose only local change
-    # is an executable-bit addition (100644 → 100755). These phantom diffs are
-    # caused by repair_exec_bits() running chmod +x on files that the upstream
-    # repo already marks as executable, but whose index entry was stored as
-    # 100644 on this machine (e.g. after a clone with core.filemode quirks).
+    # Silently normalize the filesystem for tracked files whose only local change
+    # is an executable-bit addition (100644 → 100755). repair_exec_bits() sets
+    # chmod +x on scripts that HEAD tracks as 100644, creating a persistent
+    # working-tree diff that blocks the clean-tree check.
+    # Strategy: restore the filesystem mode to match HEAD (chmod -x) so git sees
+    # no change at all — no staged entry, no working-tree diff. repair_exec_bits()
+    # will re-apply chmod +x on the scripts that need it after the pull.
     while IFS= read -r path; do
         [ -z "$path" ] && continue
         if git diff -- "$path" | grep -q '^old mode 100644'; then
-            git update-index --chmod=+x -- "$path"
+            chmod -x "$path"
         fi
     done < <(git diff --name-only)
 }
