@@ -37,7 +37,7 @@ _lang_marker() {
 }
 
 choose_language() {
-    local dl="${TRANSLATE_TARGET_LANG:-en}"
+    local dl="${VOICE_TRANSLATE_TARGET_LANG:-en}"
     _header "TARGET LANGUAGE" "🌍"
     echo ""
     printf "  $(_lang_marker en "$dl") ${C_BOLD}[1]${C_RESET}  English\n"
@@ -54,23 +54,39 @@ choose_language() {
     read -r _lang_choice
 
     case "$_lang_choice" in
-        1) TRANSLATE_TARGET_LANG="en" ;;
-        2) TRANSLATE_TARGET_LANG="fr" ;;
-        3) TRANSLATE_TARGET_LANG="de" ;;
-        4) TRANSLATE_TARGET_LANG="es" ;;
-        5) TRANSLATE_TARGET_LANG="pt" ;;
-        6) TRANSLATE_TARGET_LANG="it" ;;
-        7) TRANSLATE_TARGET_LANG="nl" ;;
-        8) TRANSLATE_TARGET_LANG="hi" ;;
-        9) TRANSLATE_TARGET_LANG="ar" ;;
-        "") TRANSLATE_TARGET_LANG="$dl" ;;
+        1) VOICE_TRANSLATE_TARGET_LANG="en" ;;
+        2) VOICE_TRANSLATE_TARGET_LANG="fr" ;;
+        3) VOICE_TRANSLATE_TARGET_LANG="de" ;;
+        4) VOICE_TRANSLATE_TARGET_LANG="es" ;;
+        5) VOICE_TRANSLATE_TARGET_LANG="pt" ;;
+        6) VOICE_TRANSLATE_TARGET_LANG="it" ;;
+        7) VOICE_TRANSLATE_TARGET_LANG="nl" ;;
+        8) VOICE_TRANSLATE_TARGET_LANG="hi" ;;
+        9) VOICE_TRANSLATE_TARGET_LANG="ar" ;;
+        "") VOICE_TRANSLATE_TARGET_LANG="$dl" ;;
         *)
             echo "  ❌ Invalid choice — using default ($dl)."
-            TRANSLATE_TARGET_LANG="$dl"
+            VOICE_TRANSLATE_TARGET_LANG="$dl"
             sleep 0.5
             ;;
     esac
-    export TRANSLATE_TARGET_LANG
+    export VOICE_TRANSLATE_TARGET_LANG
+
+    if [ "$VOICE_TRANSLATE_TARGET_LANG" != "$dl" ]; then
+        printf "  ${C_DIM}Save %s as default? [y/N]:${C_RESET} " "$VOICE_TRANSLATE_TARGET_LANG"
+        read -r _save_lang
+        if [ "$_save_lang" = "y" ] || [ "$_save_lang" = "Y" ]; then
+            local _env_file="$SCRIPT_DIR/.env"
+            if [ -f "$_env_file" ]; then
+                if grep -q "^VOICE_TRANSLATE_TARGET_LANG=" "$_env_file"; then
+                    sed -i "s/^VOICE_TRANSLATE_TARGET_LANG=.*/VOICE_TRANSLATE_TARGET_LANG=$VOICE_TRANSLATE_TARGET_LANG/" "$_env_file"
+                else
+                    printf '\nVOICE_TRANSLATE_TARGET_LANG=%s\n' "$VOICE_TRANSLATE_TARGET_LANG" >> "$_env_file"
+                fi
+                _success "Default language saved → $VOICE_TRANSLATE_TARGET_LANG"
+            fi
+        fi
+    fi
 }
 
 # ─── Voice profile ───────────────────────────────────────────────────────────
@@ -309,7 +325,10 @@ _translate_and_speak() {
 # ─── Voice Translate pipeline ─────────────────────────────────────────────────
 
 voice_translate() {
-    TARGET_LANG="${TRANSLATE_TARGET_LANG:-en}"
+    TARGET_LANG="${VOICE_TRANSLATE_TARGET_LANG:-en}"
+    # Override TRANSLATE_TARGET_LANG for child Python processes (voice_rewrite.py
+    # reads it directly from env; .env may carry a different value set by other modules).
+    export TRANSLATE_TARGET_LANG="$TARGET_LANG"
     _header "VOICE TRANSLATE → $TARGET_LANG" "🌍"
 
     # ── Step 1: Record ────────────────────────────────────────────────────
@@ -450,7 +469,7 @@ voice_translate() {
     while true; do
         echo ""
         _sep
-        printf "  ${C_BOLD}[l]${C_RESET} Listen  ${C_BOLD}[r]${C_RESET} Retry  ${C_BOLD}[d]${C_RESET} Save  ${C_BOLD}[n]${C_RESET} New (%s)  ${C_BOLD}[m]${C_RESET} Menu VoxRefiner: " "$TARGET_LANG"
+        printf "  ${C_BOLD}[l]${C_RESET} Listen  ${C_BOLD}[r]${C_RESET} Retry  ${C_BOLD}[d]${C_RESET} Save  ${C_BOLD}[n]${C_RESET} New (%s)  ${C_BOLD}[m]${C_RESET} Menu Voice Translate : " "$TARGET_LANG"
         read -r _action
         case "$_action" in
             d|D)

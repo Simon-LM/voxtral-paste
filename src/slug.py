@@ -20,6 +20,7 @@ import sys
 from pathlib import Path
 
 from dotenv import load_dotenv
+from src.ui_py import process, warn
 
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
@@ -85,7 +86,7 @@ def generate_slug(text: str, lang: str = "auto") -> str:
 
     for model in (_MODEL_PRIMARY, _MODEL_FALLBACK):
         try:
-            print(f"🏷️  Generating slug via {model}...", file=sys.stderr)
+            process(f"Generating slug via {model}...")
             raw = call_model(
                 model,
                 messages,
@@ -99,7 +100,7 @@ def generate_slug(text: str, lang: str = "auto") -> str:
             if slug and slug != _FALLBACK_SLUG:
                 return slug
         except Exception as exc:  # noqa: BLE001
-            print(f"⚠️  {model} slug failed: {exc}", file=sys.stderr)
+            warn(f"{model} slug failed: {exc}")
 
     return _FALLBACK_SLUG
 

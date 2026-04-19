@@ -21,6 +21,7 @@ from pathlib import Path
 
 import requests
 from dotenv import load_dotenv
+from src.ui_py import error, process, warn
 
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
@@ -95,16 +96,12 @@ def translate(text: str) -> str:
         try:
             timeout = effective_timeout(base_timeout, model)
             if model == _MODEL:
-                print(
-                    f"🌐 Translating to {target_language} via {model} "
-                    f"({word_count} words, timeout {timeout}s)...",
-                    file=sys.stderr,
+                process(
+                    f"Translating to {target_language} via {model} "
+                    f"({word_count} words, timeout {timeout}s)..."
                 )
             else:
-                print(
-                    f"⚠️  {_MODEL} unavailable — switching to fallback: {model}",
-                    file=sys.stderr,
-                )
+                warn(f"{_MODEL} unavailable — switching to fallback: {model}")
             result = call_model(
                 model, messages, api_key,
                 timeout=timeout,
@@ -118,11 +115,11 @@ def translate(text: str) -> str:
         except requests.HTTPError as e:
             status = e.response.status_code if e.response is not None else "?"
             if status in (429, 500, 502, 503):
-                print(f"⚠️  {model} error ({status}) — switching model…", file=sys.stderr)
+                warn(f"{model} error ({status}) — switching model…")
                 continue
             raise
         except requests.RequestException:
-            print(f"⚠️  {model} unreachable, switching…", file=sys.stderr)
+            warn(f"{model} unreachable, switching…")
             continue
 
     raise RuntimeError("All translation models failed.")
@@ -131,12 +128,12 @@ def translate(text: str) -> str:
 if __name__ == "__main__":
     raw = sys.stdin.read().strip()
     if not raw:
-        print("❌ No input text received.", file=sys.stderr)
+        error("No input text received.")
         sys.exit(1)
 
     try:
         result = translate(raw)
         print(result)
     except RuntimeError as exc:
-        print(f"❌ {exc}", file=sys.stderr)
+        error(str(exc))
         sys.exit(1)

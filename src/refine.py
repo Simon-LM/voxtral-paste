@@ -25,6 +25,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from dotenv import load_dotenv
+from src.ui_py import error, info, process, success, warn
 
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
@@ -101,10 +102,9 @@ _OUTPUT_LANG = os.environ.get("OUTPUT_LANG", "").strip().lower()
 if _OUTPUT_LANG == "auto":
     _OUTPUT_LANG = ""  # "auto" is the UI label for "same as input" (empty)
 if _OUTPUT_LANG and _OUTPUT_LANG not in _SUPPORTED_OUTPUT_LANGS:
-    print(
-        f"⚠️  OUTPUT_LANG='{_OUTPUT_LANG}' is not supported. "
-        f"Supported: {', '.join(sorted(_SUPPORTED_OUTPUT_LANGS))}. Falling back to default.",
-        file=sys.stderr,
+    warn(
+        f"OUTPUT_LANG='{_OUTPUT_LANG}' is not supported. "
+        f"Supported: {', '.join(sorted(_SUPPORTED_OUTPUT_LANGS))}. Falling back to default."
     )
     _OUTPUT_LANG = ""
 
@@ -472,7 +472,7 @@ def _log_refine_result(result: CallResult, label: str) -> None:
         detail += f" \u2014 cascaded from {result.requested_model}"
     if result.attempts > 1:
         detail += f" \u2014 {result.attempts} attempt(s)"
-    print(f"   \u2139 {label} via {detail}", file=sys.stderr)
+    info(f"{label} via {detail}")
 
 
 def _invoke(
@@ -531,10 +531,7 @@ def _extract_and_update_history(refined_text: str) -> None:
             raw_bullets = result.text
             break
         except ProviderError as exc:
-            print(
-                f"\u26a0\ufe0f  History model {model} unavailable ({exc}), trying fallback...",
-                file=sys.stderr,
-            )
+            warn(f"History model {model} unavailable ({exc}), trying fallback...")
     if raw_bullets is None:
         raise RuntimeError("All history extraction models unavailable.")
     now = f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] "
@@ -565,7 +562,7 @@ def _extract_and_update_history(refined_text: str) -> None:
     _tmp = _HISTORY_FILE.with_suffix(".tmp")
     _tmp.write_text("\n".join(kept) + "\n", encoding="utf-8")
     _tmp.replace(_HISTORY_FILE)
-    print(f"📝 History updated ({len(kept)} bullet(s)).", file=sys.stderr)
+    success(f"History updated ({len(kept)} bullet(s)).")
 
 
 def refine(raw_text: str) -> str:
@@ -622,7 +619,7 @@ def refine(raw_text: str) -> str:
 
     if _COMPARE_MODELS:
         timeout_fb = _effective_timeout(base_timeout, fallback)
-        print(f"  🔀 Comparing fallback ({fallback}, timeout {timeout_fb}s)...", file=sys.stderr)
+        process(f"Comparing fallback ({fallback}, timeout {timeout_fb}s)...")
 
         def _run_compare() -> None:
             try:
@@ -645,9 +642,9 @@ def refine(raw_text: str) -> str:
             params = primary_params if model == primary else None
             timeout = _effective_timeout(base_timeout, model, params)
             if model == primary:
-                print(f"  ✨ Refining via {model} ({word_count} words, timeout {timeout}s)...", file=sys.stderr)
+                process(f"Refining via {model} ({word_count} words, timeout {timeout}s)...")
             else:
-                print(f"  ⚠️  {primary} unavailable — switching to fallback: {model}", file=sys.stderr)
+                warn(f"{primary} unavailable — switching to fallback: {model}")
             call_result = _invoke(
                 "refine", model, messages,
                 timeout=timeout, model_params=params,
@@ -659,11 +656,11 @@ def refine(raw_text: str) -> str:
             succeeded_result = call_result
             break
         except ProviderError as exc:
-            print(f"  ⚠️  {model} failed ({exc}) — switching...", file=sys.stderr)
+            warn(f"{model} failed ({exc}) — switching...")
             continue
 
     if not succeeded:
-        print("  ⚠️  All models unavailable — returning raw transcription.", file=sys.stderr)
+        warn("All models unavailable — returning raw transcription.")
 
     # Collect compare result — join thread (it may still be running) then write output.
     # Compare display is skipped when primary failed (succeeded_model != primary).
@@ -678,7 +675,7 @@ def refine(raw_text: str) -> str:
                     sep = "─" * 68
                     print(f"{sep}\n{_compare_result[0]}\n{sep}", file=sys.stderr)
             elif _compare_exc[0] is not None:
-                print(f"⚠️  Fallback compare failed: {_compare_exc[0]}", file=sys.stderr)
+                warn(f"Fallback compare failed: {_compare_exc[0]}")
 
     # Write model names so the shell can label the [2]/[3] display blocks.
     # Format (backward compatible — legacy readers only use lines 1-2):
@@ -710,12 +707,12 @@ if __name__ == "__main__":
             try:
                 _extract_and_update_history(_text)
             except Exception as _exc:  # noqa: BLE001
-                print(f"⚠️  History update failed: {_exc}", file=sys.stderr)
+                warn(f"History update failed: {_exc}")
         sys.exit(0)
 
     raw = sys.stdin.read().strip()
     if not raw:
-        print("❌ No input text received.", file=sys.stderr)
+        error("No input text received.")
         sys.exit(1)
 
     result = refine(raw)

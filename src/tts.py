@@ -17,6 +17,7 @@ from typing import Optional
 
 import requests
 from dotenv import load_dotenv
+from src.ui_py import BG_BLUE, BGREEN, RESET, WHITE
 
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
@@ -1121,15 +1122,14 @@ if __name__ == "__main__":
             print("\u274c Text is empty after cleaning.", file=sys.stderr)
             sys.exit(1)
 
-        # Display cleaned text in terminal with blue background
-        _BG = "\033[44m\033[97m"
-        _RST = "\033[0m"
-        print(f"{_BG}{'─' * 64}{_RST}", file=sys.stderr)
-        print(f"{_BG}  Texte nettoyé — prêt pour la lecture vocale :{_RST}", file=sys.stderr)
-        print(f"{_BG}{'─' * 64}{_RST}", file=sys.stderr)
+        # Display cleaned text in terminal with centralized UI colors
+        _BG = f"{BG_BLUE}{WHITE}"
+        print(f"{'─' * 64}", file=sys.stderr)
+        print(f"{BGREEN}  Cleaned text — ready for text-to-speech.{RESET}", file=sys.stderr)
+        print(f"{'─' * 64}", file=sys.stderr)
         for _line in text.splitlines():
-            print(f"{_BG}{_line}{_RST}", file=sys.stderr)
-        print(f"{_BG}{'─' * 64}{_RST}", file=sys.stderr)
+            print(f"{_BG}{_line}{RESET}", file=sys.stderr)
+        print(f"{'─' * 64}", file=sys.stderr)
 
         resolved_voice_id = _resolve_voice_id()
         quote_voice_id: Optional[str] = os.environ.get("TTS_QUOTE_VOICE_ID") or None

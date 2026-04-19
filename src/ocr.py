@@ -20,6 +20,7 @@ from pathlib import Path
 
 import requests
 from dotenv import load_dotenv
+from src.ui_py import error, info, process, warn
 
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
@@ -72,12 +73,12 @@ def _request_with_retry(url: str, headers: dict, payload: dict) -> dict:
             code = exc.response.status_code if exc.response is not None else None
             if code in _TRANSIENT_HTTP_CODES:
                 label = "rate limit (429)" if code == 429 else f"server error ({code})"
-                print(f"  ⚠️  OCR {label} — will retry…", file=sys.stderr)
+                warn(f"OCR {label} — will retry…")
                 last_exc = exc
                 continue
             raise
         except requests.Timeout as exc:
-            print(f"  ⏱  OCR timed out ({_TIMEOUT}s) — will retry…", file=sys.stderr)
+            warn(f"OCR timed out ({_TIMEOUT}s) — will retry…")
             last_exc = exc
             continue
     raise last_exc
@@ -189,7 +190,7 @@ def ocr(image_path: str) -> str:
         )
 
     size = Path(image_path).stat().st_size
-    print(f"  🖼  Image read: {size} bytes.", file=sys.stderr)
+    info(f"Image read: {size} bytes.")
 
     image_b64 = _encode_image(image_path)
     mime = _mime_type(image_path)
@@ -197,12 +198,12 @@ def ocr(image_path: str) -> str:
     for provider in resolve("ocr"):
         try:
             if provider.adapter_type == "mistral_ocr":
-                print(f"  🔍 Running OCR via {_OCR_MODEL}…", file=sys.stderr)
+                process(f"Running OCR via {_OCR_MODEL}…")
                 text = _extract_primary(image_b64, mime, provider.key())
                 _write_ocr_meta(_OCR_MODEL, _OCR_MODEL, provider.name, provider.display_name)
 
             elif provider.adapter_type == "eden_ocr":
-                print("  🔍 Running OCR via Eden AI (async)…", file=sys.stderr)
+                process("Running OCR via Eden AI (async)…")
                 text = call_ocr_async(image_b64, mime)
                 _write_ocr_meta(
                     "ocr/ocr_async/mistral", "ocr/ocr_async/mistral",
@@ -210,12 +211,12 @@ def ocr(image_path: str) -> str:
                 )
 
             elif provider.name == "mistral_vision":
-                print(f"  🔍 Running OCR via {_VISION_MODEL} (vision fallback)…", file=sys.stderr)
+                process(f"Running OCR via {_VISION_MODEL} (vision fallback)…")
                 text = _extract_vision_fallback(image_b64, mime, provider.key())
                 _write_ocr_meta(_VISION_MODEL, _VISION_MODEL, provider.name, provider.display_name)
 
             else:  # eden_mistral — pixtral via Eden AI chat
-                print(f"  🔍 Running OCR via {_EDEN_VISION_MODEL} (Eden vision fallback)…", file=sys.stderr)
+                process(f"Running OCR via {_EDEN_VISION_MODEL} (Eden vision fallback)…")
                 text = _extract_eden_vision_fallback(image_b64, mime, provider.key())
                 _write_ocr_meta(
                     _EDEN_VISION_MODEL, _EDEN_VISION_MODEL,
@@ -225,10 +226,7 @@ def ocr(image_path: str) -> str:
             return text
 
         except Exception as exc:
-            print(
-                f"  ⚠️  {provider.display_name} failed ({exc}) — trying next tier…",
-                file=sys.stderr,
-            )
+            warn(f"{provider.display_name} failed ({exc}) — trying next tier…")
 
     raise RuntimeError("All OCR providers failed.")
 
@@ -241,12 +239,12 @@ if __name__ == "__main__":
     image_file = sys.argv[1]
 
     if not Path(image_file).exists():
-        print(f"❌ File not found: {image_file}", file=sys.stderr)
+        error(f"File not found: {image_file}")
         sys.exit(1)
 
     try:
         result = ocr(image_file)
         print(result)  # stdout only — captured by the shell script
     except RuntimeError as exc:
-        print(f"❌ {exc}", file=sys.stderr)
+        error(str(exc))
         sys.exit(1)

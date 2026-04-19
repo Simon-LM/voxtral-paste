@@ -387,7 +387,8 @@ _submenu_api_keys() {
         printf "  ${C_BOLD}Eden AI${C_RESET}    ${C_DIM}(optional)${C_RESET}  : ${C_CYAN}%s${C_RESET}  ${C_DIM}min. ~5 € HT${C_RESET}\n"  "$(_mask_key "${EDENAI_API_KEY:-}")"
         printf "  ${C_BOLD}xAI / Grok${C_RESET} ${C_DIM}(optional)${C_RESET}  : ${C_CYAN}%s${C_RESET}  ${C_DIM}min. ~10 \$ HT${C_RESET}\n" "$(_mask_key "${XAI_API_KEY:-}")"
         printf "  ${C_BOLD}Perplexity${C_RESET} ${C_DIM}(optional)${C_RESET}  : ${C_CYAN}%s${C_RESET}  ${C_DIM}min. ~50 \$ HT${C_RESET}\n" "$(_mask_key "${PERPLEXITY_API_KEY:-}")"
-        printf "  ${C_DIM}${C_ITALIC}  (montants indicatifs, susceptibles d'évoluer)${C_RESET}\n"
+        echo ""
+        printf "  ${C_DIM}${C_ITALIC}  Estimated amounts, subject to change — minimum credits required for these AI API providers.${C_RESET}\n"
         _show_capability_status
         _sep
         echo ""

@@ -433,21 +433,25 @@ _factcheck_flow() {
     _factcheck_done=1
 
     if [ -s "${INSIGHT_PERPLEXITY_FILE:-}" ] && [ -s "${INSIGHT_GROK_FILE:-}" ]; then
-        echo ""
-        printf "  ${C_BOLD}[w]${C_RESET} Perplexity details  ${C_BOLD}[x]${C_RESET} Grok details  ${C_DIM}[Enter] Continue${C_RESET}: "
-        read -r _detail_choice
-        case "$_detail_choice" in
-            w|W)
-                local _detail
-                _detail="$(cat "$INSIGHT_PERPLEXITY_FILE")"
-                _show_and_speak "WEB DETAILS — PERPLEXITY" "🌐" "$_detail" "$INSIGHT_DIR/perplexity_detail.mp3"
-                ;;
-            x|X)
-                local _detail
-                _detail="$(cat "$INSIGHT_GROK_FILE")"
-                _show_and_speak "X DETAILS — GROK" "𝕏" "$_detail" "$INSIGHT_DIR/grok_detail.mp3"
-                ;;
-        esac
+        local _detail
+        while true; do
+            echo ""
+            printf "  ${C_BOLD}[w]${C_RESET} Perplexity details  ${C_BOLD}[x]${C_RESET} Grok details  ${C_DIM}[Enter] Continue${C_RESET}: "
+            read -r _detail_choice
+            case "$_detail_choice" in
+                w|W)
+                    _detail="$(cat "$INSIGHT_PERPLEXITY_FILE")"
+                    _show_and_speak "WEB DETAILS — PERPLEXITY" "🌐" "$_detail" "$INSIGHT_DIR/perplexity_detail.mp3"
+                    ;;
+                x|X)
+                    _detail="$(cat "$INSIGHT_GROK_FILE")"
+                    _show_and_speak "X DETAILS — GROK" "𝕏" "$_detail" "$INSIGHT_DIR/grok_detail.mp3"
+                    ;;
+                *)
+                    break
+                    ;;
+            esac
+        done
     fi
 }
 

@@ -13,6 +13,71 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ---
 
+## [4.8.2] — 2026-04-19
+
+### Added
+
+- **`src/ui_py.py` — centralised Python UI output library.**
+  New shared module providing `error()`, `info()`, `process()`, `success()`,
+  `warn()` helpers and ANSI colour constants (`BG_BLUE`, `WHITE`, `BGREEN`,
+  `RESET`). All Python modules (`ocr`, `providers`, `refine`, `slug`,
+  `transcribe`, `translate`, `tts`, `voice_rewrite`) migrated from raw
+  `print(..., file=sys.stderr)` calls to these helpers, giving consistent
+  styling and prefix characters across the whole Python layer.
+- **`src/tts.py` — cleaned-text display block uses centralised colours.**
+  The blue-background "Texte nettoyé" display block now imports colour
+  constants from `ui_py` instead of inlining escape codes, and the label is
+  translated to English ("Cleaned text — ready for text-to-speech.").
+
+### Changed
+
+- **`vox-refiner-menu.sh` — indicative amounts note translated to English.**
+  The italicised footnote under the API keys section now reads "Estimated
+  amounts, subject to change — minimum credits required for these AI API
+  providers."
+
+### Fixed
+
+- **Search — selected text is context for disambiguation, not a question to answer.**
+  The system prompt and user-content framing have been redesigned across two
+  iterations. The selected text is now presented as "what the user is reading —
+  context only, not a question to answer", and the user's own question is
+  labelled distinctly as "User's question". A rule explicitly instructs the
+  engine to answer the user's question, not any question that may appear inside
+  the selected text. When a term is ambiguous, the engine favours the
+  interpretation consistent with the selected text.
+
+- **Fact-check output now respects the Settings target language.**
+  The Settings menu persists the target language as `TRANSLATE_TARGET_LANG`,
+  but `insight.py` only read `OUTPUT_DEFAULT_LANG`. When the latter was
+  unset, prompts kept the generic rule *"Write in the same language as the
+  input/question/summary/reports"* — Perplexity interpreted that against
+  the English query scaffolding and responded in English, while Grok
+  matched the input and responded in the source language, producing mixed
+  reports and a biased synthesis. `_OUTPUT_DEFAULT_LANG` now falls back to
+  `TRANSLATE_TARGET_LANG`, so the Settings menu value drives all insight,
+  search and fact-check output.
+- **Fact-check detail prompt `[w]`/`[x]` can now be toggled.**
+  The prompt offering Perplexity (`[w]`) or Grok (`[x]`) details was a
+  single-shot `read` — once a side was chosen, the user had to relaunch
+  the whole fact-check to hear the other. The prompt is now wrapped in a
+  loop; `[w]` and `[x]` can be picked in any order, and `[Enter]` (or any
+  other key) exits back to the main menu.
+- **Voice Translate — dedicated language variable and persistent default.**
+  `VOICE_TRANSLATE_TARGET_LANG` (default `en`) replaces the use of
+  `TRANSLATE_TARGET_LANG` as the default for the 🎙→🔊 module. The two
+  variables have opposite semantics: `TRANSLATE_TARGET_LANG` means "output
+  AI content in this native language" (set to `fr` by the Settings menus),
+  whereas Voice Translate needs "translate TO this foreign language". With a
+  shared variable, setting the language in Fact-check Settings was silently
+  overriding the Voice Translate default to `fr`. The pipeline now reads
+  `VOICE_TRANSLATE_TARGET_LANG` and exports `TRANSLATE_TARGET_LANG` only
+  for the child Python processes. When the user selects a different language
+  in the picker, a `Save as default? [y/N]` prompt immediately offers to
+  persist it to `.env` — no need to remember a post-menu action.
+
+---
+
 ## [4.8.1] — 2026-04-19
 
 ### Added

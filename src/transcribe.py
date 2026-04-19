@@ -10,6 +10,7 @@ from typing import List
 
 import requests
 from dotenv import load_dotenv
+from src.ui_py import error, info, process, warn
 
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
@@ -53,9 +54,8 @@ def _transcribe_single(audio_path: str, api_key: str) -> str:
     last_exc: Exception = RuntimeError("unreachable")
     for attempt in range(1 + _TRANSCRIBE_RETRIES):
         if attempt > 0:
-            print(
-                f"  ⏳  Voxtral — retry {attempt}/{_TRANSCRIBE_RETRIES} (waiting {_TRANSCRIBE_RETRY_DELAY:.0f}s)…",
-                file=sys.stderr,
+            info(
+                f"Voxtral — retry {attempt}/{_TRANSCRIBE_RETRIES} (waiting {_TRANSCRIBE_RETRY_DELAY:.0f}s)…"
             )
             time.sleep(_TRANSCRIBE_RETRY_DELAY)
         try:
@@ -78,14 +78,14 @@ def _transcribe_single(audio_path: str, api_key: str) -> str:
             code = exc.response.status_code if exc.response is not None else None
             if code in _TRANSIENT_HTTP_CODES:
                 if code == 429:
-                    print("  ⚠️  Voxtral rate limit (429) — will retry…", file=sys.stderr)
+                    warn("Voxtral rate limit (429) — will retry…")
                 else:
-                    print(f"  ⚠️  Voxtral server error ({code}) — will retry…", file=sys.stderr)
+                    warn(f"Voxtral server error ({code}) — will retry…")
                 last_exc = exc
                 continue
             raise  # 401, 403, 404 — don't retry
         except requests.Timeout as exc:
-            print(f"  ⏱️  Voxtral timed out ({timeout}s) — will retry…", file=sys.stderr)
+            warn(f"Voxtral timed out ({timeout}s) — will retry…")
             last_exc = exc
             continue
     raise last_exc
@@ -175,13 +175,12 @@ def _split_audio(audio_path: str) -> List[str]:
             capture_output=True,
         )
         if proc.returncode != 0:
-            print(
-                f"  ⚠️  ffmpeg failed creating chunk {i + 1}: "
-                f"{proc.stderr.decode(errors='replace').strip()[-200:]}",
-                file=sys.stderr,
+            warn(
+                f"ffmpeg failed creating chunk {i + 1}: "
+                f"{proc.stderr.decode(errors='replace').strip()[-200:]}"
             )
         chunks.append(chunk_path)
-        print(f"  ✂️  Chunk {i + 1}/{len(split_points) - 1}: {start:.0f}s–{end:.0f}s", file=sys.stderr)
+        info(f"Chunk {i + 1}/{len(split_points) - 1}: {start:.0f}s–{end:.0f}s")
 
     return chunks
 
@@ -192,14 +191,14 @@ def transcribe(audio_path: str) -> str:
         raise RuntimeError("MISTRAL_API_KEY is not set. Check your .env file.")
 
     file_size = Path(audio_path).stat().st_size
-    print(f"  🎤 Audio read: {file_size} bytes.", file=sys.stderr)
+    info(f"Audio read: {file_size} bytes.")
 
     if file_size >= _VOXTRAL_MAX_FILE_SIZE:
-        print("  📦 Large file (> ~60 min) — splitting into ~30 min chunks…", file=sys.stderr)
+        process("Large file (> ~60 min) — splitting into ~30 min chunks…")
         chunks = _split_audio(audio_path)
         texts = []
         for i, chunk in enumerate(chunks, 1):
-            print(f"  🔊 Transcribing chunk {i}/{len(chunks)} via Voxtral…", file=sys.stderr)
+            process(f"Transcribing chunk {i}/{len(chunks)} via Voxtral…")
             texts.append(_transcribe_single(chunk, api_key))
             if chunk != audio_path:
                 try:
@@ -208,7 +207,7 @@ def transcribe(audio_path: str) -> str:
                     pass
         return " ".join(texts)
 
-    print("  🔊 Transcribing via Mistral Voxtral...", file=sys.stderr)
+    process("Transcribing via Mistral Voxtral...")
     return _transcribe_single(audio_path, api_key)
 
 
@@ -220,7 +219,7 @@ if __name__ == "__main__":
     audio_file = sys.argv[1]
 
     if not Path(audio_file).exists():
-        print(f"❌ File not found: {audio_file}", file=sys.stderr)
+        error(f"File not found: {audio_file}")
         sys.exit(1)
 
     result = transcribe(audio_file)

@@ -89,6 +89,7 @@ from pathlib import Path
 
 import requests
 from dotenv import load_dotenv
+from src.ui_py import process
 
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
@@ -1125,7 +1126,7 @@ def call_ocr_async(
     if not job_id:
         raise ProviderError("Eden OCR: no public_id returned — cannot poll.")
 
-    print(f"  ⏳  Eden OCR job submitted ({job_id[:16]}…) — polling…", file=sys.stderr)
+    process(f"Eden OCR job submitted ({job_id[:16]}…) — polling…")
 
     # ── Step 2: poll until completed ─────────────────────────────────────────
     poll_url = f"{_OCR_POLL_URL}/{job_id}"
@@ -1283,7 +1284,7 @@ def _cli_main() -> None:
         audit(validate=False)
 
     elif args.validate:
-        print("Re-validating all configured API keys...", file=sys.stderr)
+        process("Re-validating all configured API keys...")
         audit(validate=True)
 
     elif args.available:

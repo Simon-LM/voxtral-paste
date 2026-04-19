@@ -17,6 +17,7 @@ from typing import Any, Dict
 
 import requests
 from dotenv import load_dotenv
+from src.ui_py import error, process, warn
 
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
@@ -135,16 +136,12 @@ def voice_rewrite(raw_text: str) -> str:
             params = primary_params if model == primary else None
             timeout = effective_timeout(base_timeout, model, params)
             if model == primary:
-                print(
-                    f"\U0001f30d Rewriting for voice ({target_language}) via {model} "
-                    f"({word_count} words, timeout {timeout}s)...",
-                    file=sys.stderr,
+                process(
+                    f"Rewriting for voice ({target_language}) via {model} "
+                    f"({word_count} words, timeout {timeout}s)..."
                 )
             else:
-                print(
-                    f"\u26a0\ufe0f  {primary} unavailable \u2014 switching to fallback: {model}",
-                    file=sys.stderr,
-                )
+                warn(f"{primary} unavailable — switching to fallback: {model}")
             result = call_model(
                 model, messages, api_key,
                 timeout=timeout,
@@ -156,21 +153,21 @@ def voice_rewrite(raw_text: str) -> str:
         except requests.HTTPError as e:
             status = e.response.status_code if e.response is not None else "?"
             if status in (429, 500, 502, 503):
-                print(f"\u26a0\ufe0f  {model} error ({status}) \u2014 switching model\u2026", file=sys.stderr)
+                warn(f"{model} error ({status}) — switching model…")
                 continue
             raise
         except requests.RequestException:
-            print(f"\u26a0\ufe0f  {model} unreachable, switching...", file=sys.stderr)
+            warn(f"{model} unreachable, switching...")
             continue
 
-    print("\u26a0\ufe0f  All models unavailable \u2014 returning raw transcription.", file=sys.stderr)
+    warn("All models unavailable — returning raw transcription.")
     return raw_text
 
 
 if __name__ == "__main__":
     raw = sys.stdin.read().strip()
     if not raw:
-        print("\u274c No input text received.", file=sys.stderr)
+        error("No input text received.")
         sys.exit(1)
 
     result = voice_rewrite(raw)
