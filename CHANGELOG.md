@@ -13,6 +13,28 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ---
 
+## [4.9.2] — 2026-04-20
+
+### Fixed
+
+- **`vox-refiner-menu.sh` — stale optional API keys cleared at startup.**
+  `EDENAI_API_KEY`, `XAI_API_KEY`, `PERPLEXITY_API_KEY`, and `GRADIUM_API_KEY`
+  are now explicitly unset before `.env` is sourced. Previously, renaming or
+  removing a key in `.env` had no effect because `source .env` never unsets
+  variables — the old value lingered in the process environment from the
+  previous session.
+- **`src/tts.py` — 30 s timeout on Gradium WebSocket connection.**
+  Gradium uses WebSockets with no built-in connection timeout. The TTS call
+  now runs under `asyncio.wait_for(..., timeout=30.0)` so a failed or
+  unreachable connection raises `TimeoutError` after 30 s instead of
+  blocking the process indefinitely.
+- **Voice picker — previous Mistral preview preserved on failed Gradium selection.**
+  When a Gradium voice is selected without `GRADIUM_API_KEY`, the picker now
+  restores the previously staged preview instead of clearing it, so the user
+  does not lose a Mistral voice they had already queued for selection.
+
+---
+
 ## [4.9.1] — 2026-04-20
 
 ### Fixed
@@ -20,12 +42,18 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - **Voice picker — Gradium voices blocked when `GRADIUM_API_KEY` is not set.**
   Selecting a Gradium voice without a key now shows a clear error
   ("GRADIUM_API_KEY is not set — cannot preview or select this voice.") and
-  prevents the voice from being saved. Previously the picker silently failed
-  with no feedback.
+  prevents the voice from being saved. The previously staged Mistral preview
+  is preserved — the selection is restored to what it was before the failed
+  attempt.
 - **Voice picker — `GRADIUM` section header shows unavailability notice.**
   When `GRADIUM_API_KEY` is absent, the section header now reads
   `GRADIUM  (unavailable — GRADIUM_API_KEY not set, see Settings → API Keys → [e5])`
   so the user understands immediately why the voices are locked.
+- **`src/tts.py` — Gradium WebSocket timeout added.**
+  Gradium uses WebSockets with no built-in connection timeout. The TTS call
+  now runs under `asyncio.wait_for(..., timeout=30.0)` so a failed or
+  unreachable connection raises `TimeoutError` after 30 s instead of
+  blocking the process indefinitely.
 
 ---
 

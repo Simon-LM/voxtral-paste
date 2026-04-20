@@ -73,7 +73,7 @@ if [ -f "$PID_FILE" ]; then
     fi
 fi
 
-GEOMETRY="125x50"  
+GEOMETRY="80x30"  
 
 run_in_terminal() {
     local _cmd="${SCRIPT_ENV:+$SCRIPT_ENV }\"$SCRIPT_PATH\""

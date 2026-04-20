@@ -1003,12 +1003,16 @@ def _synthesize_gradium(text: str, output_path: str, voice_id: str) -> None:
     if not api_key:
         raise RuntimeError("GRADIUM_API_KEY is not set. Check your .env file.")
 
+    # Gradium uses WebSockets with no built-in timeout — wrap in wait_for to avoid
+    # hanging indefinitely when the connection cannot be established.
+    _GRADIUM_TIMEOUT = 30.0
+
     async def _run() -> None:
         from gradium.client import GradiumClient  # type: ignore[import]
         from gradium.speech import TTSSetup  # type: ignore[import]
         client = GradiumClient(api_key=api_key)
         setup = TTSSetup(voice_id=voice_id, output_format="wav")
-        result = await client.tts(setup, text)
+        result = await asyncio.wait_for(client.tts(setup, text), timeout=_GRADIUM_TIMEOUT)
         Path(output_path).write_bytes(result.raw_data)
 
     asyncio.run(_run())

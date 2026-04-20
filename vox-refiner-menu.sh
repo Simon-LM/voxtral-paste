@@ -18,7 +18,9 @@ if [ ! -x "$VENV_PYTHON" ]; then
     exit 1
 fi
 
-# Load .env
+# Load .env — unset optional keys first so removed/renamed entries don't linger
+# from a previous session. MISTRAL_API_KEY is required and left as-is.
+unset EDENAI_API_KEY XAI_API_KEY PERPLEXITY_API_KEY GRADIUM_API_KEY
 if [ -f .env ]; then
     # shellcheck disable=SC1091
     set -a; source .env; set +a
@@ -234,6 +236,8 @@ _voice_picker() {
                 if [[ "$_vchoice" =~ ^[0-9]+$ ]] && \
                    [ "$_vchoice" -ge 1 ] && [ "$_vchoice" -le "${#_vids[@]}" ]; then
                     _vi=$(( _vchoice - 1 ))
+                    _vpreview_id_saved="$_vpreview_id"
+                    _vpreview_slug_saved="$_vpreview_slug"
                     _vpreview_id="${_vids[$_vi]}"
                     _vpreview_slug="${_vslugs[$_vi]}"
                     if [ "$_vchoice" -le 6 ] || [ "$_vchoice" -ge 30 ]; then
@@ -247,8 +251,8 @@ _voice_picker() {
                        [ -z "${GRADIUM_API_KEY:-}" ]; then
                         _warn "GRADIUM_API_KEY is not set — cannot preview or select this voice."
                         printf "  ${C_DIM}Add it via Settings → API Keys → [e5] Edit Gradium key.${C_RESET}\n"
-                        _vpreview_id=""
-                        _vpreview_slug=""
+                        _vpreview_id="$_vpreview_id_saved"
+                        _vpreview_slug="$_vpreview_slug_saved"
                         sleep 2
                     else
                         _process "Generating preview for $_vpreview_slug..."
@@ -460,7 +464,7 @@ _submenu_api_keys() {
         printf "  ${C_BOLD}Eden AI${C_RESET}    ${C_DIM}(optional)${C_RESET}  : ${C_CYAN}%s${C_RESET}  ${C_DIM}min. ~5 € HT${C_RESET}\n"  "$(_mask_key "${EDENAI_API_KEY:-}")"
         printf "  ${C_BOLD}xAI / Grok${C_RESET} ${C_DIM}(optional)${C_RESET}  : ${C_CYAN}%s${C_RESET}  ${C_DIM}min. ~10 \$ HT${C_RESET}\n" "$(_mask_key "${XAI_API_KEY:-}")"
         printf "  ${C_BOLD}Perplexity${C_RESET} ${C_DIM}(optional)${C_RESET}  : ${C_CYAN}%s${C_RESET}  ${C_DIM}min. ~50 \$ HT${C_RESET}\n" "$(_mask_key "${PERPLEXITY_API_KEY:-}")"
-        printf "  ${C_BOLD}Gradium${C_RESET}    ${C_DIM}(optional)${C_RESET}  : ${C_CYAN}%s${C_RESET}  ${C_DIM}pay-as-you-go${C_RESET}\n"  "$(_mask_key "${GRADIUM_API_KEY:-}")"
+        printf "  ${C_BOLD}Gradium${C_RESET}    ${C_DIM}(optional)${C_RESET}  : ${C_CYAN}%s${C_RESET}  ${C_DIM}~1hr \$0/month HT | ~5hr \$13/month HT ${C_RESET}\n"  "$(_mask_key "${GRADIUM_API_KEY:-}")"
         echo ""
         printf "  ${C_DIM}${C_ITALIC}  Estimated amounts, subject to change — minimum credits required for these AI API providers.${C_RESET}\n"
         _show_capability_status
