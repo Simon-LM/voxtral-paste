@@ -13,6 +13,31 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ---
 
+## [4.9.0] — 2026-04-20
+
+### Added
+
+- **Gradium TTS integration — 13 native French voices in the voice picker.**
+  VoxRefiner can now synthesise speech via Gradium AI in addition to Mistral.
+  Voice picker extended with two new groups: 🇫🇷 **GRADIUM — French (France)**
+  [30]–[39] (Elise, Leo, Olivier, Manon, Jade, Amelie, Adrien, Sarah, Jennifer,
+  Elodie) and 🇨🇦 **GRADIUM — French (Canada)** [40]–[42] (Melanie, Maxime,
+  Alexandre). French preview text is used automatically for choices [30]–[42].
+- **`src/tts.py` — Gradium routing in `synthesize()`.**
+  Added `_is_gradium_voice()` (UUID vs. short alphanumeric ID detection),
+  `_synthesize_gradium()` (async call via `gradium.client.GradiumClient`), and
+  early-exit routing at the top of `synthesize()`. Requires the `gradium` package
+  (`pip install gradium`) and `GRADIUM_API_KEY` in `.env`.
+- **API Keys submenu — Gradium key management.**
+  `[t5]` test and `[e5]` edit actions added for `GRADIUM_API_KEY`. Key is tested
+  against `GET https://eu.api.gradium.ai/api/voices/` with `x-api-key` header.
+  Capability status now shows "Extended voice bank (Gradium: 13 native French
+  voices)" when the key is configured.
+- **`.env.example` — `GRADIUM_API_KEY` documented.**
+  New optional key entry with description, usage note, and link to Gradium.
+
+---
+
 ## [4.8.2] — 2026-04-19
 
 ### Added

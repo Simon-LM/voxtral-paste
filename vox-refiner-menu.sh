@@ -101,6 +101,19 @@ _voice_picker() {
         "60844938-221d-4d1e-8233-34203f787d9f"
         "5de47977-6e47-4266-a938-3bc1d76b4676"
         "cbe96cf0-85ec-4a10-accb-0b35c93b6dfd"
+        "b35yykvVppLXyw_l"
+        "axlOaUiFyOZhy4nv"
+        "vMYQUSzm6GRkJX6d"
+        "p1fSBpcmVWngBqVd"
+        "3mM3xaoFjNMQa22C"
+        "J4XbCGPYNMigXcfZ"
+        "0LMAi0x_YVG_GLeM"
+        "-dOnYAX4N4GqSOee"
+        "N8xxxD_d-ZinGVI4"
+        "zba0owtqy4Gnewn9"
+        "xynYWquoAsrvM7UY"
+        "s0PhgjzOTRD5wo5L"
+        "HBfu9XA3QfzAG1MN"
     )
     _vslugs=(
         "fr_marie_neutral"    "fr_marie_happy"
@@ -118,6 +131,13 @@ _voice_picker() {
         "gb_jane_sad"         "gb_jane_jealousy"
         "gb_jane_frustrated"  "gb_jane_curious"
         "gb_jane_confident"
+        "gradium_fr_elise"    "gradium_fr_leo"
+        "gradium_fr_olivier"  "gradium_fr_manon"
+        "gradium_fr_jade"     "gradium_fr_amelie"
+        "gradium_fr_adrien"   "gradium_fr_sarah"
+        "gradium_fr_jennifer" "gradium_fr_elodie"
+        "gradium_ca_melanie"  "gradium_ca_maxime"
+        "gradium_ca_alexandre"
     )
     local _vtext_fr="Bonjour ! Je suis votre assistante vocale. Comment puis-je vous aider aujourd'hui ?"
     local _vtext_en="Hello! I'm your voice assistant. How can I help you today?"
@@ -145,6 +165,7 @@ _voice_picker() {
         echo ""
         _sep
         echo ""
+        printf "  ${C_BGREEN}MISTRAL${C_RESET}\n"
         printf "  ${C_BCYAN}🇫🇷  MARIE (French)${C_RESET}\n"
         printf "  ${C_BOLD}[ 1]${C_RESET} Neutral    ${C_BOLD}[ 2]${C_RESET} Happy     ${C_BOLD}[ 3]${C_RESET} Sad\n"
         printf "  ${C_BOLD}[ 4]${C_RESET} Excited    ${C_BOLD}[ 5]${C_RESET} Curious   ${C_BOLD}[ 6]${C_RESET} Angry\n"
@@ -163,6 +184,16 @@ _voice_picker() {
         printf "  ${C_BOLD}[22]${C_RESET} Neutral    ${C_BOLD}[23]${C_RESET} Sarcasm   ${C_BOLD}[24]${C_RESET} Shameful\n"
         printf "  ${C_BOLD}[25]${C_RESET} Sad        ${C_BOLD}[26]${C_RESET} Jealousy  ${C_BOLD}[27]${C_RESET} Frustrated\n"
         printf "  ${C_BOLD}[28]${C_RESET} Curious    ${C_BOLD}[29]${C_RESET} Confident\n"
+        echo ""
+        printf "  ${C_BGREEN}GRADIUM${C_RESET}\n"
+        printf "  ${C_BCYAN}🇫🇷  GRADIUM — French (France)${C_RESET}\n"
+        printf "  ${C_BOLD}[30]${C_RESET} Elise      ${C_BOLD}[31]${C_RESET} Leo       ${C_BOLD}[32]${C_RESET} Olivier\n"
+        printf "  ${C_BOLD}[33]${C_RESET} Manon      ${C_BOLD}[34]${C_RESET} Jade      ${C_BOLD}[35]${C_RESET} Amelie\n"
+        printf "  ${C_BOLD}[36]${C_RESET} Adrien     ${C_BOLD}[37]${C_RESET} Sarah     ${C_BOLD}[38]${C_RESET} Jennifer\n"
+        printf "  ${C_BOLD}[39]${C_RESET} Elodie\n"
+        echo ""
+        printf "  ${C_BCYAN}🇨🇦  GRADIUM — French (Canada)${C_RESET}\n"
+        printf "  ${C_BOLD}[40]${C_RESET} Melanie    ${C_BOLD}[41]${C_RESET} Maxime    ${C_BOLD}[42]${C_RESET} Alexandre\n"
         echo ""
         _sep
         if [ -n "$_vpreview_id" ]; then
@@ -201,7 +232,7 @@ _voice_picker() {
                     _vi=$(( _vchoice - 1 ))
                     _vpreview_id="${_vids[$_vi]}"
                     _vpreview_slug="${_vslugs[$_vi]}"
-                    if [ "$_vchoice" -le 6 ]; then
+                    if [ "$_vchoice" -le 6 ] || [ "$_vchoice" -ge 30 ]; then
                         _vsample="$_vtext_fr"
                     else
                         _vsample="$_vtext_en"
@@ -327,6 +358,27 @@ _test_perplexity_key() {
     esac
 }
 
+_test_gradium_key() {
+    local key="$1"
+    if [ -z "$key" ]; then
+        _error "No Gradium key to test."
+        return 1
+    fi
+    printf "  ${C_CYAN}⚡ Testing Gradium key...${C_RESET}\n"
+    local http_code
+    http_code=$(curl -s -o /dev/null -w "%{http_code}" \
+        -H "x-api-key: $key" \
+        "https://eu.api.gradium.ai/api/voices/" \
+        --max-time 15 2>/dev/null)
+    case "$http_code" in
+        200) _success "Gradium key is valid." ; return 0 ;;
+        401) _error  "Invalid Gradium key (401 Unauthorized)." ; return 1 ;;
+        429) _warn   "Rate limited (429) — key exists but quota exceeded." ; return 1 ;;
+        000) _error  "No network response — check your internet connection." ; return 1 ;;
+        *)   _error  "Unexpected response: HTTP $http_code" ; return 1 ;;
+    esac
+}
+
 _show_capability_status() {
     # Display which features are available/locked based on configured keys.
     # Intended for display inside _submenu_api_keys.
@@ -334,6 +386,7 @@ _show_capability_status() {
     local _has_e="${EDENAI_API_KEY:-}"
     local _has_x="${XAI_API_KEY:-}"
     local _has_p="${PERPLEXITY_API_KEY:-}"
+    local _has_g="${GRADIUM_API_KEY:-}"
 
     echo ""
     printf "  ${C_DIM}── Capabilities ──────────────────────────────────────────────────${C_RESET}\n"
@@ -375,6 +428,13 @@ _show_capability_status() {
         printf "  ${C_DIM}                             OCR, Gemini, and rate-limit resilience${C_RESET}\n"
     fi
 
+    # Gradium (extended French voice bank)
+    if [ -n "$_has_g" ]; then
+        printf "  ${C_BGREEN}✓${C_RESET}  Extended voice bank      (Gradium: 13 native French voices)\n"
+    else
+        printf "  ${C_DIM}○${C_RESET}  ${C_DIM}Extended voice bank       — add GRADIUM_API_KEY for French voices [30]–[42]${C_RESET}\n"
+    fi
+
     echo ""
 }
 
@@ -387,6 +447,7 @@ _submenu_api_keys() {
         printf "  ${C_BOLD}Eden AI${C_RESET}    ${C_DIM}(optional)${C_RESET}  : ${C_CYAN}%s${C_RESET}  ${C_DIM}min. ~5 € HT${C_RESET}\n"  "$(_mask_key "${EDENAI_API_KEY:-}")"
         printf "  ${C_BOLD}xAI / Grok${C_RESET} ${C_DIM}(optional)${C_RESET}  : ${C_CYAN}%s${C_RESET}  ${C_DIM}min. ~10 \$ HT${C_RESET}\n" "$(_mask_key "${XAI_API_KEY:-}")"
         printf "  ${C_BOLD}Perplexity${C_RESET} ${C_DIM}(optional)${C_RESET}  : ${C_CYAN}%s${C_RESET}  ${C_DIM}min. ~50 \$ HT${C_RESET}\n" "$(_mask_key "${PERPLEXITY_API_KEY:-}")"
+        printf "  ${C_BOLD}Gradium${C_RESET}    ${C_DIM}(optional)${C_RESET}  : ${C_CYAN}%s${C_RESET}  ${C_DIM}pay-as-you-go${C_RESET}\n"  "$(_mask_key "${GRADIUM_API_KEY:-}")"
         echo ""
         printf "  ${C_DIM}${C_ITALIC}  Estimated amounts, subject to change — minimum credits required for these AI API providers.${C_RESET}\n"
         _show_capability_status
@@ -396,6 +457,7 @@ _submenu_api_keys() {
         printf "  ${C_BOLD}[t2]${C_RESET}  Test Eden AI key       ${C_BOLD}[e2]${C_RESET}  Edit Eden AI key\n"
         printf "  ${C_BOLD}[t3]${C_RESET}  Test xAI / Grok key    ${C_BOLD}[e3]${C_RESET}  Edit xAI / Grok key\n"
         printf "  ${C_BOLD}[t4]${C_RESET}  Test Perplexity key    ${C_BOLD}[e4]${C_RESET}  Edit Perplexity key\n"
+        printf "  ${C_BOLD}[t5]${C_RESET}  Test Gradium key       ${C_BOLD}[e5]${C_RESET}  Edit Gradium key\n"
         echo ""
         printf "  ${C_BOLD}[m]${C_RESET}  Menu VoxRefiner\n"
         echo ""
@@ -501,6 +563,32 @@ _submenu_api_keys() {
                     _success "Perplexity key saved."
                     echo ""
                     _test_perplexity_key "$_new_key"
+                fi
+                echo ""
+                printf "  ${C_DIM}Press Enter to continue...${C_RESET}"
+                read -r
+                ;;
+            t5|T5)
+                echo ""
+                _test_gradium_key "${GRADIUM_API_KEY:-}"
+                echo ""
+                printf "  ${C_DIM}Press Enter to continue...${C_RESET}"
+                read -r
+                ;;
+            e5|E5)
+                echo ""
+                printf "  Enter new Gradium API key: "
+                _read_masked
+                _new_key="$_MASKED_INPUT"
+                if [ -z "$_new_key" ]; then
+                    _warn "No key entered — unchanged."
+                else
+                    _set_env_var "GRADIUM_API_KEY" "$_new_key"
+                    export GRADIUM_API_KEY="$_new_key"
+                    set -a; source .env; set +a
+                    _success "Gradium key saved."
+                    echo ""
+                    _test_gradium_key "$_new_key"
                 fi
                 echo ""
                 printf "  ${C_DIM}Press Enter to continue...${C_RESET}"

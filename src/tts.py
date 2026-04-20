@@ -4,6 +4,7 @@
 Calls the Mistral audio.speech API with an optional voice sample for cloning.
 """
 
+import asyncio
 import base64
 import os
 import re
@@ -52,6 +53,12 @@ _REQUEST_RETRIES = int(os.environ.get("TTS_REQUEST_RETRIES", "2"))
 _RETRY_DELAY = 2.0
 
 _TRANSIENT_HTTP_CODES = (429, 500, 502, 503)
+
+# Mistral voices use UUID format; Gradium voices use short alphanumeric IDs.
+_UUID_RE = re.compile(
+    r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+    re.IGNORECASE,
+)
 
 _CHUNK_MAX_CHARS = int(os.environ.get("TTS_CHUNK_SIZE", "800"))
 
@@ -985,6 +992,28 @@ def _encode_voice_sample(sample_path: str) -> str:
     return base64.b64encode(data).decode("ascii")
 
 
+def _is_gradium_voice(voice_id: str) -> bool:
+    """Return True if voice_id is a Gradium ID (non-UUID alphanumeric format)."""
+    return not _UUID_RE.match(voice_id)
+
+
+def _synthesize_gradium(text: str, output_path: str, voice_id: str) -> None:
+    """Call Gradium TTS and write WAV audio to output_path."""
+    api_key = os.environ.get("GRADIUM_API_KEY")
+    if not api_key:
+        raise RuntimeError("GRADIUM_API_KEY is not set. Check your .env file.")
+
+    async def _run() -> None:
+        from gradium.client import GradiumClient  # type: ignore[import]
+        from gradium.speech import TTSSetup  # type: ignore[import]
+        client = GradiumClient(api_key=api_key)
+        setup = TTSSetup(voice_id=voice_id, output_format="wav")
+        result = await client.tts(setup, text)
+        Path(output_path).write_bytes(result.raw_data)
+
+    asyncio.run(_run())
+
+
 def synthesize(
     text: str,
     output_path: str,
@@ -1004,6 +1033,12 @@ def synthesize(
         voice_format: Format of the voice sample file.
         output_format: Desired output audio format.
     """
+    # Gradium voices (non-UUID IDs) use a separate API — route immediately.
+    if voice_id and _is_gradium_voice(voice_id):
+        print(f"\U0001f508 Gradium TTS ({voice_id})...", file=sys.stderr)
+        _synthesize_gradium(text, output_path, voice_id)
+        return
+
     api_key = os.environ.get("MISTRAL_API_KEY")
     if not api_key:
         raise RuntimeError("MISTRAL_API_KEY is not set. Check your .env file.")
