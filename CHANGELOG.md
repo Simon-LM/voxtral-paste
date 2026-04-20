@@ -13,6 +13,17 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ---
 
+## [4.9.3] — 2026-04-21
+
+### Fixed
+
+- **`requirements.txt` — `gradium` package added.**
+  `gradium==0.5.11` was missing from the dependency list, so production installs
+  updated via `vox-refiner-update.sh` never received the SDK. Gradium voices
+  silently failed on any machine that had not manually installed the package.
+
+---
+
 ## [4.9.2] — 2026-04-20
 
 ### Fixed

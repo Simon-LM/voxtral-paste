@@ -1,3 +1,4 @@
 requests==2.32.5
 python-dotenv==1.2.2
 xai-sdk==1.11.0
+gradium==0.5.11
