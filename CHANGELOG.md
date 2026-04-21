@@ -13,6 +13,28 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ---
 
+## [4.9.4] — 2026-04-21
+
+### Added
+
+- **`src/voice_catalog.json` — major Gradium voice catalog expansion.**
+  Added many new Gradium voices across French and English families, including
+  French (France), French (Canada), English (US), English (UK), English
+  (Australia), and English (Others), with concise per-voice metadata shown in
+  the picker.
+
+### Changed
+
+- **`vox-refiner-menu.sh` + `src/voice_catalog.json` — stable provider-prefixed numbering and ordering.**
+  Gradium numbering is now explicitly controlled by per-group `start_index`
+  values so the picker keeps a consistent sequence (for example US starting at
+  `g100`) while preserving a clear language-first order in the menu.
+- **Gradium catalog presentation in voice picker.**
+  Gradium entries are displayed with compact descriptors (age/gender/style)
+  directly next to each voice name for faster selection.
+
+---
+
 ## [4.9.3] — 2026-04-21
 
 ### Fixed
@@ -130,8 +152,8 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - **Fact-check output now respects the Settings target language.**
   The Settings menu persists the target language as `TRANSLATE_TARGET_LANG`,
   but `insight.py` only read `OUTPUT_DEFAULT_LANG`. When the latter was
-  unset, prompts kept the generic rule *"Write in the same language as the
-  input/question/summary/reports"* — Perplexity interpreted that against
+  unset, prompts kept the generic rule _"Write in the same language as the
+  input/question/summary/reports"_ — Perplexity interpreted that against
   the English query scaffolding and responded in English, while Grok
   matched the input and responded in the source language, producing mixed
   reports and a biased synthesis. `_OUTPUT_DEFAULT_LANG` now falls back to
@@ -176,8 +198,8 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 - **Capability status — accuracy fixes.**
   Perplexity via Eden AI now shows `✓` (it is a working capability, not
-  degraded). Grok split into two lines: *Grok web search* (`✓` with either
-  xAI direct or Eden AI) and *Fact-check X/Twitter* (`✓` only with
+  degraded). Grok split into two lines: _Grok web search_ (`✓` with either
+  xAI direct or Eden AI) and _Fact-check X/Twitter_ (`✓` only with
   `XAI_API_KEY` direct, `○` via Eden because native X/Twitter search is not
   exposed through the Eden AI API). "Tip" hint for Perplexity removed.
 
@@ -205,9 +227,9 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - **Fact-check result returned in English when input was non-English.**
   `factcheck()` passed `_FACTCHECK_GROK_SYSTEM` to Grok but omitted the
   system-prompt argument for Perplexity, causing `search_perplexity` to fall
-  back to `_SEARCH_SYSTEM` (which anchors language on the *question*, not the
-  *input summary*). The hardcoded English query `"Verify the main factual
-  claims in this content."` then forced English output regardless of the
+  back to `_SEARCH_SYSTEM` (which anchors language on the _question_, not the
+  _input summary_). The hardcoded English query `"Verify the main factual
+claims in this content."` then forced English output regardless of the
   selected text's language. Fixed by passing `_FACTCHECK_PERPLEXITY_SYSTEM`
   as the third argument, consistent with the existing Grok call.
 - **`EDEN_MODEL_MAP` only covered Mistral, breaking Eden fallback for search /
@@ -515,8 +537,8 @@ Eden AI)"`; other providers → `" — {model} (via {display})"` with the
 - **Fact-check result returned in English when input was non-English.**
   `factcheck()` passed `_FACTCHECK_GROK_SYSTEM` to Grok but omitted the
   system-prompt argument for Perplexity, causing `search_perplexity` to fall
-  back to `_SEARCH_SYSTEM` (which anchors language on the *question*, not the
-  *input summary*). The hardcoded English query `"Verify the main factual
+  back to `_SEARCH_SYSTEM` (which anchors language on the _question_, not the
+  _input summary_). The hardcoded English query `"Verify the main factual
 claims in this content."` then forced English output regardless of the
   selected text's language. Fixed by passing `_FACTCHECK_PERPLEXITY_SYSTEM`
   as the third argument, consistent with the existing Grok call.

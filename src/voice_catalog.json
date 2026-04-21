@@ -1,0 +1,1264 @@
+{
+	"providers": [
+		{
+			"key": "mistral",
+			"prefix": "m",
+			"title": "MISTRAL",
+			"api_key_env": "MISTRAL_API_KEY",
+			"groups": [
+				{
+					"title": "🇫🇷  MARIE (French)",
+					"voices": [
+						{
+							"label": "Neutral",
+							"slug": "fr_marie_neutral",
+							"id": "5a271406-039d-46fe-835b-fbbb00eaf08d",
+							"sample_lang": "fr"
+						},
+						{
+							"label": "Happy",
+							"slug": "fr_marie_happy",
+							"id": "49d024dd-981b-4462-bb17-74d381eb8fd7",
+							"sample_lang": "fr"
+						},
+						{
+							"label": "Sad",
+							"slug": "fr_marie_sad",
+							"id": "4adeb2c6-25a3-44bc-8100-5234dfc1193b",
+							"sample_lang": "fr"
+						},
+						{
+							"label": "Excited",
+							"slug": "fr_marie_excited",
+							"id": "2f62b1af-aea3-4079-9d10-7ca665ee7243",
+							"sample_lang": "fr"
+						},
+						{
+							"label": "Curious",
+							"slug": "fr_marie_curious",
+							"id": "e0580ce5-e63c-4cbe-88c8-a983b80c5f1f",
+							"sample_lang": "fr"
+						},
+						{
+							"label": "Angry",
+							"slug": "fr_marie_angry",
+							"id": "a7c07cdc-1c35-4d87-a938-c610a654f600",
+							"sample_lang": "fr"
+						}
+					]
+				},
+				{
+					"title": "🇺🇸  PAUL (English US)",
+					"voices": [
+						{
+							"label": "Neutral",
+							"slug": "en_paul_neutral",
+							"id": "c69964a6-ab8b-4f8a-9465-ec0925096ec8",
+							"sample_lang": "en"
+						},
+						{
+							"label": "Happy",
+							"slug": "en_paul_happy",
+							"id": "1024d823-a11e-43ee-bf3d-d440dccc0577",
+							"sample_lang": "en"
+						},
+						{
+							"label": "Sad",
+							"slug": "en_paul_sad",
+							"id": "530e2e20-58e2-45d8-b0a5-4594f4915944",
+							"sample_lang": "en"
+						},
+						{
+							"label": "Excited",
+							"slug": "en_paul_excited",
+							"id": "5940190b-f58a-4c3e-8264-a40d63fd6883",
+							"sample_lang": "en"
+						},
+						{
+							"label": "Confident",
+							"slug": "en_paul_confident",
+							"id": "98559b22-62b5-4a64-a7cd-fc78ca41faa8",
+							"sample_lang": "en"
+						},
+						{
+							"label": "Cheerful",
+							"slug": "en_paul_cheerful",
+							"id": "01d985cd-5e0c-4457-bfd8-80ba31a5bc03",
+							"sample_lang": "en"
+						},
+						{
+							"label": "Angry",
+							"slug": "en_paul_angry",
+							"id": "cb891218-482c-4392-9878-91e8d999d57a",
+							"sample_lang": "en"
+						},
+						{
+							"label": "Frustrated",
+							"slug": "en_paul_frustrated",
+							"id": "1f017bcb-02e5-460d-989b-db065c0c6122",
+							"sample_lang": "en"
+						}
+					]
+				},
+				{
+					"title": "🇬🇧  OLIVER (English GB)",
+					"voices": [
+						{
+							"label": "Neutral",
+							"slug": "gb_oliver_neutral",
+							"id": "e3596645-b1af-469e-b857-f18ddedc7652",
+							"sample_lang": "en"
+						},
+						{
+							"label": "Sad",
+							"slug": "gb_oliver_sad",
+							"id": "d4101b8f-12c3-450d-a812-7d700b3a3245",
+							"sample_lang": "en"
+						},
+						{
+							"label": "Excited",
+							"slug": "gb_oliver_excited",
+							"id": "e8e5b1de-493c-4061-8414-e2170f9f4b6f",
+							"sample_lang": "en"
+						},
+						{
+							"label": "Curious",
+							"slug": "gb_oliver_curious",
+							"id": "390c8a2b-60a6-4882-8437-c49a8bd33b63",
+							"sample_lang": "en"
+						},
+						{
+							"label": "Confident",
+							"slug": "gb_oliver_confident",
+							"id": "8169ab87-bc99-4669-a5ec-6855860ace24",
+							"sample_lang": "en"
+						},
+						{
+							"label": "Cheerful",
+							"slug": "gb_oliver_cheerful",
+							"id": "5ad5d44e-6b4e-4a57-a8a8-4cae088034ed",
+							"sample_lang": "en"
+						},
+						{
+							"label": "Angry",
+							"slug": "gb_oliver_angry",
+							"id": "862274a7-8333-48f7-b668-f19c932999e0",
+							"sample_lang": "en"
+						}
+					]
+				},
+				{
+					"title": "🇬🇧  JANE (English GB)",
+					"voices": [
+						{
+							"label": "Neutral",
+							"slug": "gb_jane_neutral",
+							"id": "82c99ee6-f932-423f-a4a3-d403c8914b8d",
+							"sample_lang": "en"
+						},
+						{
+							"label": "Sarcasm",
+							"slug": "gb_jane_sarcasm",
+							"id": "a3e41ea8-020b-44c0-8d8b-f6cc03524e31",
+							"sample_lang": "en"
+						},
+						{
+							"label": "Shameful",
+							"slug": "gb_jane_shameful",
+							"id": "230ccacf-8800-4aa0-8ac2-8d004f1d9fb7",
+							"sample_lang": "en"
+						},
+						{
+							"label": "Sad",
+							"slug": "gb_jane_sad",
+							"id": "c7a8eb83-5247-4540-89f3-6650d349100d",
+							"sample_lang": "en"
+						},
+						{
+							"label": "Jealousy",
+							"slug": "gb_jane_jealousy",
+							"id": "e7168caa-f7ed-4e1c-98a1-434251f4f2b0",
+							"sample_lang": "en"
+						},
+						{
+							"label": "Frustrated",
+							"slug": "gb_jane_frustrated",
+							"id": "60844938-221d-4d1e-8233-34203f787d9f",
+							"sample_lang": "en"
+						},
+						{
+							"label": "Curious",
+							"slug": "gb_jane_curious",
+							"id": "5de47977-6e47-4266-a938-3bc1d76b4676",
+							"sample_lang": "en"
+						},
+						{
+							"label": "Confident",
+							"slug": "gb_jane_confident",
+							"id": "cbe96cf0-85ec-4a10-accb-0b35c93b6dfd",
+							"sample_lang": "en"
+						}
+					]
+				}
+			]
+		},
+		{
+			"key": "gradium",
+			"prefix": "g",
+			"title": "GRADIUM",
+			"api_key_env": "GRADIUM_API_KEY",
+			"groups": [
+				{
+					"title": "🇫🇷 French (France)",
+					"voices": [
+						{
+							"label": "Elise",
+							"slug": "gradium_fr_elise",
+							"id": "b35yykvVppLXyw_l",
+							"sample_lang": "fr",
+							"menu_note": "Adult/F - warm, smooth, welcoming"
+						},
+						{
+							"label": "Leo",
+							"slug": "gradium_fr_leo",
+							"id": "axlOaUiFyOZhy4nv",
+							"sample_lang": "fr",
+							"menu_note": "Adult/M - warm, smooth, welcoming"
+						},
+						{
+							"label": "Olivier",
+							"slug": "gradium_fr_olivier",
+							"id": "vMYQUSzm6GRkJX6d",
+							"sample_lang": "fr",
+							"menu_note": "Adult/M - warm, friendly tone"
+						},
+						{
+							"label": "Manon",
+							"slug": "gradium_fr_manon",
+							"id": "p1fSBpcmVWngBqVd",
+							"sample_lang": "fr",
+							"menu_note": "Young adult/F - gentle, calm pace"
+						},
+						{
+							"label": "Jade",
+							"slug": "gradium_fr_jade",
+							"id": "3mM3xaoFjNMQa22C",
+							"sample_lang": "fr",
+							"menu_note": "Young adult/F - clear, bright, smooth"
+						},
+						{
+							"label": "Amelie",
+							"slug": "gradium_fr_amelie",
+							"id": "J4XbCGPYNMigXcfZ",
+							"sample_lang": "fr",
+							"menu_note": "Young adult/F - friendly, clear"
+						},
+						{
+							"label": "Adrien",
+							"slug": "gradium_fr_adrien",
+							"id": "0LMAi0x_YVG_GLeM",
+							"sample_lang": "fr",
+							"menu_note": "Young adult/M - clear, warm, steady"
+						},
+						{
+							"label": "Sarah",
+							"slug": "gradium_fr_sarah",
+							"id": "-dOnYAX4N4GqSOee",
+							"sample_lang": "fr",
+							"menu_note": "Young adult/F - warm, smooth, welcoming"
+						},
+						{
+							"label": "Jennifer",
+							"slug": "gradium_fr_jennifer",
+							"id": "N8xxxD_d-ZinGVI4",
+							"sample_lang": "fr",
+							"menu_note": "Young adult/F - warm, smooth, support"
+						},
+						{
+							"label": "Elodie",
+							"slug": "gradium_fr_elodie",
+							"id": "zba0owtqy4Gnewn9",
+							"sample_lang": "fr",
+							"menu_note": "Adult/F - confident, corporate narration"
+						},
+						{
+							"label": "Justine",
+							"slug": "gradium_fr_justine",
+							"id": "TJv-kucMsUo24VQe",
+							"sample_lang": "fr",
+							"menu_note": "Young adult/F - upbeat, energetic"
+						},
+						{
+							"label": "Oceane",
+							"slug": "gradium_fr_oceane",
+							"id": "YE0-JPiElafJrZaC",
+							"sample_lang": "fr",
+							"menu_note": "Young adult/F - polished, broadcast style"
+						},
+						{
+							"label": "Lea",
+							"slug": "gradium_fr_lea",
+							"id": "QY_BJKHMElKDO12-",
+							"sample_lang": "fr",
+							"menu_note": "Adult/F - formal, precise reporting"
+						},
+						{
+							"label": "Sarah",
+							"slug": "gradium_fr_sarah_adult",
+							"id": "QkmUhBH4hIV2_BkY",
+							"sample_lang": "fr",
+							"menu_note": "Adult/F - confident, compassionate"
+						},
+						{
+							"label": "Mathieu",
+							"slug": "gradium_fr_mathieu",
+							"id": "D-IpHY1UI0iX9xQD",
+							"sample_lang": "fr",
+							"menu_note": "Adult/M - assertive, energetic"
+						},
+						{
+							"label": "Clement",
+							"slug": "gradium_fr_clement",
+							"id": "twLGV8mrH_ycNpUn",
+							"sample_lang": "fr",
+							"menu_note": "Adult/M - confident, sincere"
+						},
+						{
+							"label": "Julie",
+							"slug": "gradium_fr_julie",
+							"id": "k1wgs3k8-wRxTJO6",
+							"sample_lang": "fr",
+							"menu_note": "Adult/F - joyful, engaging"
+						},
+						{
+							"label": "Dylan",
+							"slug": "gradium_fr_dylan",
+							"id": "Hdf5cdfaGrLDTD63",
+							"sample_lang": "fr",
+							"menu_note": "Adult/M - sincere, emotional"
+						},
+						{
+							"label": "Marion",
+							"slug": "gradium_fr_marion",
+							"id": "1VAVLmmbQFDw7TMn",
+							"sample_lang": "fr",
+							"menu_note": "Adult/F - warm, trustworthy"
+						},
+						{
+							"label": "Pauline",
+							"slug": "gradium_fr_pauline",
+							"id": "2AtP1urAQkZaeI2U",
+							"sample_lang": "fr",
+							"menu_note": "Adult/F - articulate, journalistic"
+						},
+						{
+							"label": "Vincent",
+							"slug": "gradium_fr_vincent",
+							"id": "B09t5S64xLaKwXeW",
+							"sample_lang": "fr",
+							"menu_note": "Adult/M - warm, wise"
+						},
+						{
+							"label": "Pierre",
+							"slug": "gradium_fr_pierre",
+							"id": "AroCL6f1qizjiZ_a",
+							"sample_lang": "fr",
+							"menu_note": "Young adult/M - energetic, lively"
+						},
+						{
+							"label": "Guillaume",
+							"slug": "gradium_fr_guillaume",
+							"id": "qTA0lxFpynJdoxx7",
+							"sample_lang": "fr",
+							"menu_note": "Young adult/M - joyful, adventurous"
+						},
+						{
+							"label": "Romain",
+							"slug": "gradium_fr_romain",
+							"id": "zpmn3GOfiU_i5QGo",
+							"sample_lang": "fr",
+							"menu_note": "Adult/M - steady, clear"
+						},
+						{
+							"label": "Kevin",
+							"slug": "gradium_fr_kevin",
+							"id": "IB53xJtufx1sbfbt",
+							"sample_lang": "fr",
+							"menu_note": "Adult/M - sincere, emotional depth"
+						},
+						{
+							"label": "Florian",
+							"slug": "gradium_fr_florian",
+							"id": "kw_VWSocR7vyA9Ty",
+							"sample_lang": "fr",
+							"menu_note": "Adult/M - joyful, relatable"
+						},
+						{
+							"label": "Antoine",
+							"slug": "gradium_fr_antoine",
+							"id": "hx1RAC4Lqd9xyTAr",
+							"sample_lang": "fr",
+							"menu_note": "Adult/M - gritty, confident"
+						},
+						{
+							"label": "Quentin",
+							"slug": "gradium_fr_quentin",
+							"id": "pdcyd1mLmo0fcg3O",
+							"sample_lang": "fr",
+							"menu_note": "Adult/M - confident, documentary style"
+						},
+						{
+							"label": "Adam",
+							"slug": "gradium_fr_adam",
+							"id": "aNiSRZ0BhQxO1FPx",
+							"sample_lang": "fr",
+							"menu_note": "Adult/M - warm, formal"
+						},
+						{
+							"label": "Anais",
+							"slug": "gradium_fr_anais",
+							"id": "ImBVnxSeLsdCfNIV",
+							"sample_lang": "fr",
+							"menu_note": "Young adult/F - sharp, distinctive"
+						},
+						{
+							"label": "Marine",
+							"slug": "gradium_fr_marine",
+							"id": "GmGF_3ETsY2Zq7_w",
+							"sample_lang": "fr",
+							"menu_note": "Adult/F - warm, nurturing"
+						},
+						{
+							"label": "Camille",
+							"slug": "gradium_fr_camille",
+							"id": "w9V1722uEmTkWqnR",
+							"sample_lang": "fr",
+							"menu_note": "Adult/F - joyful, professional"
+						},
+						{
+							"label": "Marie",
+							"slug": "gradium_fr_marie",
+							"id": "BbLb4TxdlrldgpHI",
+							"sample_lang": "fr",
+							"menu_note": "Adult/F - warm, professional"
+						},
+						{
+							"label": "Thomas",
+							"slug": "gradium_fr_thomas",
+							"id": "8nsAoui8Y5RK9PYw",
+							"sample_lang": "fr",
+							"menu_note": "Adult/M - confident, action-driven"
+						},
+						{
+							"label": "Chloe",
+							"slug": "gradium_fr_chloe",
+							"id": "rIYDMY3dLccdauWA",
+							"sample_lang": "fr",
+							"menu_note": "Adult/F - bright, versatile"
+						},
+						{
+							"label": "Nicolas",
+							"slug": "gradium_fr_nicolas",
+							"id": "mxcKXLymdLQCdlEq",
+							"sample_lang": "fr",
+							"menu_note": "Adult/M - assertive, warm"
+						},
+						{
+							"label": "Laura",
+							"slug": "gradium_fr_laura",
+							"id": "Jlh1B0PKQJyup0sQ",
+							"sample_lang": "fr",
+							"menu_note": "Adult/F - clear, helpful"
+						},
+						{
+							"label": "Amandine",
+							"slug": "gradium_fr_amandine",
+							"id": "NvHEAMGiPT4u8iT-",
+							"sample_lang": "fr",
+							"menu_note": "Adult/F - versatile, joyful"
+						},
+						{
+							"label": "Valentin",
+							"slug": "gradium_fr_valentin",
+							"id": "WWHSNJCSTm77dyGd",
+							"sample_lang": "fr",
+							"menu_note": "Adult/M - warm, lively"
+						},
+						{
+							"label": "Manu",
+							"slug": "gradium_fr_manu",
+							"id": "L6OaiBybqikfCBk0",
+							"sample_lang": "fr",
+							"menu_note": "Young adult/M - low pitch, smooth"
+						}
+					]
+				},
+				{
+					"title": "🇨🇦 French (Canada)",
+					"start_index": 41,
+					"voices": [
+						{
+							"label": "Melanie",
+							"slug": "gradium_ca_melanie",
+							"id": "xynYWquoAsrvM7UY",
+							"sample_lang": "fr",
+							"menu_note": "CA French/F"
+						},
+						{
+							"label": "Maxime",
+							"slug": "gradium_ca_maxime",
+							"id": "s0PhgjzOTRD5wo5L",
+							"sample_lang": "fr",
+							"menu_note": "CA French/M"
+						},
+						{
+							"label": "Alexandre",
+							"slug": "gradium_ca_alexandre",
+							"id": "HBfu9XA3QfzAG1MN",
+							"sample_lang": "fr",
+							"menu_note": "CA French/M"
+						}
+					]
+				},
+				{
+					"title": "🇺🇸 English (US)",
+					"start_index": 100,
+					"voices": [
+						{
+							"label": "Emma",
+							"slug": "gradium_us_emma",
+							"id": "YTpq7expH9539ERJ",
+							"sample_lang": "en",
+							"menu_note": "Adult/F - pleasant, smooth, conversational"
+						},
+						{
+							"label": "Kent",
+							"slug": "gradium_us_kent",
+							"id": "LFZvm12tW_z0xfGo",
+							"sample_lang": "en",
+							"menu_note": "Adult/M - relaxed, authentic, friendly"
+						},
+						{
+							"label": "Tiffany",
+							"slug": "gradium_us_tiffany",
+							"id": "Eu9iL_CYe8N-Gkx_",
+							"sample_lang": "en",
+							"menu_note": "Young adult/F - warm, smooth, welcoming"
+						},
+						{
+							"label": "Christina",
+							"slug": "gradium_us_christina",
+							"id": "2H4HY2CBNyJHBCrP",
+							"sample_lang": "en",
+							"menu_note": "Adult/F - joyful, low pitch, efficient"
+						},
+						{
+							"label": "Sydney",
+							"slug": "gradium_us_sydney",
+							"id": "jtEKaLYNn6iif5PR",
+							"sample_lang": "en",
+							"menu_note": "Adult/F - joyful, airy, training-friendly"
+						},
+						{
+							"label": "John",
+							"slug": "gradium_us_john",
+							"id": "KWJiFWu2O9nMPYcR",
+							"sample_lang": "en",
+							"menu_note": "Adult/M - warm, low pitch, radio tone"
+						},
+						{
+							"label": "Maria",
+							"slug": "gradium_us_maria",
+							"id": "KNYHZTB8ZqdAZv0Q",
+							"sample_lang": "en",
+							"menu_note": "Adult/F - joyful, high pitch, energetic"
+						},
+						{
+							"label": "Mark",
+							"slug": "gradium_us_mark",
+							"id": "dh0EzP6jCroK6prq",
+							"sample_lang": "en",
+							"menu_note": "Adult/M - warm, low pitch, pro radio"
+						},
+						{
+							"label": "Logan",
+							"slug": "gradium_us_logan",
+							"id": "XJc-Y9tkSd1UA7s4",
+							"sample_lang": "en",
+							"menu_note": "Young adult/M - joyful, smooth, sporty"
+						},
+						{
+							"label": "Juan",
+							"slug": "gradium_us_juan",
+							"id": "78zAgQK6xmExb8wS",
+							"sample_lang": "en",
+							"menu_note": "Adult/M - joyful, smooth, vibrant"
+						},
+						{
+							"label": "Kaitlyn",
+							"slug": "gradium_us_kaitlyn",
+							"id": "56DcpvEI0Gawpidh",
+							"sample_lang": "en",
+							"menu_note": "Adult/F - warm, smooth, helpful"
+						},
+						{
+							"label": "Mary",
+							"slug": "gradium_us_mary",
+							"id": "wPx6HPbUQkaUHGhq",
+							"sample_lang": "en",
+							"menu_note": "Adult/F - joyful, high pitch, youthful"
+						},
+						{
+							"label": "Cameron",
+							"slug": "gradium_us_cameron",
+							"id": "c8BzreHTk1GG2R4z",
+							"sample_lang": "en",
+							"menu_note": "Adult/M - steady, low pitch, tech"
+						},
+						{
+							"label": "Jeremy",
+							"slug": "gradium_us_jeremy",
+							"id": "9QHzSiOYUD-RzEzM",
+							"sample_lang": "en",
+							"menu_note": "Adult/M - composed, intelligent, tech-savvy"
+						},
+						{
+							"label": "Jesse",
+							"slug": "gradium_us_jesse",
+							"id": "hOhCtzjR-cRG4T5T",
+							"sample_lang": "en",
+							"menu_note": "Young adult/M - joyful, airy, character"
+						},
+						{
+							"label": "Sean",
+							"slug": "gradium_us_sean",
+							"id": "cu0XE3Cxmg_GmSJ3",
+							"sample_lang": "en",
+							"menu_note": "Adult/M - joyful, spirited announcer"
+						},
+						{
+							"label": "Olivia",
+							"slug": "gradium_us_olivia",
+							"id": "kr-Om35JRqmA3Hzq",
+							"sample_lang": "en",
+							"menu_note": "Young adult/F - warm, low pitch, soothing"
+						},
+						{
+							"label": "Shelby",
+							"slug": "gradium_us_shelby",
+							"id": "O0uTTRx5zcetDFX4",
+							"sample_lang": "en",
+							"menu_note": "Young adult/F - joyful, high pitch, enthusiastic"
+						},
+						{
+							"label": "Patrick",
+							"slug": "gradium_us_patrick",
+							"id": "Z5GIOZR45ieZ8M-W",
+							"sample_lang": "en",
+							"menu_note": "Adult/M - joyful, smooth, public-service"
+						},
+						{
+							"label": "Richard",
+							"slug": "gradium_us_richard",
+							"id": "HndphaVV7KTCfKQT",
+							"sample_lang": "en",
+							"menu_note": "Adult/M - joyful, high pitch, sports"
+						},
+						{
+							"label": "Jason",
+							"slug": "gradium_us_jason",
+							"id": "FOFDH8py3aghc5kb",
+							"sample_lang": "en",
+							"menu_note": "Adult/M - joyful, engaging radio"
+						},
+						{
+							"label": "Timothy",
+							"slug": "gradium_us_timothy",
+							"id": "v5lib8tjaosy5sxQ",
+							"sample_lang": "en",
+							"menu_note": "Adult/M - warm, low pitch, nostalgic"
+						},
+						{
+							"label": "Nathan",
+							"slug": "gradium_us_nathan",
+							"id": "4NU5PqxX2BdMEtWe",
+							"sample_lang": "en",
+							"menu_note": "Adult/M - warm, smooth, neighborly"
+						},
+						{
+							"label": "Adam",
+							"slug": "gradium_us_adam",
+							"id": "EbIA5CIcQoa6NNd2",
+							"sample_lang": "en",
+							"menu_note": "Adult/M - joyful, smooth, morning radio"
+						},
+						{
+							"label": "Abigail",
+							"slug": "gradium_us_abigail",
+							"id": "KRo-uwfno-KcEgBM",
+							"sample_lang": "en",
+							"menu_note": "Adult/F - warm, airy, empathetic"
+						},
+						{
+							"label": "Melissa",
+							"slug": "gradium_us_melissa",
+							"id": "8Tm8RKFEbnkRtkdA",
+							"sample_lang": "en",
+							"menu_note": "Adult/F - joyful, smooth, upbeat"
+						},
+						{
+							"label": "Allison",
+							"slug": "gradium_us_allison",
+							"id": "yU6yxQ3e8LKRwU84",
+							"sample_lang": "en",
+							"menu_note": "Adult/F - joyful, high pitch, high-energy"
+						},
+						{
+							"label": "Kelsey",
+							"slug": "gradium_us_kelsey",
+							"id": "MQC0U1yWvZXrppaF",
+							"sample_lang": "en",
+							"menu_note": "Adult/F - balanced, natural service tone"
+						},
+						{
+							"label": "Anna",
+							"slug": "gradium_us_anna",
+							"id": "PS7enm5lVZiIvEKV",
+							"sample_lang": "en",
+							"menu_note": "Adult/F - warm, smooth, supportive"
+						},
+						{
+							"label": "Katherine",
+							"slug": "gradium_us_katherine",
+							"id": "bvNlBZ3DWDoVy_Yc",
+							"sample_lang": "en",
+							"menu_note": "Young adult/F - warm, smooth, professional"
+						},
+						{
+							"label": "Brian",
+							"slug": "gradium_us_brian",
+							"id": "ptMwY_gvmFxXMmDf",
+							"sample_lang": "en",
+							"menu_note": "Adult/M - steady, low pitch, character"
+						},
+						{
+							"label": "Jose",
+							"slug": "gradium_us_jose",
+							"id": "LqFNS0u6EII7VHBx",
+							"sample_lang": "en",
+							"menu_note": "Adult/M - warm, low pitch, mentor"
+						},
+						{
+							"label": "Dylan",
+							"slug": "gradium_us_dylan",
+							"id": "d9Fl9x8luXXX7u6E",
+							"sample_lang": "en",
+							"menu_note": "Adult/M - warm, smooth, DJ style"
+						},
+						{
+							"label": "Rebecca",
+							"slug": "gradium_us_rebecca",
+							"id": "GJSxJhSTPAGIPDwy",
+							"sample_lang": "en",
+							"menu_note": "Adult/F - warm, airy, gentle"
+						},
+						{
+							"label": "Eric",
+							"slug": "gradium_us_eric",
+							"id": "knw-ddWDPNORRA4Z",
+							"sample_lang": "en",
+							"menu_note": "Adult/M - joyful, smooth, cheerful"
+						},
+						{
+							"label": "Alyssa",
+							"slug": "gradium_us_alyssa",
+							"id": "22YWyuFACaMHsPh5",
+							"sample_lang": "en",
+							"menu_note": "Young adult/F - warm, smooth, relatable"
+						},
+						{
+							"label": "Alexandra",
+							"slug": "gradium_us_alexandra",
+							"id": "4nAcNUlNhEA_Kyjo",
+							"sample_lang": "en",
+							"menu_note": "Adult/F - joyful, smooth, hosting"
+						},
+						{
+							"label": "Jasmine",
+							"slug": "gradium_us_jasmine",
+							"id": "QPHuXnvRPQ57oXYy",
+							"sample_lang": "en",
+							"menu_note": "Adult/F - joyful, high pitch, commanding"
+						},
+						{
+							"label": "Jordan",
+							"slug": "gradium_us_jordan",
+							"id": "ws0Wb0PZXl21_Bbz",
+							"sample_lang": "en",
+							"menu_note": "Young adult/M - joyful, fitness energy"
+						},
+						{
+							"label": "Cody",
+							"slug": "gradium_us_cody",
+							"id": "SqHUVuEiTPSlIB5r",
+							"sample_lang": "en",
+							"menu_note": "Adult/M - warm, resonant, professional"
+						},
+						{
+							"label": "Alex",
+							"slug": "gradium_us_alex",
+							"id": "91EdXxJDbWICDBgz",
+							"sample_lang": "en",
+							"menu_note": "Adult/N - joyful, high pitch, ad-ready"
+						},
+						{
+							"label": "Brianna",
+							"slug": "gradium_us_brianna",
+							"id": "fggSYM_FGJ30QTTl",
+							"sample_lang": "en",
+							"menu_note": "Young adult/F - warm, smooth, radio/edu"
+						},
+						{
+							"label": "Victoria",
+							"slug": "gradium_us_victoria",
+							"id": "8dBmiTurwb7KcxLY",
+							"sample_lang": "en",
+							"menu_note": "Adult/F - warm, smooth, reliable"
+						},
+						{
+							"label": "Nicole",
+							"slug": "gradium_us_nicole",
+							"id": "T7UL6gmeDqqYiVe1",
+							"sample_lang": "en",
+							"menu_note": "Adult/F - joyful, sarcastic podcast edge"
+						},
+						{
+							"label": "Jennifer",
+							"slug": "gradium_us_jennifer",
+							"id": "auZu0iT-fniQ4cJd",
+							"sample_lang": "en",
+							"menu_note": "Adult/F - warm, smooth, friendly"
+						},
+						{
+							"label": "Stephanie",
+							"slug": "gradium_us_stephanie",
+							"id": "ikbJkd83GvuyoSLb",
+							"sample_lang": "en",
+							"menu_note": "Adult/F - joyful, smooth, relatable"
+						},
+						{
+							"label": "Kyle",
+							"slug": "gradium_us_kyle",
+							"id": "CjQcj4yeIs6h0uAb",
+							"sample_lang": "en",
+							"menu_note": "Adult/M - joyful, morning radio energy"
+						},
+						{
+							"label": "Lauren",
+							"slug": "gradium_us_lauren",
+							"id": "SG3KnxbSOkkrY097",
+							"sample_lang": "en",
+							"menu_note": "Adult/F - assertive, smooth, business"
+						},
+						{
+							"label": "Alexis",
+							"slug": "gradium_us_alexis",
+							"id": "74asmf7CXzjfopIX",
+							"sample_lang": "en",
+							"menu_note": "Adult/F - joyful, bright, customer care"
+						},
+						{
+							"label": "Megan",
+							"slug": "gradium_us_megan",
+							"id": "exG4bLr-lZ_bI0jF",
+							"sample_lang": "en",
+							"menu_note": "Adult/F - joyful, high pitch, influencer"
+						},
+						{
+							"label": "Jonathan",
+							"slug": "gradium_us_jonathan",
+							"id": "4u2uvwrHdTA2gRnZ",
+							"sample_lang": "en",
+							"menu_note": "Adult/M - joyful, old-timey charm"
+						},
+						{
+							"label": "Robert",
+							"slug": "gradium_us_robert",
+							"id": "gTAO-3xLZ8_WSfbm",
+							"sample_lang": "en",
+							"menu_note": "Adult/M - warm, resonant, polished"
+						},
+						{
+							"label": "Alexander",
+							"slug": "gradium_us_alexander",
+							"id": "8sWSyTC7byLsbHkr",
+							"sample_lang": "en",
+							"menu_note": "Adult/M - warm, low pitch, motivating"
+						},
+						{
+							"label": "Elizabeth",
+							"slug": "gradium_us_elizabeth",
+							"id": "u8rA2xOF_0LRnNSb",
+							"sample_lang": "en",
+							"menu_note": "Adult/F - consistent, smooth, reliable"
+						},
+						{
+							"label": "Emily",
+							"slug": "gradium_us_emily",
+							"id": "i1kmq28cO60ia35K",
+							"sample_lang": "en",
+							"menu_note": "Young adult/F - warm, smooth, podcast"
+						},
+						{
+							"label": "Brandon",
+							"slug": "gradium_us_brandon",
+							"id": "2j8TWGsIiUl4G3kj",
+							"sample_lang": "en",
+							"menu_note": "Young adult/M - high pitch, joyful"
+						},
+						{
+							"label": "Nicholas",
+							"slug": "gradium_us_nicholas",
+							"id": "n2Gv34jje2ZiiNzK",
+							"sample_lang": "en",
+							"menu_note": "Adult/M - joyful, relatable, sitcom-like"
+						},
+						{
+							"label": "Ashley",
+							"slug": "gradium_us_ashley",
+							"id": "QZMzHBlnJRjll_71",
+							"sample_lang": "en",
+							"menu_note": "Adult/F - warm, low pitch, supportive"
+						},
+						{
+							"label": "Joshua",
+							"slug": "gradium_us_joshua",
+							"id": "bDlMqRew31ZJwrD-",
+							"sample_lang": "en",
+							"menu_note": "Adult/M - joyful, resonant, radio host"
+						},
+						{
+							"label": "Jessica",
+							"slug": "gradium_us_jessica",
+							"id": "wYY8mXKrKtwKsaXZ",
+							"sample_lang": "en",
+							"menu_note": "Adult/F - consistent, smooth, patient"
+						},
+						{
+							"label": "Jacob",
+							"slug": "gradium_us_jacob",
+							"id": "ixaCTlZ5Xqf2XzQH",
+							"sample_lang": "en",
+							"menu_note": "Mature/M - steady, old-timey texture"
+						},
+						{
+							"label": "Matthew",
+							"slug": "gradium_us_matthew",
+							"id": "X-wgJsZwQKhfebgK",
+							"sample_lang": "en",
+							"menu_note": "Adult/M - high pitch, ad energy"
+						},
+						{
+							"label": "Michael",
+							"slug": "gradium_us_michael",
+							"id": "Mj0Pzs94jCw8oVOC",
+							"sample_lang": "en",
+							"menu_note": "Adult/M - low pitch, casual, sporty"
+						},
+						{
+							"label": "Hannah",
+							"slug": "gradium_us_hannah",
+							"id": "lP7D1y02OQFtffU3",
+							"sample_lang": "en",
+							"menu_note": "Young adult/F - warm, airy, calming"
+						},
+						{
+							"label": "Justin",
+							"slug": "gradium_us_justin",
+							"id": "6Mp6PGnaCdb-US21",
+							"sample_lang": "en",
+							"menu_note": "Adult/M - distinct, characterful"
+						},
+						{
+							"label": "James",
+							"slug": "gradium_us_james",
+							"id": "MZWrEHL2Fe_uc2Rv",
+							"sample_lang": "en",
+							"menu_note": "Adult/M - warm, resonant, storytelling"
+						},
+						{
+							"label": "Ryan",
+							"slug": "gradium_us_ryan",
+							"id": "AqRuVz8-e8u3BR00",
+							"sample_lang": "en",
+							"menu_note": "Adult/M - warm, low pitch, rural charm"
+						},
+						{
+							"label": "Taylor",
+							"slug": "gradium_us_taylor",
+							"id": "EfuzJVuTmw_mA7PC",
+							"sample_lang": "en",
+							"menu_note": "Adult/F - warm, efficient, support"
+						},
+						{
+							"label": "Sarah",
+							"slug": "gradium_us_sarah",
+							"id": "aW5dxfdkzIFCIdXc",
+							"sample_lang": "en",
+							"menu_note": "Young adult/F - clear, precise, student"
+						},
+						{
+							"label": "Samantha",
+							"slug": "gradium_us_samantha",
+							"id": "mn5sS7D8kYKETZXA",
+							"sample_lang": "en",
+							"menu_note": "Adult/F - warm, professional, managerial"
+						},
+						{
+							"label": "Austin",
+							"slug": "gradium_us_austin",
+							"id": "-0MuXG9RcCsuSVtb",
+							"sample_lang": "en",
+							"menu_note": "Mature/M - warm, rough, grandfatherly"
+						}
+					]
+				},
+				{
+					"title": "🇬🇧 English (UK)",
+					"start_index": 171,
+					"voices": [
+						{
+							"label": "Eva",
+							"slug": "gradium_uk_eva",
+							"id": "ubuXFxVQwVYnZQhy",
+							"sample_lang": "en",
+							"menu_note": "Adult/F - joyful, dynamic"
+						},
+						{
+							"label": "Jack",
+							"slug": "gradium_uk_jack",
+							"id": "m86j6D7UZpGzHsNu",
+							"sample_lang": "en",
+							"menu_note": "Adult/M - pleasant, versatile"
+						},
+						{
+							"label": "Kelly",
+							"slug": "gradium_uk_kelly",
+							"id": "Lxc7YlPC8ckLJA8H",
+							"sample_lang": "en",
+							"menu_note": "Adult/F - clear, soft, measured"
+						},
+						{
+							"label": "Charles",
+							"slug": "gradium_uk_charles",
+							"id": "P0GYBrxlhTy5CC87",
+							"sample_lang": "en",
+							"menu_note": "Adult/M - warm, smooth, classic radio"
+						},
+						{
+							"label": "Haley",
+							"slug": "gradium_uk_haley",
+							"id": "aq7ltaIQ6ZJUY0jR",
+							"sample_lang": "en",
+							"menu_note": "Adult/F - confident, warm, versatile"
+						},
+						{
+							"label": "Steven",
+							"slug": "gradium_uk_steven",
+							"id": "zyLIanWKViHkc6Wp",
+							"sample_lang": "en",
+							"menu_note": "Adult/M - steady, smooth, advisory"
+						},
+						{
+							"label": "Madison",
+							"slug": "gradium_uk_madison",
+							"id": "cuXxqSrGVntdhFpZ",
+							"sample_lang": "en",
+							"menu_note": "Young adult/F - warm, low pitch"
+						},
+						{
+							"label": "Benjamin",
+							"slug": "gradium_uk_benjamin",
+							"id": "IBVzgY91NZ1IJ0oP",
+							"sample_lang": "en",
+							"menu_note": "Adult/M - joyful, smooth, MC flair"
+						},
+						{
+							"label": "Aaron",
+							"slug": "gradium_uk_aaron",
+							"id": "Ve1zknlflaRwcAQw",
+							"sample_lang": "en",
+							"menu_note": "Adult/M - composed, smooth, technical"
+						},
+						{
+							"label": "Christian",
+							"slug": "gradium_uk_christian",
+							"id": "x69x43aS-5mVLCX2",
+							"sample_lang": "en",
+							"menu_note": "Adult/M - warm, smooth, scholarly"
+						},
+						{
+							"label": "Thomas",
+							"slug": "gradium_uk_thomas",
+							"id": "m7fJRmVaJjG2TL1c",
+							"sample_lang": "en",
+							"menu_note": "Adult/M - warm, smooth, actor-like"
+						},
+						{
+							"label": "Morgan",
+							"slug": "gradium_uk_morgan",
+							"id": "MGiwMOFxVe4a2aSU",
+							"sample_lang": "en",
+							"menu_note": "Adult/F - warm, airy, meditative"
+						},
+						{
+							"label": "Kimberly",
+							"slug": "gradium_uk_kimberly",
+							"id": "Abqwk2RWxlBEyv0j",
+							"sample_lang": "en",
+							"menu_note": "Adult/F - joyful, high pitch, cheerful"
+						},
+						{
+							"label": "Courtney",
+							"slug": "gradium_uk_courtney",
+							"id": "UX3Hi2ZmK7tT0c3G",
+							"sample_lang": "en",
+							"menu_note": "Adult/F - joyful, high pitch, sales"
+						},
+						{
+							"label": "Amanda",
+							"slug": "gradium_uk_amanda",
+							"id": "ZZb4X9ueHSdRlv9q",
+							"sample_lang": "en",
+							"menu_note": "Young adult/F - joyful, modern, podcast"
+						},
+						{
+							"label": "David",
+							"slug": "gradium_uk_david",
+							"id": "OceLYI_PPbqsdgdV",
+							"sample_lang": "en",
+							"menu_note": "Young adult/M - warm, smooth, relaxed"
+						},
+						{
+							"label": "Rachel",
+							"slug": "gradium_uk_rachel",
+							"id": "dEcrv3B8XGHoox2_",
+							"sample_lang": "en",
+							"menu_note": "Adult/F - warm, low pitch, calming"
+						},
+						{
+							"label": "Kayla",
+							"slug": "gradium_uk_kayla",
+							"id": "9VXl5t2IMagUQAzg",
+							"sample_lang": "en",
+							"menu_note": "Adult/F - joyful, precise, service"
+						},
+						{
+							"label": "Tyler",
+							"slug": "gradium_uk_tyler",
+							"id": "Ow5IKhni2ED3Xxhl",
+							"sample_lang": "en",
+							"menu_note": "Adult/M - warm, smooth, tech-radio"
+						},
+						{
+							"label": "Joseph",
+							"slug": "gradium_uk_joseph",
+							"id": "MhsYZQ4bIfcDpokF",
+							"sample_lang": "en",
+							"menu_note": "Adult/M - warm, relatable, blue-collar"
+						},
+						{
+							"label": "Christopher",
+							"slug": "gradium_uk_christopher",
+							"id": "fs2Qj_X2Z2WvWJSU",
+							"sample_lang": "en",
+							"menu_note": "Adult/M - smooth, trustworthy expert"
+						}
+					]
+				},
+				{
+					"title": "🇦🇺 English (Australia)",
+					"start_index": 192,
+					"voices": [
+						{
+							"label": "Hunter",
+							"slug": "gradium_au_hunter",
+							"id": "W5htOuyiFI4Fwhxs",
+							"sample_lang": "en",
+							"menu_note": "Adult/M - joyful, smooth, radio charm"
+						},
+						{
+							"label": "Samuel",
+							"slug": "gradium_au_samuel",
+							"id": "pxKsJ_4kEMid5XpZ",
+							"sample_lang": "en",
+							"menu_note": "Young adult/M - warm, smooth, friendly"
+						},
+						{
+							"label": "Kevin",
+							"slug": "gradium_au_kevin",
+							"id": "J2qsArcdozbto5Hn",
+							"sample_lang": "en",
+							"menu_note": "Adult/M - joyful, host/tutor"
+						},
+						{
+							"label": "William",
+							"slug": "gradium_au_william",
+							"id": "VeVmpxxbyJiWrGNG",
+							"sample_lang": "en",
+							"menu_note": "Adult/M - joyful, high pitch, coach"
+						},
+						{
+							"label": "Anthony",
+							"slug": "gradium_au_anthony",
+							"id": "2V3TjbyQGPlkY6ON",
+							"sample_lang": "en",
+							"menu_note": "Adult/M - joyful, smooth, MC energy"
+						},
+						{
+							"label": "Daniel",
+							"slug": "gradium_au_daniel",
+							"id": "apU2CMobTyu92tZj",
+							"sample_lang": "en",
+							"menu_note": "Adult/M - joyful, smooth, down-to-earth"
+						}
+					]
+				},
+				{
+					"title": "🌍 English (Others)",
+					"start_index": 198,
+					"voices": [
+						{
+							"label": "Max",
+							"slug": "gradium_other_max",
+							"id": "NoJdNY6JTz-VJLwz",
+							"sample_lang": "en",
+							"menu_note": "Young adult/M - clear, calm, measured"
+						},
+						{
+							"label": "Arjun",
+							"slug": "gradium_other_arjun",
+							"id": "-_aUUFZaJ0CT1gks",
+							"sample_lang": "en",
+							"menu_note": "Adult/M - warm, low pitch, smooth"
+						},
+						{
+							"label": "Michelle",
+							"slug": "gradium_other_michelle",
+							"id": "lt88kyLfD8Mqemla",
+							"sample_lang": "en",
+							"menu_note": "Young adult/F - Indian English, warm, clear"
+						},
+						{
+							"label": "Brittany",
+							"slug": "gradium_other_brittany",
+							"id": "3bIdO9CHnAh_pRAf",
+							"sample_lang": "en",
+							"menu_note": "Adult/F - Indian English, joyful, smooth"
+						}
+					]
+				}
+			]
+		}
+	]
+}

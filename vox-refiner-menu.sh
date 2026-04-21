@@ -70,81 +70,92 @@ _voice_picker() {
     # _voice_picker <ENV_VAR_NAME> <MENU_TITLE> <ALLOW_DISABLE>
     # ALLOW_DISABLE="1" adds [d] Disable option (sets the var to empty string).
     local _vp_var="$1" _vp_title="$2" _vp_allow_disable="${3:-0}"
-    local _cur_vid _cur_slug _vpreview_id _vpreview_slug _vchoice _vi _vsample _tts_tmp
-    local -a _vids _vslugs
+    local _catalog_file="$SCRIPT_DIR/src/voice_catalog.json"
+    local _catalog_dump=""
+    local _cur_vid _cur_slug _vchoice _vsample _tts_tmp
+    local _vpreview_id _vpreview_slug _vpreview_provider_prefix _vpreview_lang
+    local _sel_prefix _sel_number _provider_label _provider_api_env
+    local _provider_hint="" _vi _row_items _row_count _group_has_notes
+    local -a _provider_prefixes _provider_titles _provider_api_envs
+    local -a _group_prefixes _group_ids _group_titles
+    local -a _voice_prefixes _voice_group_ids _voice_numbers _voice_labels
+    local -a _voice_slugs _voice_ids _voice_sample_langs _voice_menu_notes
+    local _m_max=0 _g_max=0
 
-    _vids=(
-        "5a271406-039d-46fe-835b-fbbb00eaf08d"
-        "49d024dd-981b-4462-bb17-74d381eb8fd7"
-        "4adeb2c6-25a3-44bc-8100-5234dfc1193b"
-        "2f62b1af-aea3-4079-9d10-7ca665ee7243"
-        "e0580ce5-e63c-4cbe-88c8-a983b80c5f1f"
-        "a7c07cdc-1c35-4d87-a938-c610a654f600"
-        "c69964a6-ab8b-4f8a-9465-ec0925096ec8"
-        "1024d823-a11e-43ee-bf3d-d440dccc0577"
-        "530e2e20-58e2-45d8-b0a5-4594f4915944"
-        "5940190b-f58a-4c3e-8264-a40d63fd6883"
-        "98559b22-62b5-4a64-a7cd-fc78ca41faa8"
-        "01d985cd-5e0c-4457-bfd8-80ba31a5bc03"
-        "cb891218-482c-4392-9878-91e8d999d57a"
-        "1f017bcb-02e5-460d-989b-db065c0c6122"
-        "e3596645-b1af-469e-b857-f18ddedc7652"
-        "d4101b8f-12c3-450d-a812-7d700b3a3245"
-        "e8e5b1de-493c-4061-8414-e2170f9f4b6f"
-        "390c8a2b-60a6-4882-8437-c49a8bd33b63"
-        "8169ab87-bc99-4669-a5ec-6855860ace24"
-        "5ad5d44e-6b4e-4a57-a8a8-4cae088034ed"
-        "862274a7-8333-48f7-b668-f19c932999e0"
-        "82c99ee6-f932-423f-a4a3-d403c8914b8d"
-        "a3e41ea8-020b-44c0-8d8b-f6cc03524e31"
-        "230ccacf-8800-4aa0-8ac2-8d004f1d9fb7"
-        "c7a8eb83-5247-4540-89f3-6650d349100d"
-        "e7168caa-f7ed-4e1c-98a1-434251f4f2b0"
-        "60844938-221d-4d1e-8233-34203f787d9f"
-        "5de47977-6e47-4266-a938-3bc1d76b4676"
-        "cbe96cf0-85ec-4a10-accb-0b35c93b6dfd"
-        "b35yykvVppLXyw_l"
-        "axlOaUiFyOZhy4nv"
-        "vMYQUSzm6GRkJX6d"
-        "p1fSBpcmVWngBqVd"
-        "3mM3xaoFjNMQa22C"
-        "J4XbCGPYNMigXcfZ"
-        "0LMAi0x_YVG_GLeM"
-        "-dOnYAX4N4GqSOee"
-        "N8xxxD_d-ZinGVI4"
-        "zba0owtqy4Gnewn9"
-        "xynYWquoAsrvM7UY"
-        "s0PhgjzOTRD5wo5L"
-        "HBfu9XA3QfzAG1MN"
-    )
-    _vslugs=(
-        "fr_marie_neutral"    "fr_marie_happy"
-        "fr_marie_sad"        "fr_marie_excited"
-        "fr_marie_curious"    "fr_marie_angry"
-        "en_paul_neutral"     "en_paul_happy"
-        "en_paul_sad"         "en_paul_excited"
-        "en_paul_confident"   "en_paul_cheerful"
-        "en_paul_angry"       "en_paul_frustrated"
-        "gb_oliver_neutral"   "gb_oliver_sad"
-        "gb_oliver_excited"   "gb_oliver_curious"
-        "gb_oliver_confident" "gb_oliver_cheerful"
-        "gb_oliver_angry"     "gb_jane_neutral"
-        "gb_jane_sarcasm"     "gb_jane_shameful"
-        "gb_jane_sad"         "gb_jane_jealousy"
-        "gb_jane_frustrated"  "gb_jane_curious"
-        "gb_jane_confident"
-        "gradium_fr_elise"    "gradium_fr_leo"
-        "gradium_fr_olivier"  "gradium_fr_manon"
-        "gradium_fr_jade"     "gradium_fr_amelie"
-        "gradium_fr_adrien"   "gradium_fr_sarah"
-        "gradium_fr_jennifer" "gradium_fr_elodie"
-        "gradium_ca_melanie"  "gradium_ca_maxime"
-        "gradium_ca_alexandre"
-    )
+    if ! _catalog_dump="$($VENV_PYTHON - "$_catalog_file" <<'PY'
+import json
+import sys
+
+catalog_path = sys.argv[1]
+with open(catalog_path, encoding="utf-8") as f:
+    data = json.load(f)
+
+for provider in data.get("providers", []):
+    prefix = provider["prefix"]
+    title = provider["title"]
+    api_env = provider.get("api_key_env", "")
+    print(f"PROVIDER\t{prefix}\t{title}\t{api_env}")
+    provider_index = 1
+    for group_idx, group in enumerate(provider.get("groups", []), start=1):
+        start_index = group.get("start_index")
+        if isinstance(start_index, int) and start_index > 0:
+            provider_index = start_index
+        print(f"GROUP\t{prefix}\t{group_idx}\t{group['title']}")
+        for voice in group.get("voices", []):
+            note = (voice.get("menu_note", "") or "").replace("\t", " ").replace("\n", " ").strip()
+            print(
+                "VOICE\t"
+                f"{prefix}\t{group_idx}\t{provider_index}\t"
+                f"{voice['label']}\t{voice['slug']}\t{voice['id']}\t{voice.get('sample_lang', 'en')}\t{note}"
+            )
+            provider_index += 1
+PY
+)"; then
+        _error "Failed to load voice catalog: $_catalog_file"
+        sleep 1
+        return 1
+    fi
+
+    while IFS=$'\t' read -r _kind _f1 _f2 _f3 _f4 _f5 _f6 _f7 _f8; do
+        [ -z "$_kind" ] && continue
+        case "$_kind" in
+            PROVIDER)
+                _provider_prefixes+=("$_f1")
+                _provider_titles+=("$_f2")
+                _provider_api_envs+=("$_f3")
+                ;;
+            GROUP)
+                _group_prefixes+=("$_f1")
+                _group_ids+=("$_f2")
+                _group_titles+=("$_f3")
+                ;;
+            VOICE)
+                _voice_prefixes+=("$_f1")
+                _voice_group_ids+=("$_f2")
+                _voice_numbers+=("$_f3")
+                _voice_labels+=("$_f4")
+                _voice_slugs+=("$_f5")
+                _voice_ids+=("$_f6")
+                _voice_sample_langs+=("$_f7")
+                _voice_menu_notes+=("$_f8")
+                if [ "$_f1" = "m" ] && [ "$_f3" -gt "$_m_max" ]; then _m_max="$_f3"; fi
+                if [ "$_f1" = "g" ] && [ "$_f3" -gt "$_g_max" ]; then _g_max="$_f3"; fi
+                ;;
+        esac
+    done <<< "$_catalog_dump"
+
+    if [ "${#_voice_ids[@]}" -eq 0 ]; then
+        _error "Voice catalog has no entries: $_catalog_file"
+        sleep 1
+        return 1
+    fi
+
     local _vtext_fr="Bonjour ! Je suis votre assistante vocale. Comment puis-je vous aider aujourd'hui ?"
     local _vtext_en="Hello! I'm your voice assistant. How can I help you today?"
     _vpreview_id=""
     _vpreview_slug=""
+    _vpreview_provider_prefix=""
+    _vpreview_lang=""
 
     while true; do
         _cur_vid="${!_vp_var}"
@@ -152,9 +163,9 @@ _voice_picker() {
         if [ -z "$_cur_vid" ] && [ "$_vp_allow_disable" = "1" ]; then
             _cur_slug="(disabled)"
         else
-            for _i in "${!_vids[@]}"; do
-                if [ "${_vids[$_i]}" = "$_cur_vid" ]; then
-                    _cur_slug="${_vslugs[$_i]}"
+            for _i in "${!_voice_ids[@]}"; do
+                if [ "${_voice_ids[$_i]}" = "$_cur_vid" ]; then
+                    _cur_slug="${_voice_slugs[$_i]}"
                     break
                 fi
             done
@@ -167,47 +178,75 @@ _voice_picker() {
         echo ""
         _sep
         echo ""
-        printf "  ${C_BGREEN}MISTRAL${C_RESET}\n"
-        printf "  ${C_BCYAN}🇫🇷  MARIE (French)${C_RESET}\n"
-        printf "  ${C_BOLD}[ 1]${C_RESET} Neutral    ${C_BOLD}[ 2]${C_RESET} Happy     ${C_BOLD}[ 3]${C_RESET} Sad\n"
-        printf "  ${C_BOLD}[ 4]${C_RESET} Excited    ${C_BOLD}[ 5]${C_RESET} Curious   ${C_BOLD}[ 6]${C_RESET} Angry\n"
-        echo ""
-        printf "  ${C_BCYAN}🇺🇸  PAUL (English US)${C_RESET}\n"
-        printf "  ${C_BOLD}[ 7]${C_RESET} Neutral    ${C_BOLD}[ 8]${C_RESET} Happy     ${C_BOLD}[ 9]${C_RESET} Sad\n"
-        printf "  ${C_BOLD}[10]${C_RESET} Excited    ${C_BOLD}[11]${C_RESET} Confident ${C_BOLD}[12]${C_RESET} Cheerful\n"
-        printf "  ${C_BOLD}[13]${C_RESET} Angry      ${C_BOLD}[14]${C_RESET} Frustrated\n"
-        echo ""
-        printf "  ${C_BCYAN}🇬🇧  OLIVER (English GB)${C_RESET}\n"
-        printf "  ${C_BOLD}[15]${C_RESET} Neutral    ${C_BOLD}[16]${C_RESET} Sad       ${C_BOLD}[17]${C_RESET} Excited\n"
-        printf "  ${C_BOLD}[18]${C_RESET} Curious    ${C_BOLD}[19]${C_RESET} Confident ${C_BOLD}[20]${C_RESET} Cheerful\n"
-        printf "  ${C_BOLD}[21]${C_RESET} Angry\n"
-        echo ""
-        printf "  ${C_BCYAN}🇬🇧  JANE (English GB)${C_RESET}\n"
-        printf "  ${C_BOLD}[22]${C_RESET} Neutral    ${C_BOLD}[23]${C_RESET} Sarcasm   ${C_BOLD}[24]${C_RESET} Shameful\n"
-        printf "  ${C_BOLD}[25]${C_RESET} Sad        ${C_BOLD}[26]${C_RESET} Jealousy  ${C_BOLD}[27]${C_RESET} Frustrated\n"
-        printf "  ${C_BOLD}[28]${C_RESET} Curious    ${C_BOLD}[29]${C_RESET} Confident\n"
-        echo ""
-        if [ -z "${GRADIUM_API_KEY:-}" ]; then
-            printf "  ${C_BGREEN}GRADIUM${C_RESET}  ${C_DIM}(unavailable — GRADIUM_API_KEY not set, see Settings → API Keys → [e5])${C_RESET}\n"
-        else
-            printf "  ${C_BGREEN}GRADIUM${C_RESET}\n"
-        fi
-        printf "  ${C_BCYAN}🇫🇷  GRADIUM — French (France)${C_RESET}\n"
-        printf "  ${C_BOLD}[30]${C_RESET} Elise      ${C_BOLD}[31]${C_RESET} Leo       ${C_BOLD}[32]${C_RESET} Olivier\n"
-        printf "  ${C_BOLD}[33]${C_RESET} Manon      ${C_BOLD}[34]${C_RESET} Jade      ${C_BOLD}[35]${C_RESET} Amelie\n"
-        printf "  ${C_BOLD}[36]${C_RESET} Adrien     ${C_BOLD}[37]${C_RESET} Sarah     ${C_BOLD}[38]${C_RESET} Jennifer\n"
-        printf "  ${C_BOLD}[39]${C_RESET} Elodie\n"
-        echo ""
-        printf "  ${C_BCYAN}🇨🇦  GRADIUM — French (Canada)${C_RESET}\n"
-        printf "  ${C_BOLD}[40]${C_RESET} Melanie    ${C_BOLD}[41]${C_RESET} Maxime    ${C_BOLD}[42]${C_RESET} Alexandre\n"
-        echo ""
+        for _pi in "${!_provider_prefixes[@]}"; do
+            _sel_prefix="${_provider_prefixes[$_pi]}"
+            _provider_label="${_provider_titles[$_pi]}"
+            _provider_api_env="${_provider_api_envs[$_pi]}"
+            if [ -n "$_provider_api_env" ] && [ -z "${!_provider_api_env:-}" ] && [ "$_sel_prefix" != "m" ]; then
+                printf "  ${C_BGREEN}%s${C_RESET}  ${C_DIM}(unavailable — %s not set, see Settings → API Keys)${C_RESET}\n" "$_provider_label" "$_provider_api_env"
+            else
+                printf "  ${C_BGREEN}%s${C_RESET}\n" "$_provider_label"
+            fi
+
+            for _gi in "${!_group_prefixes[@]}"; do
+                [ "${_group_prefixes[$_gi]}" != "$_sel_prefix" ] && continue
+                printf "  ${C_BCYAN}%s${C_RESET}\n" "${_group_titles[$_gi]}"
+
+                _group_has_notes=0
+                for _vi in "${!_voice_ids[@]}"; do
+                    [ "${_voice_prefixes[$_vi]}" != "$_sel_prefix" ] && continue
+                    [ "${_voice_group_ids[$_vi]}" != "${_group_ids[$_gi]}" ] && continue
+                    if [ -n "${_voice_menu_notes[$_vi]}" ]; then
+                        _group_has_notes=1
+                        break
+                    fi
+                done
+
+                if [ "$_sel_prefix" = "g" ] || [ "$_group_has_notes" = "1" ]; then
+                    for _vi in "${!_voice_ids[@]}"; do
+                        [ "${_voice_prefixes[$_vi]}" != "$_sel_prefix" ] && continue
+                        [ "${_voice_group_ids[$_vi]}" != "${_group_ids[$_gi]}" ] && continue
+                        if [ -n "${_voice_menu_notes[$_vi]}" ]; then
+                            printf "  ${C_BOLD}[%s%s]${C_RESET} %s ${C_DIM}- %s${C_RESET}\n" \
+                                "$_sel_prefix" "${_voice_numbers[$_vi]}" "${_voice_labels[$_vi]}" "${_voice_menu_notes[$_vi]}"
+                        else
+                            printf "  ${C_BOLD}[%s%s]${C_RESET} %s\n" \
+                                "$_sel_prefix" "${_voice_numbers[$_vi]}" "${_voice_labels[$_vi]}"
+                        fi
+                    done
+                else
+                    _row_items=""
+                    _row_count=0
+                    for _vi in "${!_voice_ids[@]}"; do
+                        [ "${_voice_prefixes[$_vi]}" != "$_sel_prefix" ] && continue
+                        [ "${_voice_group_ids[$_vi]}" != "${_group_ids[$_gi]}" ] && continue
+                        if [ -z "$_row_items" ]; then
+                            _row_items="${C_BOLD}[${_sel_prefix}${_voice_numbers[$_vi]}]${C_RESET} ${_voice_labels[$_vi]}"
+                        else
+                            _row_items="${_row_items}    ${C_BOLD}[${_sel_prefix}${_voice_numbers[$_vi]}]${C_RESET} ${_voice_labels[$_vi]}"
+                        fi
+                        _row_count=$((_row_count + 1))
+                        if [ $((_row_count % 3)) -eq 0 ]; then
+                            printf "  %b\n" "$_row_items"
+                            _row_items=""
+                        fi
+                    done
+                    [ -n "$_row_items" ] && printf "  %b\n" "$_row_items"
+                fi
+                echo ""
+            done
+        done
+
         _sep
+        _provider_hint=""
+        [ "$_m_max" -gt 0 ] && _provider_hint="m1-m$_m_max"
+        [ "$_g_max" -gt 0 ] && _provider_hint="${_provider_hint:+${_provider_hint}, }g1-g$_g_max"
         if [ -n "$_vpreview_id" ]; then
             printf "  ${C_DIM}Last preview:${C_RESET} ${C_CYAN}%s${C_RESET}   ${C_BOLD}[s]${C_RESET} Select it" "$_vpreview_slug"
             [ "$_vp_allow_disable" = "1" ] && printf "  ${C_BOLD}[d]${C_RESET} Disable"
             printf "  ${C_BOLD}[m]${C_RESET} Menu settings\n"
         else
-            printf "  ${C_DIM}Type a number to listen"
+            printf "  ${C_DIM}Type provider+number to listen (%s)" "$_provider_hint"
             [ "$_vp_allow_disable" = "1" ] && printf "   ${C_BOLD}[d]${C_RESET} ${C_DIM}Disable"
             printf "   ${C_BOLD}[m]${C_RESET} Menu settings\n"
         fi
@@ -233,26 +272,49 @@ _voice_picker() {
                 ;;
             ""|m|M) break ;;
             *)
-                if [[ "$_vchoice" =~ ^[0-9]+$ ]] && \
-                   [ "$_vchoice" -ge 1 ] && [ "$_vchoice" -le "${#_vids[@]}" ]; then
-                    _vi=$(( _vchoice - 1 ))
+                _vi=-1
+                if [[ "$_vchoice" =~ ^([A-Za-z])([0-9]+)$ ]]; then
+                    _sel_prefix="${BASH_REMATCH[1],,}"
+                    _sel_number="${BASH_REMATCH[2]}"
+                    for _i in "${!_voice_ids[@]}"; do
+                        if [ "${_voice_prefixes[$_i]}" = "$_sel_prefix" ] && \
+                           [ "${_voice_numbers[$_i]}" = "$_sel_number" ]; then
+                            _vi="$_i"
+                            break
+                        fi
+                    done
+                fi
+
+                if [ "$_vi" -ge 0 ]; then
                     _vpreview_id_saved="$_vpreview_id"
                     _vpreview_slug_saved="$_vpreview_slug"
-                    _vpreview_id="${_vids[$_vi]}"
-                    _vpreview_slug="${_vslugs[$_vi]}"
-                    if [ "$_vchoice" -le 6 ] || [ "$_vchoice" -ge 30 ]; then
+                    _vpreview_provider_prefix_saved="$_vpreview_provider_prefix"
+                    _vpreview_lang_saved="$_vpreview_lang"
+                    _vpreview_id="${_voice_ids[$_vi]}"
+                    _vpreview_slug="${_voice_slugs[$_vi]}"
+                    _vpreview_provider_prefix="${_voice_prefixes[$_vi]}"
+                    _vpreview_lang="${_voice_sample_langs[$_vi]}"
+                    if [ "$_vpreview_lang" = "fr" ]; then
                         _vsample="$_vtext_fr"
                     else
                         _vsample="$_vtext_en"
                     fi
                     _tts_tmp="$SCRIPT_DIR/recordings/.voice_preview.mp3"
                     echo ""
-                    if ! [[ "$_vpreview_id" =~ ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$ ]] && \
-                       [ -z "${GRADIUM_API_KEY:-}" ]; then
-                        _warn "GRADIUM_API_KEY is not set — cannot preview or select this voice."
-                        printf "  ${C_DIM}Add it via Settings → API Keys → [e5] Edit Gradium key.${C_RESET}\n"
+                    _provider_api_env=""
+                    for _pi in "${!_provider_prefixes[@]}"; do
+                        if [ "${_provider_prefixes[$_pi]}" = "$_vpreview_provider_prefix" ]; then
+                            _provider_api_env="${_provider_api_envs[$_pi]}"
+                            break
+                        fi
+                    done
+                    if [ -n "$_provider_api_env" ] && [ -z "${!_provider_api_env:-}" ]; then
+                        _warn "$_provider_api_env is not set — cannot preview or select this voice."
+                        printf "  ${C_DIM}Add it via Settings → API Keys.${C_RESET}\n"
                         _vpreview_id="$_vpreview_id_saved"
                         _vpreview_slug="$_vpreview_slug_saved"
+                        _vpreview_provider_prefix="$_vpreview_provider_prefix_saved"
+                        _vpreview_lang="$_vpreview_lang_saved"
                         sleep 2
                     else
                         _process "Generating preview for $_vpreview_slug..."
@@ -266,10 +328,12 @@ _voice_picker() {
                             _warn "Preview failed."
                             _vpreview_id=""
                             _vpreview_slug=""
+                            _vpreview_provider_prefix=""
+                            _vpreview_lang=""
                         fi
                     fi
                 else
-                    _warn "Invalid choice."
+                    _warn "Invalid choice. Use mN or gN."
                     sleep 0.5
                 fi
                 ;;
@@ -447,9 +511,9 @@ _show_capability_status() {
 
     # Gradium (extended French voice bank)
     if [ -n "$_has_g" ]; then
-        printf "  ${C_BGREEN}✓${C_RESET}  Extended voice bank      (Gradium: 13 native French voices)\n"
+        printf "  ${C_BGREEN}✓${C_RESET}  Extended voice bank      (Gradium French voice catalog)\n"
     else
-        printf "  ${C_DIM}○${C_RESET}  ${C_DIM}Extended voice bank       — add GRADIUM_API_KEY for French voices [30]–[42]${C_RESET}\n"
+        printf "  ${C_DIM}○${C_RESET}  ${C_DIM}Extended voice bank       — add GRADIUM_API_KEY to unlock Gradium voices (gN)${C_RESET}\n"
     fi
 
     echo ""
