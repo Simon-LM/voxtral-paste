@@ -75,16 +75,56 @@ _voice_picker() {
     local _cur_vid _cur_slug _vchoice _vsample _tts_tmp
     local _vpreview_id _vpreview_slug _vpreview_provider_prefix _vpreview_lang
     local _sel_prefix _sel_number _provider_label _provider_api_env
-    local _provider_hint="" _vi _row_items _row_count _group_has_notes
+    local _provider_hint="" _vi _group_has_notes _row_text _rows_printed
+    local _provider_has_visible_groups _group_lang _selected_group_lang
+    local _lang_filter="all" _lang_filter_label="All languages" _needs_lang_prompt=1
+    local _lang_choice _lang_index _lang_code _lang_label _lang_count
+    local _lang_exists _lang_has_voices
     local -a _provider_prefixes _provider_titles _provider_api_envs
-    local -a _group_prefixes _group_ids _group_titles
+    local -a _group_prefixes _group_ids _group_titles _group_langs _group_voice_counts
     local -a _voice_prefixes _voice_group_ids _voice_numbers _voice_labels
     local -a _voice_slugs _voice_ids _voice_sample_langs _voice_menu_notes
+    local -a _row_prefixes _row_group_ids _row_texts
+    local -a _lang_codes _lang_labels _lang_counts
     local _m_max=0 _g_max=0
 
     if ! _catalog_dump="$($VENV_PYTHON - "$_catalog_file" <<'PY'
 import json
 import sys
+import unicodedata
+
+
+def display_width(text: str) -> int:
+    width = 0
+    for char in text:
+        if unicodedata.combining(char):
+            continue
+        if unicodedata.east_asian_width(char) in ("W", "F"):
+            width += 2
+        else:
+            width += 1
+    return width
+
+
+def ljust_display(text: str, width: int) -> str:
+    return text + (" " * max(0, width - display_width(text)))
+
+
+def format_grid_rows(items, columns=3, gap=4):
+    if not items:
+        return []
+    col_width = max(display_width(item) for item in items)
+    rows = []
+    for start in range(0, len(items), columns):
+        chunk = items[start:start + columns]
+        padded = []
+        for idx, item in enumerate(chunk):
+            if idx < len(chunk) - 1:
+                padded.append(ljust_display(item, col_width))
+            else:
+                padded.append(item)
+        rows.append((" " * gap).join(padded))
+    return rows
 
 catalog_path = sys.argv[1]
 with open(catalog_path, encoding="utf-8") as f:
@@ -100,15 +140,34 @@ for provider in data.get("providers", []):
         start_index = group.get("start_index")
         if isinstance(start_index, int) and start_index > 0:
             provider_index = start_index
-        print(f"GROUP\t{prefix}\t{group_idx}\t{group['title']}")
+        group_title = str(group.get("title", "")).replace("\t", " ").replace("\n", " ").strip()
+        group_langs = {
+            str(voice.get("sample_lang", "")).strip().lower()
+            for voice in group.get("voices", [])
+            if str(voice.get("sample_lang", "")).strip()
+        }
+        if len(group_langs) == 1:
+            group_lang = next(iter(group_langs))
+        elif len(group_langs) > 1:
+            group_lang = "mul"
+        else:
+            group_lang = "und"
+        print(f"GROUP\t{prefix}\t{group_idx}\t{group_title}\t{group_lang}")
+        group_rows = []
         for voice in group.get("voices", []):
+            label = str(voice.get("label", "")).replace("\t", " ").replace("\n", " ").strip()
             note = (voice.get("menu_note", "") or "").replace("\t", " ").replace("\n", " ").strip()
+            group_rows.append((provider_index, label, note))
             print(
                 "VOICE\t"
                 f"{prefix}\t{group_idx}\t{provider_index}\t"
-                f"{voice['label']}\t{voice['slug']}\t{voice['id']}\t{voice.get('sample_lang', 'en')}\t{note}"
+                f"{label}\t{voice['slug']}\t{voice['id']}\t{voice.get('sample_lang', 'en')}\t{note}"
             )
             provider_index += 1
+        if prefix != "g" and group_rows and not any(note for _, _, note in group_rows):
+            grid_items = [f"[{prefix}{idx}] {label}" for idx, label, _ in group_rows]
+            for row in format_grid_rows(grid_items, columns=3, gap=4):
+                print(f"ROW\t{prefix}\t{group_idx}\t{row}")
 PY
 )"; then
         _error "Failed to load voice catalog: $_catalog_file"
@@ -116,7 +175,7 @@ PY
         return 1
     fi
 
-    while IFS=$'\t' read -r _kind _f1 _f2 _f3 _f4 _f5 _f6 _f7 _f8; do
+    while IFS=$'\t' read -r _kind _f1 _f2 _f3 _f4 _f5 _f6 _f7 _f8 _f9; do
         [ -z "$_kind" ] && continue
         case "$_kind" in
             PROVIDER)
@@ -128,6 +187,7 @@ PY
                 _group_prefixes+=("$_f1")
                 _group_ids+=("$_f2")
                 _group_titles+=("$_f3")
+                _group_langs+=("$_f4")
                 ;;
             VOICE)
                 _voice_prefixes+=("$_f1")
@@ -141,8 +201,81 @@ PY
                 if [ "$_f1" = "m" ] && [ "$_f3" -gt "$_m_max" ]; then _m_max="$_f3"; fi
                 if [ "$_f1" = "g" ] && [ "$_f3" -gt "$_g_max" ]; then _g_max="$_f3"; fi
                 ;;
+            ROW)
+                _row_prefixes+=("$_f1")
+                _row_group_ids+=("$_f2")
+                _row_texts+=("$_f3")
+                ;;
         esac
     done <<< "$_catalog_dump"
+
+    for _gi in "${!_group_ids[@]}"; do
+        _lang_count=0
+        for _vi in "${!_voice_ids[@]}"; do
+            [ "${_voice_prefixes[$_vi]}" != "${_group_prefixes[$_gi]}" ] && continue
+            [ "${_voice_group_ids[$_vi]}" != "${_group_ids[$_gi]}" ] && continue
+            _lang_count=$((_lang_count + 1))
+        done
+        _group_voice_counts+=("$_lang_count")
+    done
+
+    for _lang_code in fr en de es pt; do
+        _lang_has_voices=0
+        for _gi in "${!_group_ids[@]}"; do
+            [ "${_group_langs[$_gi]}" != "$_lang_code" ] && continue
+            if [ "${_group_voice_counts[$_gi]}" -gt 0 ]; then
+                _lang_has_voices=1
+                break
+            fi
+        done
+        [ "$_lang_has_voices" -eq 0 ] && continue
+        case "$_lang_code" in
+            fr) _lang_label="French" ;;
+            en) _lang_label="English" ;;
+            de) _lang_label="German" ;;
+            es) _lang_label="Spanish" ;;
+            pt) _lang_label="Portuguese" ;;
+            *)  _lang_label="${_lang_code^^}" ;;
+        esac
+        _lang_codes+=("$_lang_code")
+        _lang_labels+=("$_lang_label")
+        _lang_counts+=("0")
+    done
+
+    for _gi in "${!_group_ids[@]}"; do
+        _lang_code="${_group_langs[$_gi]}"
+        [ "${_group_voice_counts[$_gi]}" -le 0 ] && continue
+        _lang_exists=0
+        for _li in "${!_lang_codes[@]}"; do
+            if [ "${_lang_codes[$_li]}" = "$_lang_code" ]; then
+                _lang_exists=1
+                break
+            fi
+        done
+        [ "$_lang_exists" -eq 1 ] && continue
+        case "$_lang_code" in
+            fr) _lang_label="French" ;;
+            en) _lang_label="English" ;;
+            de) _lang_label="German" ;;
+            es) _lang_label="Spanish" ;;
+            pt) _lang_label="Portuguese" ;;
+            mul) _lang_label="Mixed" ;;
+            und) _lang_label="Unknown" ;;
+            *)   _lang_label="${_lang_code^^}" ;;
+        esac
+        _lang_codes+=("$_lang_code")
+        _lang_labels+=("$_lang_label")
+        _lang_counts+=("0")
+    done
+
+    for _li in "${!_lang_codes[@]}"; do
+        _lang_count=0
+        for _gi in "${!_group_ids[@]}"; do
+            [ "${_group_langs[$_gi]}" != "${_lang_codes[$_li]}" ] && continue
+            _lang_count=$((_lang_count + ${_group_voice_counts[$_gi]}))
+        done
+        _lang_counts[$_li]="$_lang_count"
+    done
 
     if [ "${#_voice_ids[@]}" -eq 0 ]; then
         _error "Voice catalog has no entries: $_catalog_file"
@@ -150,8 +283,8 @@ PY
         return 1
     fi
 
-    local _vtext_fr="Bonjour ! Je suis votre assistante vocale. Comment puis-je vous aider aujourd'hui ?"
-    local _vtext_en="Hello! I'm your voice assistant. How can I help you today?"
+    local _vtext_fr="Au début, tout semble évident. Puis un détail attire l’attention, une nuance apparaît… et la perception change. C’est souvent à ce moment-là que l’on commence vraiment à écouter."
+    local _vtext_en="At first, everything seems obvious. Then a detail stands out, a nuance appears… and perception shifts. That’s often when we truly start to listen."
     _vpreview_id=""
     _vpreview_slug=""
     _vpreview_provider_prefix=""
@@ -171,10 +304,55 @@ PY
             done
         fi
 
+        if [ "$_needs_lang_prompt" -eq 1 ]; then
+            while true; do
+                clear
+                _header "$_vp_title - LANGUAGE" "🌐"
+                echo ""
+                printf "  ${C_DIM}Choose a language filter before listing voices.${C_RESET}\n"
+                echo ""
+                _sep
+                echo ""
+                for _li in "${!_lang_codes[@]}"; do
+                    _lang_index=$((_li + 1))
+                    printf "  ${C_BOLD}[%s]${C_RESET} %s ${C_DIM}(%s voices)${C_RESET}\n" \
+                        "$_lang_index" "${_lang_labels[$_li]}" "${_lang_counts[$_li]}"
+                done
+                echo ""
+                printf "  ${C_BOLD}[a]${C_RESET} All languages\n"
+                printf "  ${C_BOLD}[m]${C_RESET} Menu settings\n"
+                echo ""
+                printf "  ${C_BGREEN}▸${C_RESET} "
+                read -r _lang_choice
+                case "$_lang_choice" in
+                    m|M)
+                        return 0
+                        ;;
+                    a|A|"")
+                        _lang_filter="all"
+                        _lang_filter_label="All languages"
+                        break
+                        ;;
+                    *)
+                        if [[ "$_lang_choice" =~ ^[0-9]+$ ]]; then
+                            _lang_index=$((_lang_choice - 1))
+                            if [ "$_lang_index" -ge 0 ] && [ "$_lang_index" -lt "${#_lang_codes[@]}" ]; then
+                                _lang_filter="${_lang_codes[$_lang_index]}"
+                                _lang_filter_label="${_lang_labels[$_lang_index]}"
+                                break
+                            fi
+                        fi
+                        ;;
+                esac
+            done
+            _needs_lang_prompt=0
+        fi
+
         clear
         _header "$_vp_title" "🔈"
         echo ""
         printf "  ${C_DIM}Current:${C_RESET} ${C_BGREEN}%s${C_RESET}\n" "$_cur_slug"
+        printf "  ${C_DIM}Language:${C_RESET} ${C_BCYAN}%s${C_RESET}\n" "$_lang_filter_label"
         echo ""
         _sep
         echo ""
@@ -182,6 +360,19 @@ PY
             _sel_prefix="${_provider_prefixes[$_pi]}"
             _provider_label="${_provider_titles[$_pi]}"
             _provider_api_env="${_provider_api_envs[$_pi]}"
+            _provider_has_visible_groups=0
+            for _gi in "${!_group_ids[@]}"; do
+                [ "${_group_prefixes[$_gi]}" != "$_sel_prefix" ] && continue
+                if [ "$_lang_filter" != "all" ] && [ "${_group_langs[$_gi]}" != "$_lang_filter" ]; then
+                    continue
+                fi
+                if [ "${_group_voice_counts[$_gi]}" -gt 0 ]; then
+                    _provider_has_visible_groups=1
+                    break
+                fi
+            done
+            [ "$_provider_has_visible_groups" -eq 0 ] && continue
+
             if [ -n "$_provider_api_env" ] && [ -z "${!_provider_api_env:-}" ] && [ "$_sel_prefix" != "m" ]; then
                 printf "  ${C_BGREEN}%s${C_RESET}  ${C_DIM}(unavailable — %s not set, see Settings → API Keys)${C_RESET}\n" "$_provider_label" "$_provider_api_env"
             else
@@ -190,6 +381,11 @@ PY
 
             for _gi in "${!_group_prefixes[@]}"; do
                 [ "${_group_prefixes[$_gi]}" != "$_sel_prefix" ] && continue
+                _group_lang="${_group_langs[$_gi]}"
+                if [ "$_lang_filter" != "all" ] && [ "$_group_lang" != "$_lang_filter" ]; then
+                    continue
+                fi
+                [ "${_group_voice_counts[$_gi]}" -le 0 ] && continue
                 printf "  ${C_BCYAN}%s${C_RESET}\n" "${_group_titles[$_gi]}"
 
                 _group_has_notes=0
@@ -215,23 +411,22 @@ PY
                         fi
                     done
                 else
-                    _row_items=""
-                    _row_count=0
-                    for _vi in "${!_voice_ids[@]}"; do
-                        [ "${_voice_prefixes[$_vi]}" != "$_sel_prefix" ] && continue
-                        [ "${_voice_group_ids[$_vi]}" != "${_group_ids[$_gi]}" ] && continue
-                        if [ -z "$_row_items" ]; then
-                            _row_items="${C_BOLD}[${_sel_prefix}${_voice_numbers[$_vi]}]${C_RESET} ${_voice_labels[$_vi]}"
-                        else
-                            _row_items="${_row_items}    ${C_BOLD}[${_sel_prefix}${_voice_numbers[$_vi]}]${C_RESET} ${_voice_labels[$_vi]}"
-                        fi
-                        _row_count=$((_row_count + 1))
-                        if [ $((_row_count % 3)) -eq 0 ]; then
-                            printf "  %b\n" "$_row_items"
-                            _row_items=""
-                        fi
+                    _rows_printed=0
+                    for _ri in "${!_row_texts[@]}"; do
+                        [ "${_row_prefixes[$_ri]}" != "$_sel_prefix" ] && continue
+                        [ "${_row_group_ids[$_ri]}" != "${_group_ids[$_gi]}" ] && continue
+                        _row_text="${_row_texts[$_ri]}"
+                        printf "  %s\n" "$_row_text"
+                        _rows_printed=1
                     done
-                    [ -n "$_row_items" ] && printf "  %b\n" "$_row_items"
+                    if [ "$_rows_printed" -eq 0 ]; then
+                        for _vi in "${!_voice_ids[@]}"; do
+                            [ "${_voice_prefixes[$_vi]}" != "$_sel_prefix" ] && continue
+                            [ "${_voice_group_ids[$_vi]}" != "${_group_ids[$_gi]}" ] && continue
+                            printf "  ${C_BOLD}[%s%s]${C_RESET} %s\n" \
+                                "$_sel_prefix" "${_voice_numbers[$_vi]}" "${_voice_labels[$_vi]}"
+                        done
+                    fi
                 fi
                 echo ""
             done
@@ -244,11 +439,11 @@ PY
         if [ -n "$_vpreview_id" ]; then
             printf "  ${C_DIM}Last preview:${C_RESET} ${C_CYAN}%s${C_RESET}   ${C_BOLD}[s]${C_RESET} Select it" "$_vpreview_slug"
             [ "$_vp_allow_disable" = "1" ] && printf "  ${C_BOLD}[d]${C_RESET} Disable"
-            printf "  ${C_BOLD}[m]${C_RESET} Menu settings\n"
+            printf "  ${C_BOLD}[l]${C_RESET} Language  ${C_BOLD}[m]${C_RESET} Menu settings\n"
         else
             printf "  ${C_DIM}Type provider+number to listen (%s)" "$_provider_hint"
             [ "$_vp_allow_disable" = "1" ] && printf "   ${C_BOLD}[d]${C_RESET} ${C_DIM}Disable"
-            printf "   ${C_BOLD}[m]${C_RESET} Menu settings\n"
+            printf "   ${C_BOLD}[l]${C_RESET} Language   ${C_BOLD}[m]${C_RESET} Menu settings\n"
         fi
         printf "  Choice: "
         read -r _vchoice
@@ -270,6 +465,9 @@ PY
                     sleep 1
                 fi
                 ;;
+            l|L)
+                _needs_lang_prompt=1
+                ;;
             ""|m|M) break ;;
             *)
                 _vi=-1
@@ -286,6 +484,19 @@ PY
                 fi
 
                 if [ "$_vi" -ge 0 ]; then
+                    _selected_group_lang=""
+                    for _gi in "${!_group_ids[@]}"; do
+                        if [ "${_group_prefixes[$_gi]}" = "${_voice_prefixes[$_vi]}" ] && \
+                           [ "${_group_ids[$_gi]}" = "${_voice_group_ids[$_vi]}" ]; then
+                            _selected_group_lang="${_group_langs[$_gi]}"
+                            break
+                        fi
+                    done
+                    if [ "$_lang_filter" != "all" ] && [ "$_selected_group_lang" != "$_lang_filter" ]; then
+                        _warn "Voice is outside current language filter. Press [l] to change language."
+                        sleep 1
+                        continue
+                    fi
                     _vpreview_id_saved="$_vpreview_id"
                     _vpreview_slug_saved="$_vpreview_slug"
                     _vpreview_provider_prefix_saved="$_vpreview_provider_prefix"

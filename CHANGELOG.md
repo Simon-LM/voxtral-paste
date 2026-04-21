@@ -13,6 +13,29 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ---
 
+## [4.9.6] — 2026-04-22
+
+### Added
+
+- **`vox-refiner-menu.sh` — language pre-menu for voice picker.**
+  A new language-selection step now appears before listing voices in the picker,
+  so users can filter by language first instead of browsing the full catalog at
+  once. The menu includes per-language voice counts, an `All languages` option,
+  and an in-picker `[l] Language` shortcut to change the filter on demand.
+
+### Changed
+
+- **`vox-refiner-menu.sh` — robust language filtering based on catalog data.**
+  Group language is now derived from voice `sample_lang` metadata during catalog
+  parsing, then used for filtering. This avoids fragile title-based matching and
+  keeps the picker stable even if group titles or emojis change.
+- **`vox-refiner-menu.sh` — robust Mistral grid alignment with Unicode-aware width.**
+  Grid row formatting is now generated in Python with display-width handling for
+  Unicode characters, then rendered in Bash as preformatted rows. This removes
+  spacing drift caused by variable label lengths and multi-width characters.
+
+---
+
 ## [4.9.5] — 2026-04-21
 
 ### Added
