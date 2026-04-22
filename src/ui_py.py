@@ -73,3 +73,7 @@ def crucial(message: str) -> None:
 
 def stop(message: str) -> None:
     print(f"  {BBLUE}{message}{RESET}", file=sys.stderr)
+
+def debug(message: str) -> None:
+    """Affiche un message discret en gris (DIM)."""
+    print(f"  {DIM}{message}{RESET}", file=sys.stderr)

@@ -285,6 +285,9 @@ PY
 
     local _vtext_fr="Au début, tout semble évident. Puis un détail attire l’attention, une nuance apparaît… et la perception change. C’est souvent à ce moment-là que l’on commence vraiment à écouter."
     local _vtext_en="At first, everything seems obvious. Then a detail stands out, a nuance appears… and perception shifts. That’s often when we truly start to listen."
+    local _vtext_de="Am Anfang scheint alles offensichtlich. Dann fällt ein Detail auf, eine Nuance tritt hervor … und die Wahrnehmung verändert sich. Oft beginnt genau dann das echte Zuhören."
+    local _vtext_es="Al principio, todo parece evidente. Luego un detalle llama la atención, aparece un matiz… y la percepción cambia. A menudo, es justo ahí cuando empezamos a escuchar de verdad."
+    local _vtext_pt="No início, tudo parece óbvio. Depois, um detalhe chama a atenção, surge uma nuance… e a perceção muda. É muitas vezes nesse momento que começamos realmente a escutar."
     _vpreview_id=""
     _vpreview_slug=""
     _vpreview_provider_prefix=""
@@ -496,7 +499,7 @@ PY
                         _warn "Voice is outside current language filter. Press [l] to change language."
                         sleep 1
                         continue
-                    fi
+                    fi 
                     _vpreview_id_saved="$_vpreview_id"
                     _vpreview_slug_saved="$_vpreview_slug"
                     _vpreview_provider_prefix_saved="$_vpreview_provider_prefix"
@@ -504,12 +507,15 @@ PY
                     _vpreview_id="${_voice_ids[$_vi]}"
                     _vpreview_slug="${_voice_slugs[$_vi]}"
                     _vpreview_provider_prefix="${_voice_prefixes[$_vi]}"
-                    _vpreview_lang="${_voice_sample_langs[$_vi]}"
-                    if [ "$_vpreview_lang" = "fr" ]; then
-                        _vsample="$_vtext_fr"
-                    else
-                        _vsample="$_vtext_en"
-                    fi
+                    _vpreview_lang="${_voice_sample_langs[$_vi],,}"
+                    case "$_vpreview_lang" in
+                        fr|fr-*) _vsample="$_vtext_fr" ;;
+                        de|de-*) _vsample="$_vtext_de" ;;
+                        es|es-*) _vsample="$_vtext_es" ;;
+                        pt|pt-*) _vsample="$_vtext_pt" ;;
+                        en|en-*) _vsample="$_vtext_en" ;;
+                        *) _vsample="$_vtext_en" ;;
+                    esac
                     _tts_tmp="$SCRIPT_DIR/recordings/.voice_preview.mp3"
                     echo ""
                     _provider_api_env=""
@@ -741,6 +747,15 @@ _submenu_api_keys() {
         printf "  ${C_BOLD}Perplexity${C_RESET} ${C_DIM}(optional)${C_RESET}  : ${C_CYAN}%s${C_RESET}  ${C_DIM}min. ~50 \$ HT${C_RESET}\n" "$(_mask_key "${PERPLEXITY_API_KEY:-}")"
         printf "  ${C_BOLD}Gradium${C_RESET}    ${C_DIM}(optional)${C_RESET}  : ${C_CYAN}%s${C_RESET}  ${C_DIM}~1hr \$0/month HT | ~5hr \$13/month HT ${C_RESET}\n"  "$(_mask_key "${GRADIUM_API_KEY:-}")"
         echo ""
+        printf "  ${C_DIM}  Voice pricing :${C_RESET}\n"
+        printf "  ${C_DIM}    Mistral\n${C_RESET}"
+        printf "  ${C_DIM}    TTS : ~\$0.016 / 1K chars (~0.7–0.9$/hour audio)${C_RESET}\n" 
+        printf "  ${C_DIM}    STT : ~\$0.003 / minute audio (~0.18$/hour)${C_RESET}\n"
+        echo ""
+        printf "  ${C_DIM}    Gradium\n${C_RESET}"
+        printf "  ${C_DIM}    TTS : ~1.6 → 2.6$/hour audio (credits-based)${C_RESET}\n"
+        printf "  ${C_DIM}    STT : ~0.65 → 1.00$/hour audio (credits-based)${C_RESET}\n"
+        echo ""
         printf "  ${C_DIM}${C_ITALIC}  Estimated amounts, subject to change — minimum credits required for these AI API providers.${C_RESET}\n"
         _show_capability_status
         _sep
@@ -937,18 +952,29 @@ _check_api_key_at_startup() {
 # ─── Menu ─────────────────────────────────────────────────────────────────────
 
 _coming_soon() {
-    local name="$1" desc="$2"
-    clear
-    echo ""
-    printf "${C_DIM}──────────────────────────────────────────────────────────────────${C_RESET}\n"
-    printf "  ${C_BYELLOW}🚧  Coming soon: %s${C_RESET}\n" "$name"
-    printf "${C_DIM}──────────────────────────────────────────────────────────────────${C_RESET}\n"
-    echo ""
-    printf "  ${C_DIM}%s${C_RESET}\n" "$desc"
-    echo ""
-    printf "  ${C_DIM}Press Enter to return to menu...${C_RESET}"
-    read -r
+    local name="$1" desc="$2"   
+
+    while true; do
+        clear
+        echo ""
+        printf "  ${C_BYELLOW}🚧  Coming soon: %s${C_RESET}\n" "$name"
+        echo ""
+        printf "  ${C_DIM}%s${C_RESET}\n" "$desc"
+        echo ""
+        printf "  ${C_BOLD}[m]${C_RESET} Menu VoxRefiner : "
+        
+        read -r _post_action
+        
+        case "$_post_action" in
+            m|M) 
+                return 
+                ;;
+            *)                 
+                ;;
+        esac
+    done
 }
+
 
 show_menu() {
     clear
@@ -1355,11 +1381,11 @@ while true; do
                 if [ "${TTS_USE_VOICE_PROFILE:-true}" = "true" ]; then
                     _vt_use_status="${C_BGREEN}on${C_RESET}"
                 else
-                    _vt_use_status="${C_DIM}off${C_RESET}"
+                    _vt_use_status="${C_BOLD}off${C_RESET}"
                 fi
 
                 clear
-                _header "SPEAK & TRANSLATE" "🎙→🔊"
+                _header "SPEAK & TRANSLATE" "🎙 → 🔊"
                 echo ""
                 printf "  ${C_DIM}Voice profile:${C_RESET} %b   ${C_DIM}Use profile:${C_RESET} %b\n" "$_vt_profile_status" "$_vt_use_status"
                 echo ""
@@ -1490,8 +1516,16 @@ while true; do
                         echo ""
                         ./vox-refiner-update.sh --check
                         echo ""
-                        printf "  ${C_DIM}Press Enter to return...${C_RESET}"
-                        read -r
+                        printf "  ${C_BOLD}[m]${C_RESET}  Menu Update\n"
+                        echo ""
+                        while true; do
+                            printf "  ${C_BGREEN}▸${C_RESET} "
+                            read -r _upd_check_action
+                            case "$_upd_check_action" in
+                                m|M) break ;;
+                                *) ;;
+                            esac
+                        done
                         ;;
                     a|A)
                         echo ""
@@ -1499,8 +1533,17 @@ while true; do
                             echo ""
                             _success "Restart VoxRefiner to use the new version."
                         fi
-                        printf "  ${C_DIM}Press Enter to return...${C_RESET}"
-                        read -r
+                        echo ""
+                        printf "  ${C_BOLD}[m]${C_RESET}  Menu Update\n"
+                        echo ""
+                        while true; do
+                            printf "  ${C_BGREEN}▸${C_RESET} "
+                            read -r _upd_apply_action
+                            case "$_upd_apply_action" in
+                                m|M) break ;;
+                                *) ;;
+                            esac
+                        done
                         ;;
                     '?')
                         echo ""
@@ -1510,8 +1553,16 @@ while true; do
                             _warn "docs/troubleshooting-update.md not found."
                         fi
                         echo ""
-                        printf "  ${C_DIM}Press Enter to return...${C_RESET}"
-                        read -r
+                        printf "  ${C_BOLD}[m]${C_RESET}  Menu Update\n"
+                        echo ""
+                        while true; do
+                            printf "  ${C_BGREEN}▸${C_RESET} "
+                            read -r _upd_help_action
+                            case "$_upd_help_action" in
+                                m|M) break ;;
+                                *) ;;
+                            esac
+                        done
                         ;;
                     m|M) break ;;
                     *) ;;

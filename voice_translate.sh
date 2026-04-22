@@ -243,6 +243,10 @@ _translate_and_speak() {
         _warn "Clipboard copy failed (is xclip installed and running under X11?)"
     fi
 
+    echo ""
+    printf "${C_DIM}──────────────────────────────────────────────────────────────────$"
+    echo ""
+
     # ── Voice sample for cloning ──────────────────────────────────────
     # Prefer pre-recorded voice profile; fall back to extracting from WAV.
 
@@ -406,7 +410,7 @@ voice_translate() {
         sleep $(( REC_MAX_SECONDS - REC_WARN_SECONDS ))
         if kill -0 "$REC_PID" 2>/dev/null; then
             echo ""
-            _crucial "  ⏱  Maximum duration reached (2 min) — stopping.${C_RESET}\n"
+            _crucial "  ⏱  Maximum duration reached (2 min) — stopping.\n"
             kill -INT "$REC_PID" 2>/dev/null
         fi
     ) &

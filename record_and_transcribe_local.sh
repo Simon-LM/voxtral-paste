@@ -275,23 +275,24 @@ if [ -n "$final_text" ]; then
         _header "$_transcribe_label" "📝"
         echo ""
         printf "${C_BG_CYAN} %s ${C_RESET}\n" "$raw_transcription"
-        echo ""
         _header "$_result_label" "📝"
-        _success "Copied to clipboard"
         echo ""
         printf "${C_BG_BLUE} %s ${C_RESET}\n" "$final_text"
+        echo ""
+        _success "Copied to clipboard"
     elif [ "${SHOW_RAW_VOXTRAL:-true}" = "true" ] && [ "${ENABLE_REFINE:-true}" = "true" ]; then
         # 2-way view: Raw Voxtral + Result (on by default)
         _header "$_transcribe_label" "📝"
         echo ""
         printf "${C_BG_CYAN} %s ${C_RESET}\n" "$raw_transcription"
-        echo ""
         _header "$_result_label" "📝"
-        _success "Copied to clipboard"
         echo ""
         printf "${C_BG_BLUE} %s ${C_RESET}\n" "$final_text"
+        echo ""
+        _success "Copied to clipboard"
     else
         _header "$_result_label" "📝"
+        echo ""
         printf "${C_BG_BLUE} %s ${C_RESET}\n" "$final_text"
     fi
     if [ -n "${VOXTRAL_COMPARE_FILE:-}" ] && [ -s "$VOXTRAL_COMPARE_FILE" ]; then

@@ -13,6 +13,28 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ---
 
+## [4.9.7] — 2026-04-22
+
+### Added
+
+- **`vox-refiner-menu.sh` — multilingual voice preview samples.**
+  Added dedicated preview sample texts for German (`de`), Spanish (`es`), and
+  Portuguese (`pt`) in addition to existing French/English samples, so voice
+  tests now sound natural in each language.
+
+### Changed
+
+- **`vox-refiner-menu.sh` — language-aware preview sample routing.**
+  Voice preview text selection now uses a language-based switch (`fr`, `en`,
+  `de`, `es`, `pt`, including locale variants like `fr-*`) with an English
+  fallback, ensuring the tested sample matches the selected voice language.
+- **`vox-refiner-menu.sh` — Update submenu return flow standardized.**
+  The `Check for updates`, `Apply update`, and `Troubleshooting` screens now
+  return via explicit `[m]  Menu Update` prompts instead of `Press Enter to
+  return...`, with consistent spacing after command output for readability.
+
+---
+
 ## [4.9.6] — 2026-04-22
 
 ### Added

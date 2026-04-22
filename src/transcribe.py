@@ -10,7 +10,7 @@ from typing import List
 
 import requests
 from dotenv import load_dotenv
-from src.ui_py import error, info, process, warn
+from src.ui_py import error, info, process, warn, debug
 
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
@@ -191,7 +191,7 @@ def transcribe(audio_path: str) -> str:
         raise RuntimeError("MISTRAL_API_KEY is not set. Check your .env file.")
 
     file_size = Path(audio_path).stat().st_size
-    info(f"Audio read: {file_size} bytes.")
+    debug(f"Audio read: {file_size} bytes.")
 
     if file_size >= _VOXTRAL_MAX_FILE_SIZE:
         process("Large file (> ~60 min) — splitting into ~30 min chunks…")
