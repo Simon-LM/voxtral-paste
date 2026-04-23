@@ -78,9 +78,10 @@ _voice_picker() {
     local _provider_hint="" _vi _group_has_notes _row_text _rows_printed
     local _provider_has_visible_groups _group_lang _selected_group_lang
     local _lang_filter="all" _lang_filter_label="All languages" _needs_lang_prompt=1
+    local _hidden_mode=0
     local _lang_choice _lang_index _lang_code _lang_label _lang_count
     local _lang_exists _lang_has_voices
-    local -a _provider_prefixes _provider_titles _provider_api_envs
+    local -a _provider_prefixes _provider_titles _provider_api_envs _provider_keys
     local -a _group_prefixes _group_ids _group_titles _group_langs _group_voice_counts
     local -a _voice_prefixes _voice_group_ids _voice_numbers _voice_labels
     local -a _voice_slugs _voice_ids _voice_sample_langs _voice_menu_notes
@@ -134,7 +135,8 @@ for provider in data.get("providers", []):
     prefix = provider["prefix"]
     title = provider["title"]
     api_env = provider.get("api_key_env", "")
-    print(f"PROVIDER\t{prefix}\t{title}\t{api_env}")
+    key = provider.get("key", "")
+    print(f"PROVIDER\t{prefix}\t{title}\t{api_env}\t{key}")
     provider_index = 1
     for group_idx, group in enumerate(provider.get("groups", []), start=1):
         start_index = group.get("start_index")
@@ -182,6 +184,7 @@ PY
                 _provider_prefixes+=("$_f1")
                 _provider_titles+=("$_f2")
                 _provider_api_envs+=("$_f3")
+                _provider_keys+=("$_f4")
                 ;;
             GROUP)
                 _group_prefixes+=("$_f1")
@@ -363,10 +366,20 @@ PY
             _sel_prefix="${_provider_prefixes[$_pi]}"
             _provider_label="${_provider_titles[$_pi]}"
             _provider_api_env="${_provider_api_envs[$_pi]}"
+            _provider_key="${_provider_keys[$_pi]}"
+            if [ "$_hidden_mode" -eq 0 ] && [ "$_provider_key" = "comparison" ]; then
+                continue
+            fi
+            if [ "$_lang_filter" = "comparison" ] && [ "$_provider_key" != "comparison" ]; then
+                continue
+            fi
+            if [ "$_lang_filter" != "all" ] && [ "$_lang_filter" != "comparison" ] && [ "$_provider_key" = "comparison" ]; then
+                continue
+            fi
             _provider_has_visible_groups=0
             for _gi in "${!_group_ids[@]}"; do
                 [ "${_group_prefixes[$_gi]}" != "$_sel_prefix" ] && continue
-                if [ "$_lang_filter" != "all" ] && [ "${_group_langs[$_gi]}" != "$_lang_filter" ]; then
+                if [ "$_lang_filter" != "all" ] && [ "$_lang_filter" != "comparison" ] && [ "${_group_langs[$_gi]}" != "$_lang_filter" ]; then
                     continue
                 fi
                 if [ "${_group_voice_counts[$_gi]}" -gt 0 ]; then
@@ -385,7 +398,7 @@ PY
             for _gi in "${!_group_prefixes[@]}"; do
                 [ "${_group_prefixes[$_gi]}" != "$_sel_prefix" ] && continue
                 _group_lang="${_group_langs[$_gi]}"
-                if [ "$_lang_filter" != "all" ] && [ "$_group_lang" != "$_lang_filter" ]; then
+                if [ "$_lang_filter" != "all" ] && [ "$_lang_filter" != "comparison" ] && [ "$_group_lang" != "$_lang_filter" ]; then
                     continue
                 fi
                 [ "${_group_voice_counts[$_gi]}" -le 0 ] && continue
@@ -471,6 +484,16 @@ PY
             l|L)
                 _needs_lang_prompt=1
                 ;;
+            h|H)
+                # Toggle hidden comparison voices
+                if [ "$_hidden_mode" -eq 1 ]; then
+                    _hidden_mode=0
+                    _warn "Hidden comparison voices disabled."
+                else
+                    _hidden_mode=1
+                    _warn "Hidden comparison voices enabled — temporary access for testing."
+                fi
+                ;;
             ""|m|M) break ;;
             *)
                 _vi=-1
@@ -495,9 +518,14 @@ PY
                             break
                         fi
                     done
-                    if [ "$_lang_filter" != "all" ] && [ "$_selected_group_lang" != "$_lang_filter" ]; then
+                    if [ "$_lang_filter" != "all" ] && [ "$_lang_filter" != "comparison" ] && [ "$_selected_group_lang" != "$_lang_filter" ]; then
                         _warn "Voice is outside current language filter. Press [l] to change language."
                         sleep 1
+                        continue
+                    fi
+                    if [ "${_voice_prefixes[$_vi]}" = "c" ] && [ -z "${GOOGLE_TTS_API_KEY:-}" ]; then
+                        _error "Comparison voice requires GOOGLE_TTS_API_KEY. Go to Settings → API Keys to configure it."
+                        sleep 2
                         continue
                     fi 
                     _vpreview_id_saved="$_vpreview_id"
@@ -677,6 +705,30 @@ _test_gradium_key() {
     esac
 }
 
+_test_google_tts_key() {
+    local key="$1"
+    if [ -z "$key" ]; then
+        _error "No Google TTS key to test."
+        return 1
+    fi
+    printf "  ${C_CYAN}⚡ Testing Google TTS key...${C_RESET}\n"
+    # Test with a simple models list call using API key header
+    local http_code
+    http_code=$(curl -s -o /dev/null -w "%{http_code}" \
+        -H "x-goog-api-key: $key" \
+        "https://generativelanguage.googleapis.com/v1beta/models" \
+        --max-time 15 2>/dev/null)
+    case "$http_code" in
+        200) _success "Google TTS key is valid." ; return 0 ;;
+        400) _error  "Bad request (400) — invalid API key format." ; return 1 ;;
+        401) _error  "Invalid Google TTS key (401 Unauthorized)." ; return 1 ;;
+        403) _error  "Forbidden (403) — check API permissions or billing." ; return 1 ;;
+        429) _warn   "Rate limited (429) — key exists but quota exceeded." ; return 1 ;;
+        000) _error  "No network response — check your internet connection." ; return 1 ;;
+        *)   _error  "Unexpected response: HTTP $http_code" ; return 1 ;;
+    esac
+}
+
 _show_capability_status() {
     # Display which features are available/locked based on configured keys.
     # Intended for display inside _submenu_api_keys.
@@ -746,6 +798,7 @@ _submenu_api_keys() {
         printf "  ${C_BOLD}xAI / Grok${C_RESET} ${C_DIM}(optional)${C_RESET}  : ${C_CYAN}%s${C_RESET}  ${C_DIM}min. ~10 \$ HT${C_RESET}\n" "$(_mask_key "${XAI_API_KEY:-}")"
         printf "  ${C_BOLD}Perplexity${C_RESET} ${C_DIM}(optional)${C_RESET}  : ${C_CYAN}%s${C_RESET}  ${C_DIM}min. ~50 \$ HT${C_RESET}\n" "$(_mask_key "${PERPLEXITY_API_KEY:-}")"
         printf "  ${C_BOLD}Gradium${C_RESET}    ${C_DIM}(optional)${C_RESET}  : ${C_CYAN}%s${C_RESET}  ${C_DIM}~1hr \$0/month HT | ~5hr \$13/month HT ${C_RESET}\n"  "$(_mask_key "${GRADIUM_API_KEY:-}")"
+        printf "  ${C_BOLD}Google TTS${C_RESET} ${C_DIM}(optional)${C_RESET}  : ${C_CYAN}%s${C_RESET}  ${C_DIM}for comparison voices${C_RESET}\n"  "$(_mask_key "${GOOGLE_TTS_API_KEY:-}")"
         echo ""
         printf "  ${C_DIM}  Voice pricing :${C_RESET}\n"
         printf "  ${C_DIM}    Mistral\n${C_RESET}"
@@ -765,6 +818,7 @@ _submenu_api_keys() {
         printf "  ${C_BOLD}[t3]${C_RESET}  Test xAI / Grok key    ${C_BOLD}[e3]${C_RESET}  Edit xAI / Grok key\n"
         printf "  ${C_BOLD}[t4]${C_RESET}  Test Perplexity key    ${C_BOLD}[e4]${C_RESET}  Edit Perplexity key\n"
         printf "  ${C_BOLD}[t5]${C_RESET}  Test Gradium key       ${C_BOLD}[e5]${C_RESET}  Edit Gradium key\n"
+        printf "  ${C_BOLD}[t6]${C_RESET}  Test Google TTS key    ${C_BOLD}[e6]${C_RESET}  Edit Google TTS key\n"
         echo ""
         printf "  ${C_BOLD}[m]${C_RESET}  Menu VoxRefiner\n"
         echo ""
@@ -896,6 +950,32 @@ _submenu_api_keys() {
                     _success "Gradium key saved."
                     echo ""
                     _test_gradium_key "$_new_key"
+                fi
+                echo ""
+                printf "  ${C_DIM}Press Enter to continue...${C_RESET}"
+                read -r
+                ;;
+            t6|T6)
+                echo ""
+                _test_google_tts_key "${GOOGLE_TTS_API_KEY:-}"
+                echo ""
+                printf "  ${C_DIM}Press Enter to continue...${C_RESET}"
+                read -r
+                ;;
+            e6|E6)
+                echo ""
+                printf "  Enter new Google TTS API key: "
+                _read_masked
+                _new_key="$_MASKED_INPUT"
+                if [ -z "$_new_key" ]; then
+                    _warn "No key entered — unchanged."
+                else
+                    _set_env_var "GOOGLE_TTS_API_KEY" "$_new_key"
+                    export GOOGLE_TTS_API_KEY="$_new_key"
+                    set -a; source .env; set +a
+                    _success "Google TTS key saved."
+                    echo ""
+                    _test_google_tts_key "$_new_key"
                 fi
                 echo ""
                 printf "  ${C_DIM}Press Enter to continue...${C_RESET}"

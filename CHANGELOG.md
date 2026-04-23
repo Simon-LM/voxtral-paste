@@ -9,9 +9,33 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ---
 
-## [Unreleased]
+## [4.9.8] — 2026-04-23
 
----
+### Added
+
+- **`src/tts.py` — Google TTS integration via Gemini 3.1 Flash TTS.**
+  Added `_synthesize_google_tts()` function using `google-genai` library for
+  expressive voice synthesis with support for tags like `[excited]`, `[whispers]`.
+  Voices start with "google-" prefix (e.g., "google-kore").
+- **`src/voice_catalog.json` — temporary comparison voices provider.**
+  New "comparison" provider with prefix "c" containing Google TTS voices (Kore,
+  Aoede, Zephyr, Puck) marked as `temporary: true` for demo purposes only.
+- **`vox-refiner-menu.sh` — truly hidden comparison voices menu.**
+  Comparison voices are now hidden by default; press `h` (secret key, not displayed)
+  to toggle visibility temporarily. Voices require `GOOGLE_TTS_API_KEY` and are not
+  saved permanently.
+- **`vox-refiner-menu.sh` — Google TTS API key management.**
+  Added Google TTS key to API Keys submenu with test/edit actions ([t6]/[e6]),
+  displayed as optional for comparison voices.
+- **`vox-refiner-menu.sh` — error message for missing comparison API key.**
+  When selecting a comparison voice without valid API key, displays clear error
+  message directing to Settings → API Keys.
+- **`requirements.txt` — google-genai dependency.**
+  Added `google-genai` for Google TTS support.
+
+### Changed
+
+- **`vox-refiner-menu.sh` — voice picker filtering supports comparison mode.**
 
 ## [4.9.7] — 2026-04-22
 
@@ -31,7 +55,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - **`vox-refiner-menu.sh` — Update submenu return flow standardized.**
   The `Check for updates`, `Apply update`, and `Troubleshooting` screens now
   return via explicit `[m]  Menu Update` prompts instead of `Press Enter to
-  return...`, with consistent spacing after command output for readability.
+return...`, with consistent spacing after command output for readability.
 
 ---
 

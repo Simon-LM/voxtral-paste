@@ -1901,6 +1901,47 @@
 					]
 				}
 			]
+		},
+		{
+			"key": "comparison",
+			"prefix": "c",
+			"title": "COMPARISON (Temporary)",
+			"api_key_env": "GOOGLE_TTS_API_KEY",
+			"groups": [
+				{
+					"title": "🌐 Google TTS (Gemini)",
+					"voices": [
+						{
+							"label": "Kore",
+							"slug": "google-kore",
+							"id": "google-kore",
+							"sample_lang": "en",
+							"temporary": true
+						},
+						{
+							"label": "Aoede",
+							"slug": "google-aoede",
+							"id": "google-aoede",
+							"sample_lang": "en",
+							"temporary": true
+						},
+						{
+							"label": "Zephyr",
+							"slug": "google-zephyr",
+							"id": "google-zephyr",
+							"sample_lang": "en",
+							"temporary": true
+						},
+						{
+							"label": "Puck",
+							"slug": "google-puck",
+							"id": "google-puck",
+							"sample_lang": "en",
+							"temporary": true
+						}
+					]
+				}
+			]
 		}
 	]
 }

@@ -20,6 +20,12 @@ import requests
 from dotenv import load_dotenv
 from src.ui_py import BG_BLUE, BGREEN, RESET, WHITE
 
+try:
+    from google import genai
+    from google.genai import types
+except ImportError:
+    genai = None
+
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 _API_URL = "https://api.mistral.ai/v1/audio/speech"
@@ -997,6 +1003,38 @@ def _is_gradium_voice(voice_id: str) -> bool:
     return not _UUID_RE.match(voice_id)
 
 
+def _is_google_voice(voice_id: str) -> bool:
+    """Return True if voice_id is a Google TTS voice (starts with 'google-')."""
+    return voice_id.startswith("google-")
+
+
+def _create_wav_header(data_size: int, sample_rate: int, channels: int, bits_per_sample: int) -> bytes:
+    """Create a WAV file header for PCM data."""
+    # Calculate sizes
+    byte_rate = sample_rate * channels * (bits_per_sample // 8)
+    block_align = channels * (bits_per_sample // 8)
+    wav_size = 36 + data_size  # 36 = header size before data
+
+    # Pack header
+    import struct
+    header = struct.pack('<4sI4s4sIHHIIHH4sI',
+        b'RIFF',           # ChunkID
+        wav_size,          # ChunkSize
+        b'WAVE',           # Format
+        b'fmt ',           # Subchunk1ID
+        16,                # Subchunk1Size (PCM)
+        1,                 # AudioFormat (PCM)
+        channels,          # NumChannels
+        sample_rate,       # SampleRate
+        byte_rate,         # ByteRate
+        block_align,       # BlockAlign
+        bits_per_sample,   # BitsPerSample
+        b'data',           # Subchunk2ID
+        data_size          # Subchunk2Size
+    )
+    return header
+
+
 def _synthesize_gradium(text: str, output_path: str, voice_id: str) -> None:
     """Call Gradium TTS and write WAV audio to output_path."""
     api_key = os.environ.get("GRADIUM_API_KEY")
@@ -1018,6 +1056,71 @@ def _synthesize_gradium(text: str, output_path: str, voice_id: str) -> None:
     asyncio.run(_run())
 
 
+def _synthesize_google_tts(text: str, output_path: str, voice_name: str) -> None:
+    """Call Google Gemini TTS and write WAV audio to output_path."""
+    if genai is None:
+        raise RuntimeError("google-genai library not installed. Run 'pip install google-genai'.")
+
+    api_key = os.environ.get("GOOGLE_TTS_API_KEY")
+    if not api_key:
+        raise RuntimeError("GOOGLE_TTS_API_KEY is not set. Check your .env file.")
+
+    try:
+        client = genai.Client(api_key=api_key)
+
+        # Extract voice name (e.g., "kore" from "google-kore") and capitalize
+        voice_name_clean = voice_name.replace("google-", "").capitalize()
+
+        response = client.models.generate_content(
+            model="models/gemini-3.1-flash-tts-preview",
+            contents=text,
+            config=types.GenerateContentConfig(
+                response_modalities=["AUDIO"],
+                speech_config=types.SpeechConfig(
+                    voice_config=types.VoiceConfig(
+                        prebuilt_voice_config=types.PrebuiltVoiceConfig(
+                            voice_name=voice_name_clean
+                        )
+                    )
+                )
+            )
+        )
+
+        # Check if response has candidates
+        if not response.candidates:
+            raise RuntimeError("No candidates in response")
+
+        candidate = response.candidates[0]
+        if not candidate.content or not candidate.content.parts:
+            raise RuntimeError("No content parts in response")
+
+        part = candidate.content.parts[0]
+        if not hasattr(part, 'inline_data') or not part.inline_data:
+            raise RuntimeError("No inline_data in response part")
+
+        # Extract audio data (raw PCM, need to add WAV header)
+        pcm_data = part.inline_data.data
+
+        if not pcm_data:
+            raise RuntimeError("Empty PCM data")
+
+        # Gemini TTS outputs 24kHz, 16-bit mono PCM
+        sample_rate = 24000
+        channels = 1
+        bits_per_sample = 16
+
+        # Create WAV header
+        wav_header = _create_wav_header(len(pcm_data), sample_rate, channels, bits_per_sample)
+
+        # Write WAV file
+        with open(output_path, 'wb') as f:
+            f.write(wav_header)
+            f.write(pcm_data)
+
+    except Exception as e:
+        raise RuntimeError(f"Google TTS failed: {e}") from e
+
+
 def synthesize(
     text: str,
     output_path: str,
@@ -1037,6 +1140,16 @@ def synthesize(
         voice_format: Format of the voice sample file.
         output_format: Desired output audio format.
     """
+    # Google TTS voices (start with 'google-') use Gemini API — route immediately.
+    if voice_id and _is_google_voice(voice_id):
+        print(f"\U0001f30e Google TTS ({voice_id})...", file=sys.stderr)
+        try:
+            _synthesize_google_tts(text, output_path, voice_id)
+            return
+        except Exception as exc:
+            print(f"❌ Google TTS failed: {exc}", file=sys.stderr)
+            raise
+
     # Gradium voices (non-UUID IDs) use a separate API — route immediately.
     if voice_id and _is_gradium_voice(voice_id):
         print(f"\U0001f508 Gradium TTS ({voice_id})...", file=sys.stderr)
