@@ -528,11 +528,18 @@ PY
                         sleep 1
                         continue
                     fi
-                    if [ "${_voice_prefixes[$_vi]}" = "c" ] && [ -z "${GOOGLE_TTS_API_KEY:-}" ]; then
-                        _error "Comparison voice requires GOOGLE_TTS_API_KEY. Go to Settings → API Keys to configure it."
-                        sleep 2
-                        continue
-                    fi 
+                    if [ "${_voice_prefixes[$_vi]}" = "c" ]; then
+                        _cv_id="${_voice_ids[$_vi]}"
+                        if [[ "$_cv_id" == google-* ]] && [ -z "${GOOGLE_TTS_API_KEY:-}" ]; then
+                            _error "Google TTS comparison voice requires GOOGLE_TTS_API_KEY. Go to Settings → API Keys to configure it."
+                            sleep 2
+                            continue
+                        elif [[ "$_cv_id" == eleven-* ]] && [ -z "${EDENAI_API_KEY:-}" ]; then
+                            _error "ElevenLabs comparison voice requires EDENAI_API_KEY. Go to Settings → API Keys to configure it."
+                            sleep 2
+                            continue
+                        fi
+                    fi
                     _vpreview_id_saved="$_vpreview_id"
                     _vpreview_slug_saved="$_vpreview_slug"
                     _vpreview_provider_prefix_saved="$_vpreview_provider_prefix"
@@ -559,6 +566,11 @@ PY
                             break
                         fi
                     done
+                    # For comparison voices, the required key depends on the voice provider,
+                    # not the parent comparison provider (which defaults to GOOGLE_TTS_API_KEY).
+                    if [ "$_vpreview_provider_prefix" = "c" ] && [[ "$_vpreview_id" == eleven-* ]]; then
+                        _provider_api_env="EDENAI_API_KEY"
+                    fi
                     if [ -n "$_provider_api_env" ] && [ -z "${!_provider_api_env:-}" ]; then
                         _warn "$_provider_api_env is not set — cannot preview or select this voice."
                         printf "  ${C_DIM}Add it via Settings → API Keys.${C_RESET}\n"

@@ -13,6 +13,34 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ---
 
+## [4.10.1] — 2026-04-25
+
+### Added
+
+- **`src/voice_catalog.json` — ElevenLabs voices via Eden AI (C1000–C1250), 3 models.**
+  Same 5 language groups (French Parisien / French Canadien / English / English American /
+  English British) duplicated across 3 ElevenLabs models for comparison:
+  - **Multilingual V2** (C1000–C1050): `eleven_multilingual_v2`
+  - **Eleven V3** (C1100–C1150): `eleven_v3`
+  - **Flash V2.5** (C1200–C1250): `eleven_flash_v2_5`
+  Voice IDs use the format `eleven-<model_key>-<elevenlabs_voice_id>`
+  (e.g. `eleven-v3-6FXyooAOTqUK8m2HWm32`). All groups require `EDENAI_API_KEY`,
+  marked `"temporary": true` (comparison/hidden).
+- **`src/tts.py` — ElevenLabs routing via Eden AI.**
+  Added `_ELEVEN_MODELS` dict and `_synthesize_elevenlabs_eden()`: parses model key
+  (`v2`/`v3`/`flash`) from the voice ID prefix, calls Eden AI universal endpoint
+  (`POST https://api.edenai.run/v3/universal-ai/`), extracts `output.audio_resource_url`
+  from the response, and downloads the MP3 in a second request. Routing is inserted
+  before the Gradium check: voice IDs starting with `eleven-` are dispatched here.
+- **`vox-refiner-menu.sh` — per-voice API key check for comparison voices.**
+  Replaced hardcoded `GOOGLE_TTS_API_KEY` guard with voice-ID-aware checks:
+  `google-*` voices require `GOOGLE_TTS_API_KEY`; `eleven-*` voices require
+  `EDENAI_API_KEY`. Added override of `_provider_api_env` for `eleven-*` voices
+  in the preview/select flow so the correct key is checked instead of the comparison
+  provider's default (`GOOGLE_TTS_API_KEY`).
+
+---
+
 ## [4.10.0] — 2026-04-22
 
 ### Added

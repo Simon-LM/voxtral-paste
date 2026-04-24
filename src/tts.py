@@ -1008,6 +1008,67 @@ def _is_google_voice(voice_id: str) -> bool:
     return voice_id.startswith("google-")
 
 
+_ELEVEN_MODELS: dict[str, str] = {
+    "v2":    "audio/tts/elevenlabs/eleven_multilingual_v2",
+    "v3":    "audio/tts/elevenlabs/eleven_v3",
+    "flash": "audio/tts/elevenlabs/eleven_flash_v2_5",
+}
+
+
+def _synthesize_elevenlabs_eden(text: str, output_path: str, voice_id: str) -> None:
+    """Call ElevenLabs TTS via Eden AI universal endpoint and write MP3 to output_path.
+
+    voice_id format: "eleven-<model_key>-<elevenlabs_voice_id>"
+      e.g. "eleven-v2-pNInz6obpgDQGcFmaJgB"   → eleven_multilingual_v2
+           "eleven-v3-pNInz6obpgDQGcFmaJgB"   → eleven_v3
+           "eleven-flash-pNInz6obpgDQGcFmaJgB" → eleven_flash_v2_5
+
+    Eden AI responds with a CloudFront URL; the audio is downloaded in a second request.
+    """
+    api_key = os.environ.get("EDENAI_API_KEY")
+    if not api_key:
+        raise RuntimeError("EDENAI_API_KEY is not set. Check your .env file.")
+
+    # Parse "eleven-<model_key>-<voice_id>" — split on first two hyphens only.
+    parts = voice_id.split("-", 2)
+    if len(parts) == 3 and parts[1] in _ELEVEN_MODELS:
+        model_key, eleven_voice_id = parts[1], parts[2]
+    else:
+        # Legacy / fallback: "eleven-<voice_id>" without explicit model key.
+        model_key, eleven_voice_id = "v2", voice_id.removeprefix("eleven-")
+
+    eden_model = _ELEVEN_MODELS[model_key]
+
+    response = requests.post(
+        "https://api.edenai.run/v3/universal-ai/",
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        },
+        json={
+            "model": eden_model,
+            "input": {"text": text, "voice": eleven_voice_id},
+            "show_original_response": False,
+        },
+        timeout=60,
+    )
+    response.raise_for_status()
+    data = response.json()
+
+    if data.get("status") != "success":
+        error = data.get("error") or {}
+        raise RuntimeError(f"ElevenLabs Eden AI ({model_key}) error: {error.get('message', str(data)[:300])}")
+
+    # Eden AI returns a CloudFront URL — download the audio file.
+    audio_url = (data.get("output") or {}).get("audio_resource_url")
+    if not audio_url:
+        raise RuntimeError(f"ElevenLabs Eden AI: missing audio_resource_url in response: {str(data)[:300]}")
+
+    audio_response = requests.get(audio_url, timeout=30)
+    audio_response.raise_for_status()
+    Path(output_path).write_bytes(audio_response.content)
+
+
 def _create_wav_header(data_size: int, sample_rate: int, channels: int, bits_per_sample: int) -> bytes:
     """Create a WAV file header for PCM data."""
     # Calculate sizes
@@ -1200,6 +1261,12 @@ def synthesize(
         except Exception as exc:
             print(f"❌ Google TTS failed: {exc}", file=sys.stderr)
             raise
+
+    # ElevenLabs voices via Eden AI (prefix "eleven-") — route before Gradium.
+    if voice_id and voice_id.startswith("eleven-"):
+        print(f"\U0001f3a4 ElevenLabs TTS via Eden AI ({voice_id})...", file=sys.stderr)
+        _synthesize_elevenlabs_eden(text, output_path, voice_id)
+        return
 
     # Gradium voices (non-UUID IDs) use a separate API — route immediately.
     if voice_id and _is_gradium_voice(voice_id):

@@ -3867,6 +3867,1104 @@
 							"temporary": true
 						}
 					]
+				},
+				{
+					"title": "🇫🇷 ElevenLabs (Multilingual V2) — French Parisien",
+					"start_index": 1000,
+					"voices": [
+						{
+							"label": "Marine",
+							"slug": "eleven-v2-marine-fr",
+							"id": "eleven-v2-6FXyooAOTqUK8m2HWm32",
+							"sample_lang": "fr",
+							"menu_note": "F - Conversational AI",
+							"temporary": true
+						},
+						{
+							"label": "Jade",
+							"slug": "eleven-v2-jade-fr",
+							"id": "eleven-v2-3C1zYzXNXNzrB66ON8rj",
+							"sample_lang": "fr",
+							"menu_note": "F - Customer Service",
+							"temporary": true
+						},
+						{
+							"label": "Marco",
+							"slug": "eleven-v2-marco-fr",
+							"id": "eleven-v2-CYR0HqHoZAUmoZsLWPob",
+							"sample_lang": "fr",
+							"menu_note": "M - AI Agent, Energetic",
+							"temporary": true
+						},
+						{
+							"label": "Saray",
+							"slug": "eleven-v2-saray-fr",
+							"id": "eleven-v2-AqX3O1nij56oCicN2U6w",
+							"sample_lang": "fr",
+							"menu_note": "M - Dynamic",
+							"temporary": true
+						},
+						{
+							"label": "Victoria (Narrative)",
+							"slug": "eleven-v2-victoria-narrative-fr",
+							"id": "eleven-v2-O31r762Gb3WFygrEOGh0",
+							"sample_lang": "fr",
+							"menu_note": "F - Content Creator",
+							"temporary": true
+						},
+						{
+							"label": "Victoria (Audiobook)",
+							"slug": "eleven-v2-victoria-audiobook-fr",
+							"id": "eleven-v2-WeAAwKYcS06VmXw086yZ",
+							"sample_lang": "fr",
+							"menu_note": "F - Warm, Calm",
+							"temporary": true
+						},
+						{
+							"label": "Clément",
+							"slug": "eleven-v2-clement-fr",
+							"id": "eleven-v2-jUHQdLfy668sllNiNTSW",
+							"sample_lang": "fr",
+							"menu_note": "M - Calm, Neutral",
+							"temporary": true
+						},
+						{
+							"label": "Sébas",
+							"slug": "eleven-v2-sebas-fr",
+							"id": "eleven-v2-5jCmrHdxbpU36l1wb3Ke",
+							"sample_lang": "fr",
+							"menu_note": "M - Narrator, Young",
+							"temporary": true
+						}
+					]
+				},
+				{
+					"title": "🇨🇦 ElevenLabs (Multilingual V2) — French Canadien",
+					"start_index": 1008,
+					"voices": [
+						{
+							"label": "Amélie",
+							"slug": "eleven-v2-amelie-ca",
+							"id": "eleven-v2-UJCi4DDncuo0VJDSIegj",
+							"sample_lang": "fr",
+							"menu_note": "F - Québec",
+							"temporary": true
+						},
+						{
+							"label": "Claudia",
+							"slug": "eleven-v2-claudia-ca",
+							"id": "eleven-v2-WW0JfNPk5DgcQdM0d6X6",
+							"sample_lang": "fr",
+							"menu_note": "F - Warm, Energetic",
+							"temporary": true
+						},
+						{
+							"label": "Adam",
+							"slug": "eleven-v2-adam-ca",
+							"id": "eleven-v2-93nuHbke4dTER9x2pDwE",
+							"sample_lang": "fr",
+							"menu_note": "M - Québec, e-learning",
+							"temporary": true
+						},
+						{
+							"label": "Thierry",
+							"slug": "eleven-v2-thierry-ca",
+							"id": "eleven-v2-mVjOqyqTPfwlXPjV5sjX",
+							"sample_lang": "fr",
+							"menu_note": "M - Professional AI",
+							"temporary": true
+						}
+					]
+				},
+				{
+					"title": "🇬🇧 ElevenLabs (Multilingual V2) — English",
+					"start_index": 1021,
+					"voices": [
+						{
+							"label": "Adam",
+							"slug": "eleven-v2-adam-en",
+							"id": "eleven-v2-pNInz6obpgDQGcFmaJgB",
+							"sample_lang": "en",
+							"menu_note": "M - Dominant, Firm",
+							"temporary": true
+						},
+						{
+							"label": "Alice",
+							"slug": "eleven-v2-alice-en",
+							"id": "eleven-v2-Xb7hH8MSUJpSbSDYk0k2",
+							"sample_lang": "en",
+							"menu_note": "F - Clear, Engaging",
+							"temporary": true
+						},
+						{
+							"label": "Bella",
+							"slug": "eleven-v2-bella-en",
+							"id": "eleven-v2-hpp4J3VqNfWAUOO0d1Us",
+							"sample_lang": "en",
+							"menu_note": "F - Professional, Bright",
+							"temporary": true
+						},
+						{
+							"label": "Bill",
+							"slug": "eleven-v2-bill-en",
+							"id": "eleven-v2-pqHfZKP75CvOlQylNhV4",
+							"sample_lang": "en",
+							"menu_note": "M - Wise, Mature",
+							"temporary": true
+						},
+						{
+							"label": "Brian",
+							"slug": "eleven-v2-brian-en",
+							"id": "eleven-v2-nPczCjzI2devNBz1zQrb",
+							"sample_lang": "en",
+							"menu_note": "M - Deep, Resonant",
+							"temporary": true
+						},
+						{
+							"label": "Callum",
+							"slug": "eleven-v2-callum-en",
+							"id": "eleven-v2-N2lVS1w4EtoT3dr4eOWO",
+							"sample_lang": "en",
+							"menu_note": "M - Husky",
+							"temporary": true
+						},
+						{
+							"label": "Charlie",
+							"slug": "eleven-v2-charlie-en",
+							"id": "eleven-v2-IKne3meq5aSn9XLyUdCD",
+							"sample_lang": "en",
+							"menu_note": "M - Deep, Confident",
+							"temporary": true
+						},
+						{
+							"label": "Chris",
+							"slug": "eleven-v2-chris-en",
+							"id": "eleven-v2-iP95p4xoKVk53GoZ742B",
+							"sample_lang": "en",
+							"menu_note": "M - Charming",
+							"temporary": true
+						},
+						{
+							"label": "Daniel",
+							"slug": "eleven-v2-daniel-en",
+							"id": "eleven-v2-onwK4e9ZLuTAKqWW03F9",
+							"sample_lang": "en",
+							"menu_note": "M - Steady Broadcaster",
+							"temporary": true
+						},
+						{
+							"label": "Eric",
+							"slug": "eleven-v2-eric-en",
+							"id": "eleven-v2-cjVigY5qzO86Huf0OWal",
+							"sample_lang": "en",
+							"menu_note": "M - Smooth, Trustworthy",
+							"temporary": true
+						},
+						{
+							"label": "George",
+							"slug": "eleven-v2-george-en",
+							"id": "eleven-v2-JBFqnCBsd6RMkjVDRZzb",
+							"sample_lang": "en",
+							"menu_note": "M - Warm, Storyteller",
+							"temporary": true
+						},
+						{
+							"label": "Harry",
+							"slug": "eleven-v2-harry-en",
+							"id": "eleven-v2-SOYHLrjzK2X1ezoPC6cr",
+							"sample_lang": "en",
+							"menu_note": "M - Fierce",
+							"temporary": true
+						},
+						{
+							"label": "Jessica",
+							"slug": "eleven-v2-jessica-en",
+							"id": "eleven-v2-cgSgspJ2msm6clMCkdW9",
+							"sample_lang": "en",
+							"menu_note": "F - Playful, Bright",
+							"temporary": true
+						},
+						{
+							"label": "Laura",
+							"slug": "eleven-v2-laura-en",
+							"id": "eleven-v2-FGY2WhTYpPnrIDTdsKH5",
+							"sample_lang": "en",
+							"menu_note": "F - Enthusiast, Quirky",
+							"temporary": true
+						},
+						{
+							"label": "Liam",
+							"slug": "eleven-v2-liam-en",
+							"id": "eleven-v2-TX3LPaxmHKxFdv7VOQHJ",
+							"sample_lang": "en",
+							"menu_note": "M - Energetic",
+							"temporary": true
+						},
+						{
+							"label": "Lily",
+							"slug": "eleven-v2-lily-en",
+							"id": "eleven-v2-pFZP5JQG7iQjIQuC4Bku",
+							"sample_lang": "en",
+							"menu_note": "F - Velvety",
+							"temporary": true
+						},
+						{
+							"label": "Matilda",
+							"slug": "eleven-v2-matilda-en",
+							"id": "eleven-v2-XrExE9yKIg1WjnnlVkGX",
+							"sample_lang": "en",
+							"menu_note": "F - Knowledgeable",
+							"temporary": true
+						},
+						{
+							"label": "River",
+							"slug": "eleven-v2-river-en",
+							"id": "eleven-v2-SAz9YHcvj6GT2YYXdXww",
+							"sample_lang": "en",
+							"menu_note": "N - Relaxed, Neutral",
+							"temporary": true
+						},
+						{
+							"label": "Roger",
+							"slug": "eleven-v2-roger-en",
+							"id": "eleven-v2-CwhRBWXzGAHq8TQ4Fs17",
+							"sample_lang": "en",
+							"menu_note": "M - Laid-Back, Casual",
+							"temporary": true
+						},
+						{
+							"label": "Sarah",
+							"slug": "eleven-v2-sarah-en",
+							"id": "eleven-v2-EXAVITQu4vr4xnSDxMaL",
+							"sample_lang": "en",
+							"menu_note": "F - Mature, Reassuring",
+							"temporary": true
+						},
+						{
+							"label": "Will",
+							"slug": "eleven-v2-will-en",
+							"id": "eleven-v2-bIHbv24MWmeRgasZH58o",
+							"sample_lang": "en",
+							"menu_note": "M - Relaxed Optimist",
+							"temporary": true
+						}
+					]
+				},
+				{
+					"title": "🇺🇸 ElevenLabs (Multilingual V2) — English American",
+					"start_index": 1042,
+					"voices": [
+						{
+							"label": "Hope",
+							"slug": "eleven-v2-hope-us",
+							"id": "eleven-v2-zGjIP4SZlMnY9m93k97r",
+							"sample_lang": "en",
+							"menu_note": "F - Podcaster",
+							"temporary": true
+						},
+						{
+							"label": "Alexandra",
+							"slug": "eleven-v2-alexandra-us",
+							"id": "eleven-v2-kdmDKE6EkgrWrrykO9Qt",
+							"sample_lang": "en",
+							"menu_note": "F - Conversational",
+							"temporary": true
+						},
+						{
+							"label": "Mark",
+							"slug": "eleven-v2-mark-us",
+							"id": "eleven-v2-UgBBYS2sOqTuMpoF3BR0",
+							"sample_lang": "en",
+							"menu_note": "M - Natural, Casual",
+							"temporary": true
+						},
+						{
+							"label": "Hale",
+							"slug": "eleven-v2-hale-us",
+							"id": "eleven-v2-wWWn96OtTHu1sn8SRGEr",
+							"sample_lang": "en",
+							"menu_note": "M - Expressive, Deep",
+							"temporary": true
+						}
+					]
+				},
+				{
+					"title": "🇬🇧 ElevenLabs (Multilingual V2) — English British",
+					"start_index": 1046,
+					"voices": [
+						{
+							"label": "Lucy",
+							"slug": "eleven-v2-lucy-gb",
+							"id": "eleven-v2-lcMyyd2HUfFzxdCaC4Ta",
+							"sample_lang": "en",
+							"menu_note": "F - Fresh, Casual",
+							"temporary": true
+						},
+						{
+							"label": "Jude",
+							"slug": "eleven-v2-jude-gb",
+							"id": "eleven-v2-Yg7C1g7suzNt5TisIqkZ",
+							"sample_lang": "en",
+							"menu_note": "F - Podcaster",
+							"temporary": true
+						},
+						{
+							"label": "James",
+							"slug": "eleven-v2-james-gb",
+							"id": "eleven-v2-lUTamkMw7gOzZbFIwmq4",
+							"sample_lang": "en",
+							"menu_note": "M - Professional",
+							"temporary": true
+						},
+						{
+							"label": "Christopher",
+							"slug": "eleven-v2-christopher-gb",
+							"id": "eleven-v2-G17SuINrv2H9FC6nvetn",
+							"sample_lang": "en",
+							"menu_note": "M - Gentle, Audiobook",
+							"temporary": true
+						},
+						{
+							"label": "Edmund",
+							"slug": "eleven-v2-edmund-gb",
+							"id": "eleven-v2-mlvXFS1MP5qndOFkWz1M",
+							"sample_lang": "en",
+							"menu_note": "M - Customer Care",
+							"temporary": true
+						}
+					]
+				},
+				{
+					"title": "🇫🇷 ElevenLabs (Eleven V3) — French Parisien",
+					"start_index": 1100,
+					"voices": [
+						{
+							"label": "Marine",
+							"slug": "eleven-v3-marine-fr",
+							"id": "eleven-v3-6FXyooAOTqUK8m2HWm32",
+							"sample_lang": "fr",
+							"menu_note": "F - Conversational AI",
+							"temporary": true
+						},
+						{
+							"label": "Jade",
+							"slug": "eleven-v3-jade-fr",
+							"id": "eleven-v3-3C1zYzXNXNzrB66ON8rj",
+							"sample_lang": "fr",
+							"menu_note": "F - Customer Service",
+							"temporary": true
+						},
+						{
+							"label": "Marco",
+							"slug": "eleven-v3-marco-fr",
+							"id": "eleven-v3-CYR0HqHoZAUmoZsLWPob",
+							"sample_lang": "fr",
+							"menu_note": "M - AI Agent, Energetic",
+							"temporary": true
+						},
+						{
+							"label": "Saray",
+							"slug": "eleven-v3-saray-fr",
+							"id": "eleven-v3-AqX3O1nij56oCicN2U6w",
+							"sample_lang": "fr",
+							"menu_note": "M - Dynamic",
+							"temporary": true
+						},
+						{
+							"label": "Victoria (Narrative)",
+							"slug": "eleven-v3-victoria-narrative-fr",
+							"id": "eleven-v3-O31r762Gb3WFygrEOGh0",
+							"sample_lang": "fr",
+							"menu_note": "F - Content Creator",
+							"temporary": true
+						},
+						{
+							"label": "Victoria (Audiobook)",
+							"slug": "eleven-v3-victoria-audiobook-fr",
+							"id": "eleven-v3-WeAAwKYcS06VmXw086yZ",
+							"sample_lang": "fr",
+							"menu_note": "F - Warm, Calm",
+							"temporary": true
+						},
+						{
+							"label": "Clément",
+							"slug": "eleven-v3-clement-fr",
+							"id": "eleven-v3-jUHQdLfy668sllNiNTSW",
+							"sample_lang": "fr",
+							"menu_note": "M - Calm, Neutral",
+							"temporary": true
+						},
+						{
+							"label": "Sébas",
+							"slug": "eleven-v3-sebas-fr",
+							"id": "eleven-v3-5jCmrHdxbpU36l1wb3Ke",
+							"sample_lang": "fr",
+							"menu_note": "M - Narrator, Young",
+							"temporary": true
+						}
+					]
+				},
+				{
+					"title": "🇨🇦 ElevenLabs (Eleven V3) — French Canadien",
+					"start_index": 1108,
+					"voices": [
+						{
+							"label": "Amélie",
+							"slug": "eleven-v3-amelie-ca",
+							"id": "eleven-v3-UJCi4DDncuo0VJDSIegj",
+							"sample_lang": "fr",
+							"menu_note": "F - Québec",
+							"temporary": true
+						},
+						{
+							"label": "Claudia",
+							"slug": "eleven-v3-claudia-ca",
+							"id": "eleven-v3-WW0JfNPk5DgcQdM0d6X6",
+							"sample_lang": "fr",
+							"menu_note": "F - Warm, Energetic",
+							"temporary": true
+						},
+						{
+							"label": "Adam",
+							"slug": "eleven-v3-adam-ca",
+							"id": "eleven-v3-93nuHbke4dTER9x2pDwE",
+							"sample_lang": "fr",
+							"menu_note": "M - Québec, e-learning",
+							"temporary": true
+						},
+						{
+							"label": "Thierry",
+							"slug": "eleven-v3-thierry-ca",
+							"id": "eleven-v3-mVjOqyqTPfwlXPjV5sjX",
+							"sample_lang": "fr",
+							"menu_note": "M - Professional AI",
+							"temporary": true
+						}
+					]
+				},
+				{
+					"title": "🇬🇧 ElevenLabs (Eleven V3) — English",
+					"start_index": 1121,
+					"voices": [
+						{
+							"label": "Adam",
+							"slug": "eleven-v3-adam-en",
+							"id": "eleven-v3-pNInz6obpgDQGcFmaJgB",
+							"sample_lang": "en",
+							"menu_note": "M - Dominant, Firm",
+							"temporary": true
+						},
+						{
+							"label": "Alice",
+							"slug": "eleven-v3-alice-en",
+							"id": "eleven-v3-Xb7hH8MSUJpSbSDYk0k2",
+							"sample_lang": "en",
+							"menu_note": "F - Clear, Engaging",
+							"temporary": true
+						},
+						{
+							"label": "Bella",
+							"slug": "eleven-v3-bella-en",
+							"id": "eleven-v3-hpp4J3VqNfWAUOO0d1Us",
+							"sample_lang": "en",
+							"menu_note": "F - Professional, Bright",
+							"temporary": true
+						},
+						{
+							"label": "Bill",
+							"slug": "eleven-v3-bill-en",
+							"id": "eleven-v3-pqHfZKP75CvOlQylNhV4",
+							"sample_lang": "en",
+							"menu_note": "M - Wise, Mature",
+							"temporary": true
+						},
+						{
+							"label": "Brian",
+							"slug": "eleven-v3-brian-en",
+							"id": "eleven-v3-nPczCjzI2devNBz1zQrb",
+							"sample_lang": "en",
+							"menu_note": "M - Deep, Resonant",
+							"temporary": true
+						},
+						{
+							"label": "Callum",
+							"slug": "eleven-v3-callum-en",
+							"id": "eleven-v3-N2lVS1w4EtoT3dr4eOWO",
+							"sample_lang": "en",
+							"menu_note": "M - Husky",
+							"temporary": true
+						},
+						{
+							"label": "Charlie",
+							"slug": "eleven-v3-charlie-en",
+							"id": "eleven-v3-IKne3meq5aSn9XLyUdCD",
+							"sample_lang": "en",
+							"menu_note": "M - Deep, Confident",
+							"temporary": true
+						},
+						{
+							"label": "Chris",
+							"slug": "eleven-v3-chris-en",
+							"id": "eleven-v3-iP95p4xoKVk53GoZ742B",
+							"sample_lang": "en",
+							"menu_note": "M - Charming",
+							"temporary": true
+						},
+						{
+							"label": "Daniel",
+							"slug": "eleven-v3-daniel-en",
+							"id": "eleven-v3-onwK4e9ZLuTAKqWW03F9",
+							"sample_lang": "en",
+							"menu_note": "M - Steady Broadcaster",
+							"temporary": true
+						},
+						{
+							"label": "Eric",
+							"slug": "eleven-v3-eric-en",
+							"id": "eleven-v3-cjVigY5qzO86Huf0OWal",
+							"sample_lang": "en",
+							"menu_note": "M - Smooth, Trustworthy",
+							"temporary": true
+						},
+						{
+							"label": "George",
+							"slug": "eleven-v3-george-en",
+							"id": "eleven-v3-JBFqnCBsd6RMkjVDRZzb",
+							"sample_lang": "en",
+							"menu_note": "M - Warm, Storyteller",
+							"temporary": true
+						},
+						{
+							"label": "Harry",
+							"slug": "eleven-v3-harry-en",
+							"id": "eleven-v3-SOYHLrjzK2X1ezoPC6cr",
+							"sample_lang": "en",
+							"menu_note": "M - Fierce",
+							"temporary": true
+						},
+						{
+							"label": "Jessica",
+							"slug": "eleven-v3-jessica-en",
+							"id": "eleven-v3-cgSgspJ2msm6clMCkdW9",
+							"sample_lang": "en",
+							"menu_note": "F - Playful, Bright",
+							"temporary": true
+						},
+						{
+							"label": "Laura",
+							"slug": "eleven-v3-laura-en",
+							"id": "eleven-v3-FGY2WhTYpPnrIDTdsKH5",
+							"sample_lang": "en",
+							"menu_note": "F - Enthusiast, Quirky",
+							"temporary": true
+						},
+						{
+							"label": "Liam",
+							"slug": "eleven-v3-liam-en",
+							"id": "eleven-v3-TX3LPaxmHKxFdv7VOQHJ",
+							"sample_lang": "en",
+							"menu_note": "M - Energetic",
+							"temporary": true
+						},
+						{
+							"label": "Lily",
+							"slug": "eleven-v3-lily-en",
+							"id": "eleven-v3-pFZP5JQG7iQjIQuC4Bku",
+							"sample_lang": "en",
+							"menu_note": "F - Velvety",
+							"temporary": true
+						},
+						{
+							"label": "Matilda",
+							"slug": "eleven-v3-matilda-en",
+							"id": "eleven-v3-XrExE9yKIg1WjnnlVkGX",
+							"sample_lang": "en",
+							"menu_note": "F - Knowledgeable",
+							"temporary": true
+						},
+						{
+							"label": "River",
+							"slug": "eleven-v3-river-en",
+							"id": "eleven-v3-SAz9YHcvj6GT2YYXdXww",
+							"sample_lang": "en",
+							"menu_note": "N - Relaxed, Neutral",
+							"temporary": true
+						},
+						{
+							"label": "Roger",
+							"slug": "eleven-v3-roger-en",
+							"id": "eleven-v3-CwhRBWXzGAHq8TQ4Fs17",
+							"sample_lang": "en",
+							"menu_note": "M - Laid-Back, Casual",
+							"temporary": true
+						},
+						{
+							"label": "Sarah",
+							"slug": "eleven-v3-sarah-en",
+							"id": "eleven-v3-EXAVITQu4vr4xnSDxMaL",
+							"sample_lang": "en",
+							"menu_note": "F - Mature, Reassuring",
+							"temporary": true
+						},
+						{
+							"label": "Will",
+							"slug": "eleven-v3-will-en",
+							"id": "eleven-v3-bIHbv24MWmeRgasZH58o",
+							"sample_lang": "en",
+							"menu_note": "M - Relaxed Optimist",
+							"temporary": true
+						}
+					]
+				},
+				{
+					"title": "🇺🇸 ElevenLabs (Eleven V3) — English American",
+					"start_index": 1142,
+					"voices": [
+						{
+							"label": "Hope",
+							"slug": "eleven-v3-hope-us",
+							"id": "eleven-v3-zGjIP4SZlMnY9m93k97r",
+							"sample_lang": "en",
+							"menu_note": "F - Podcaster",
+							"temporary": true
+						},
+						{
+							"label": "Alexandra",
+							"slug": "eleven-v3-alexandra-us",
+							"id": "eleven-v3-kdmDKE6EkgrWrrykO9Qt",
+							"sample_lang": "en",
+							"menu_note": "F - Conversational",
+							"temporary": true
+						},
+						{
+							"label": "Mark",
+							"slug": "eleven-v3-mark-us",
+							"id": "eleven-v3-UgBBYS2sOqTuMpoF3BR0",
+							"sample_lang": "en",
+							"menu_note": "M - Natural, Casual",
+							"temporary": true
+						},
+						{
+							"label": "Hale",
+							"slug": "eleven-v3-hale-us",
+							"id": "eleven-v3-wWWn96OtTHu1sn8SRGEr",
+							"sample_lang": "en",
+							"menu_note": "M - Expressive, Deep",
+							"temporary": true
+						}
+					]
+				},
+				{
+					"title": "🇬🇧 ElevenLabs (Eleven V3) — English British",
+					"start_index": 1146,
+					"voices": [
+						{
+							"label": "Lucy",
+							"slug": "eleven-v3-lucy-gb",
+							"id": "eleven-v3-lcMyyd2HUfFzxdCaC4Ta",
+							"sample_lang": "en",
+							"menu_note": "F - Fresh, Casual",
+							"temporary": true
+						},
+						{
+							"label": "Jude",
+							"slug": "eleven-v3-jude-gb",
+							"id": "eleven-v3-Yg7C1g7suzNt5TisIqkZ",
+							"sample_lang": "en",
+							"menu_note": "F - Podcaster",
+							"temporary": true
+						},
+						{
+							"label": "James",
+							"slug": "eleven-v3-james-gb",
+							"id": "eleven-v3-lUTamkMw7gOzZbFIwmq4",
+							"sample_lang": "en",
+							"menu_note": "M - Professional",
+							"temporary": true
+						},
+						{
+							"label": "Christopher",
+							"slug": "eleven-v3-christopher-gb",
+							"id": "eleven-v3-G17SuINrv2H9FC6nvetn",
+							"sample_lang": "en",
+							"menu_note": "M - Gentle, Audiobook",
+							"temporary": true
+						},
+						{
+							"label": "Edmund",
+							"slug": "eleven-v3-edmund-gb",
+							"id": "eleven-v3-mlvXFS1MP5qndOFkWz1M",
+							"sample_lang": "en",
+							"menu_note": "M - Customer Care",
+							"temporary": true
+						}
+					]
+				},
+				{
+					"title": "🇫🇷 ElevenLabs (Flash V2.5) — French Parisien",
+					"start_index": 1200,
+					"voices": [
+						{
+							"label": "Marine",
+							"slug": "eleven-flash-marine-fr",
+							"id": "eleven-flash-6FXyooAOTqUK8m2HWm32",
+							"sample_lang": "fr",
+							"menu_note": "F - Conversational AI",
+							"temporary": true
+						},
+						{
+							"label": "Jade",
+							"slug": "eleven-flash-jade-fr",
+							"id": "eleven-flash-3C1zYzXNXNzrB66ON8rj",
+							"sample_lang": "fr",
+							"menu_note": "F - Customer Service",
+							"temporary": true
+						},
+						{
+							"label": "Marco",
+							"slug": "eleven-flash-marco-fr",
+							"id": "eleven-flash-CYR0HqHoZAUmoZsLWPob",
+							"sample_lang": "fr",
+							"menu_note": "M - AI Agent, Energetic",
+							"temporary": true
+						},
+						{
+							"label": "Saray",
+							"slug": "eleven-flash-saray-fr",
+							"id": "eleven-flash-AqX3O1nij56oCicN2U6w",
+							"sample_lang": "fr",
+							"menu_note": "M - Dynamic",
+							"temporary": true
+						},
+						{
+							"label": "Victoria (Narrative)",
+							"slug": "eleven-flash-victoria-narrative-fr",
+							"id": "eleven-flash-O31r762Gb3WFygrEOGh0",
+							"sample_lang": "fr",
+							"menu_note": "F - Content Creator",
+							"temporary": true
+						},
+						{
+							"label": "Victoria (Audiobook)",
+							"slug": "eleven-flash-victoria-audiobook-fr",
+							"id": "eleven-flash-WeAAwKYcS06VmXw086yZ",
+							"sample_lang": "fr",
+							"menu_note": "F - Warm, Calm",
+							"temporary": true
+						},
+						{
+							"label": "Clément",
+							"slug": "eleven-flash-clement-fr",
+							"id": "eleven-flash-jUHQdLfy668sllNiNTSW",
+							"sample_lang": "fr",
+							"menu_note": "M - Calm, Neutral",
+							"temporary": true
+						},
+						{
+							"label": "Sébas",
+							"slug": "eleven-flash-sebas-fr",
+							"id": "eleven-flash-5jCmrHdxbpU36l1wb3Ke",
+							"sample_lang": "fr",
+							"menu_note": "M - Narrator, Young",
+							"temporary": true
+						}
+					]
+				},
+				{
+					"title": "🇨🇦 ElevenLabs (Flash V2.5) — French Canadien",
+					"start_index": 1208,
+					"voices": [
+						{
+							"label": "Amélie",
+							"slug": "eleven-flash-amelie-ca",
+							"id": "eleven-flash-UJCi4DDncuo0VJDSIegj",
+							"sample_lang": "fr",
+							"menu_note": "F - Québec",
+							"temporary": true
+						},
+						{
+							"label": "Claudia",
+							"slug": "eleven-flash-claudia-ca",
+							"id": "eleven-flash-WW0JfNPk5DgcQdM0d6X6",
+							"sample_lang": "fr",
+							"menu_note": "F - Warm, Energetic",
+							"temporary": true
+						},
+						{
+							"label": "Adam",
+							"slug": "eleven-flash-adam-ca",
+							"id": "eleven-flash-93nuHbke4dTER9x2pDwE",
+							"sample_lang": "fr",
+							"menu_note": "M - Québec, e-learning",
+							"temporary": true
+						},
+						{
+							"label": "Thierry",
+							"slug": "eleven-flash-thierry-ca",
+							"id": "eleven-flash-mVjOqyqTPfwlXPjV5sjX",
+							"sample_lang": "fr",
+							"menu_note": "M - Professional AI",
+							"temporary": true
+						}
+					]
+				},
+				{
+					"title": "🇬🇧 ElevenLabs (Flash V2.5) — English",
+					"start_index": 1221,
+					"voices": [
+						{
+							"label": "Adam",
+							"slug": "eleven-flash-adam-en",
+							"id": "eleven-flash-pNInz6obpgDQGcFmaJgB",
+							"sample_lang": "en",
+							"menu_note": "M - Dominant, Firm",
+							"temporary": true
+						},
+						{
+							"label": "Alice",
+							"slug": "eleven-flash-alice-en",
+							"id": "eleven-flash-Xb7hH8MSUJpSbSDYk0k2",
+							"sample_lang": "en",
+							"menu_note": "F - Clear, Engaging",
+							"temporary": true
+						},
+						{
+							"label": "Bella",
+							"slug": "eleven-flash-bella-en",
+							"id": "eleven-flash-hpp4J3VqNfWAUOO0d1Us",
+							"sample_lang": "en",
+							"menu_note": "F - Professional, Bright",
+							"temporary": true
+						},
+						{
+							"label": "Bill",
+							"slug": "eleven-flash-bill-en",
+							"id": "eleven-flash-pqHfZKP75CvOlQylNhV4",
+							"sample_lang": "en",
+							"menu_note": "M - Wise, Mature",
+							"temporary": true
+						},
+						{
+							"label": "Brian",
+							"slug": "eleven-flash-brian-en",
+							"id": "eleven-flash-nPczCjzI2devNBz1zQrb",
+							"sample_lang": "en",
+							"menu_note": "M - Deep, Resonant",
+							"temporary": true
+						},
+						{
+							"label": "Callum",
+							"slug": "eleven-flash-callum-en",
+							"id": "eleven-flash-N2lVS1w4EtoT3dr4eOWO",
+							"sample_lang": "en",
+							"menu_note": "M - Husky",
+							"temporary": true
+						},
+						{
+							"label": "Charlie",
+							"slug": "eleven-flash-charlie-en",
+							"id": "eleven-flash-IKne3meq5aSn9XLyUdCD",
+							"sample_lang": "en",
+							"menu_note": "M - Deep, Confident",
+							"temporary": true
+						},
+						{
+							"label": "Chris",
+							"slug": "eleven-flash-chris-en",
+							"id": "eleven-flash-iP95p4xoKVk53GoZ742B",
+							"sample_lang": "en",
+							"menu_note": "M - Charming",
+							"temporary": true
+						},
+						{
+							"label": "Daniel",
+							"slug": "eleven-flash-daniel-en",
+							"id": "eleven-flash-onwK4e9ZLuTAKqWW03F9",
+							"sample_lang": "en",
+							"menu_note": "M - Steady Broadcaster",
+							"temporary": true
+						},
+						{
+							"label": "Eric",
+							"slug": "eleven-flash-eric-en",
+							"id": "eleven-flash-cjVigY5qzO86Huf0OWal",
+							"sample_lang": "en",
+							"menu_note": "M - Smooth, Trustworthy",
+							"temporary": true
+						},
+						{
+							"label": "George",
+							"slug": "eleven-flash-george-en",
+							"id": "eleven-flash-JBFqnCBsd6RMkjVDRZzb",
+							"sample_lang": "en",
+							"menu_note": "M - Warm, Storyteller",
+							"temporary": true
+						},
+						{
+							"label": "Harry",
+							"slug": "eleven-flash-harry-en",
+							"id": "eleven-flash-SOYHLrjzK2X1ezoPC6cr",
+							"sample_lang": "en",
+							"menu_note": "M - Fierce",
+							"temporary": true
+						},
+						{
+							"label": "Jessica",
+							"slug": "eleven-flash-jessica-en",
+							"id": "eleven-flash-cgSgspJ2msm6clMCkdW9",
+							"sample_lang": "en",
+							"menu_note": "F - Playful, Bright",
+							"temporary": true
+						},
+						{
+							"label": "Laura",
+							"slug": "eleven-flash-laura-en",
+							"id": "eleven-flash-FGY2WhTYpPnrIDTdsKH5",
+							"sample_lang": "en",
+							"menu_note": "F - Enthusiast, Quirky",
+							"temporary": true
+						},
+						{
+							"label": "Liam",
+							"slug": "eleven-flash-liam-en",
+							"id": "eleven-flash-TX3LPaxmHKxFdv7VOQHJ",
+							"sample_lang": "en",
+							"menu_note": "M - Energetic",
+							"temporary": true
+						},
+						{
+							"label": "Lily",
+							"slug": "eleven-flash-lily-en",
+							"id": "eleven-flash-pFZP5JQG7iQjIQuC4Bku",
+							"sample_lang": "en",
+							"menu_note": "F - Velvety",
+							"temporary": true
+						},
+						{
+							"label": "Matilda",
+							"slug": "eleven-flash-matilda-en",
+							"id": "eleven-flash-XrExE9yKIg1WjnnlVkGX",
+							"sample_lang": "en",
+							"menu_note": "F - Knowledgeable",
+							"temporary": true
+						},
+						{
+							"label": "River",
+							"slug": "eleven-flash-river-en",
+							"id": "eleven-flash-SAz9YHcvj6GT2YYXdXww",
+							"sample_lang": "en",
+							"menu_note": "N - Relaxed, Neutral",
+							"temporary": true
+						},
+						{
+							"label": "Roger",
+							"slug": "eleven-flash-roger-en",
+							"id": "eleven-flash-CwhRBWXzGAHq8TQ4Fs17",
+							"sample_lang": "en",
+							"menu_note": "M - Laid-Back, Casual",
+							"temporary": true
+						},
+						{
+							"label": "Sarah",
+							"slug": "eleven-flash-sarah-en",
+							"id": "eleven-flash-EXAVITQu4vr4xnSDxMaL",
+							"sample_lang": "en",
+							"menu_note": "F - Mature, Reassuring",
+							"temporary": true
+						},
+						{
+							"label": "Will",
+							"slug": "eleven-flash-will-en",
+							"id": "eleven-flash-bIHbv24MWmeRgasZH58o",
+							"sample_lang": "en",
+							"menu_note": "M - Relaxed Optimist",
+							"temporary": true
+						}
+					]
+				},
+				{
+					"title": "🇺🇸 ElevenLabs (Flash V2.5) — English American",
+					"start_index": 1242,
+					"voices": [
+						{
+							"label": "Hope",
+							"slug": "eleven-flash-hope-us",
+							"id": "eleven-flash-zGjIP4SZlMnY9m93k97r",
+							"sample_lang": "en",
+							"menu_note": "F - Podcaster",
+							"temporary": true
+						},
+						{
+							"label": "Alexandra",
+							"slug": "eleven-flash-alexandra-us",
+							"id": "eleven-flash-kdmDKE6EkgrWrrykO9Qt",
+							"sample_lang": "en",
+							"menu_note": "F - Conversational",
+							"temporary": true
+						},
+						{
+							"label": "Mark",
+							"slug": "eleven-flash-mark-us",
+							"id": "eleven-flash-UgBBYS2sOqTuMpoF3BR0",
+							"sample_lang": "en",
+							"menu_note": "M - Natural, Casual",
+							"temporary": true
+						},
+						{
+							"label": "Hale",
+							"slug": "eleven-flash-hale-us",
+							"id": "eleven-flash-wWWn96OtTHu1sn8SRGEr",
+							"sample_lang": "en",
+							"menu_note": "M - Expressive, Deep",
+							"temporary": true
+						}
+					]
+				},
+				{
+					"title": "🇬🇧 ElevenLabs (Flash V2.5) — English British",
+					"start_index": 1246,
+					"voices": [
+						{
+							"label": "Lucy",
+							"slug": "eleven-flash-lucy-gb",
+							"id": "eleven-flash-lcMyyd2HUfFzxdCaC4Ta",
+							"sample_lang": "en",
+							"menu_note": "F - Fresh, Casual",
+							"temporary": true
+						},
+						{
+							"label": "Jude",
+							"slug": "eleven-flash-jude-gb",
+							"id": "eleven-flash-Yg7C1g7suzNt5TisIqkZ",
+							"sample_lang": "en",
+							"menu_note": "F - Podcaster",
+							"temporary": true
+						},
+						{
+							"label": "James",
+							"slug": "eleven-flash-james-gb",
+							"id": "eleven-flash-lUTamkMw7gOzZbFIwmq4",
+							"sample_lang": "en",
+							"menu_note": "M - Professional",
+							"temporary": true
+						},
+						{
+							"label": "Christopher",
+							"slug": "eleven-flash-christopher-gb",
+							"id": "eleven-flash-G17SuINrv2H9FC6nvetn",
+							"sample_lang": "en",
+							"menu_note": "M - Gentle, Audiobook",
+							"temporary": true
+						},
+						{
+							"label": "Edmund",
+							"slug": "eleven-flash-edmund-gb",
+							"id": "eleven-flash-mlvXFS1MP5qndOFkWz1M",
+							"sample_lang": "en",
+							"menu_note": "M - Customer Care",
+							"temporary": true
+						}
+					]
 				}
 			]
 		}
