@@ -60,6 +60,7 @@ _LANG_NAMES = {
     "nl": "Dutch",
     "hi": "Hindi",
     "ar": "Arabic",
+    "eo": "Esperanto",
 }
 
 # ── System prompt ────────────────────────────────────────────────────────────

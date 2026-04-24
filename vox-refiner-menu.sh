@@ -78,7 +78,7 @@ _voice_picker() {
     local _provider_hint="" _vi _group_has_notes _row_text _rows_printed
     local _provider_has_visible_groups _group_lang _selected_group_lang
     local _lang_filter="all" _lang_filter_label="All languages" _needs_lang_prompt=1
-    local _hidden_mode=0
+    local _hidden_mode=0 _public_lang_count=0
     local _lang_choice _lang_index _lang_code _lang_label _lang_count
     local _lang_exists _lang_has_voices
     local -a _provider_prefixes _provider_titles _provider_api_envs _provider_keys
@@ -239,12 +239,14 @@ PY
             de) _lang_label="German" ;;
             es) _lang_label="Spanish" ;;
             pt) _lang_label="Portuguese" ;;
+            eo) _lang_label="Esperanto" ;;
             *)  _lang_label="${_lang_code^^}" ;;
         esac
         _lang_codes+=("$_lang_code")
         _lang_labels+=("$_lang_label")
         _lang_counts+=("0")
     done
+    _public_lang_count=${#_lang_codes[@]}
 
     for _gi in "${!_group_ids[@]}"; do
         _lang_code="${_group_langs[$_gi]}"
@@ -292,6 +294,7 @@ PY
     local _vtext_de="Am Anfang scheint alles offensichtlich. Dann fällt ein Detail auf, eine Nuance tritt hervor … und die Wahrnehmung verändert sich. Oft beginnt genau dann das echte Zuhören."
     local _vtext_es="Al principio, todo parece evidente. Luego un detalle llama la atención, aparece un matiz… y la percepción cambia. A menudo, es justo ahí cuando empezamos a escuchar de verdad."
     local _vtext_pt="No início, tudo parece óbvio. Depois, um detalhe chama a atenção, surge uma nuance… e a perceção muda. É muitas vezes nesse momento que começamos realmente a escutar."
+    local _vtext_eo="Komence, ĉio ŝajnas evidenta. Tiam detalo elstaras, nuanco aperas… kaj percepto ŝanĝiĝas. Tio ofte estas kiam ni vere komencas aŭskulti."
     _vpreview_id=""
     _vpreview_slug=""
     _vpreview_provider_prefix=""
@@ -321,6 +324,7 @@ PY
                 _sep
                 echo ""
                 for _li in "${!_lang_codes[@]}"; do
+                    if [ "$_hidden_mode" -eq 0 ] && [ "$_li" -ge "$_public_lang_count" ]; then continue; fi
                     _lang_index=$((_li + 1))
                     printf "  ${C_BOLD}[%s]${C_RESET} %s ${C_DIM}(%s voices)${C_RESET}\n" \
                         "$_lang_index" "${_lang_labels[$_li]}" "${_lang_counts[$_li]}"
@@ -543,6 +547,7 @@ PY
                         es|es-*) _vsample="$_vtext_es" ;;
                         pt|pt-*) _vsample="$_vtext_pt" ;;
                         en|en-*) _vsample="$_vtext_en" ;;
+                        eo|eo-*) _vsample="$_vtext_eo" ;;
                         *) _vsample="$_vtext_en" ;;
                     esac
                     _tts_tmp="$SCRIPT_DIR/recordings/.voice_preview.mp3"

@@ -9,6 +9,42 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ---
 
+## [Unreleased]
+
+---
+
+## [4.10.0] — 2026-04-22
+
+### Added
+
+- **`src/voice_catalog.json` — Google TTS locale groups (30 voices each).**
+  Added complete groups for 🇨🇦 Français Canadien, 🇪🇸 Español España,
+  🇲🇽 Español México, 🇺🇸 English US, 🇬🇧 English UK, and 🇦🇺 English Australia,
+  all using Gemini 3.1 Flash TTS. These groups are intended for voice comparison
+  and are hidden from the language picker by default.
+- **`src/voice_catalog.json` — Google TTS base group relabelled to Esperanto.**
+  The base Google TTS group (C1–C30) now uses `sample_lang: "eo"` and reads
+  Esperanto preview text, serving as a language-neutral comparison baseline.
+- **`src/tts.py` — Google TTS multi-locale parsing.**
+  Extended `_synthesize_google_tts()` to parse language suffixes in voice slugs
+  (e.g., `google-kore-fr-ca`) and pass the correct `language_code` (fr-CA,
+  es-ES, es-MX, en-US, en-GB, en-AU) to the Gemini TTS API.
+- **Esperanto added to all language dictionaries.**
+  `"eo": "Esperanto"` added to `src/insight.py`, `src/refine.py`,
+  `src/translate.py`, `src/voice_rewrite.py`, and `vox-refiner-menu.sh`.
+- **`vox-refiner-menu.sh` — Esperanto preview text.**
+  Added `_vtext_eo` and wired `eo|eo-*` in the voice sample selector.
+
+### Changed
+
+- **Voice picker language menu — test languages hidden by default.**
+  Languages beyond the five public ones (French, English, German, Spanish,
+  Portuguese) no longer appear in the language selection menu. They remain
+  accessible by selecting `[a] All languages` then pressing `h` in the voice
+  list. The public/hidden boundary is tracked via `_public_lang_count`.
+
+---
+
 ## [4.9.9] — 2026-04-24
 
 ### Added

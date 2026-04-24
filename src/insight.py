@@ -102,6 +102,7 @@ _INSIGHT_LANG_NAMES = {
     "pt": "Portuguese", "it": "Italian", "nl": "Dutch",   "hi": "Hindi",
     "ar": "Arabic",   "zh": "Chinese (Simplified)", "ja": "Japanese",
     "ko": "Korean",   "ru": "Russian",  "pl": "Polish",   "sv": "Swedish",
+    "eo": "Esperanto",
 }
 
 

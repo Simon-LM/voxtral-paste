@@ -1087,18 +1087,33 @@ def _synthesize_google_tts(text: str, output_path: str, voice_name: str, languag
     # Parse accent tags from text
     text, detected_language = _parse_accent_tags(text)
 
-    # Check if voice_id indicates French
-    if voice_name.endswith("-fr"):
-        voice_name = voice_name[:-3]  # Remove "-fr" suffix
-        detected_language = detected_language or "fr-FR"
+    # Parse voice name and language from slug (e.g., "google-kore-fr-ca")
+    if voice_name.startswith("google-"):
+        parts = voice_name.split("-")
+        voice_base = parts[1]  # "kore"
+        voice_name_clean = voice_base.capitalize()
+        if len(parts) > 2:
+            lang_suffix = "-".join(parts[2:])  # "fr-ca"
+            if lang_suffix == "fr":
+                detected_language = detected_language or "fr-FR"
+            elif lang_suffix == "fr-ca":
+                detected_language = detected_language or "fr-CA"
+            elif lang_suffix == "es-es":
+                detected_language = detected_language or "es-ES"
+            elif lang_suffix == "es-mx":
+                detected_language = detected_language or "es-MX"
+            elif lang_suffix == "en-us":
+                detected_language = detected_language or "en-US"
+            elif lang_suffix == "en-gb":
+                detected_language = detected_language or "en-GB"
+            elif lang_suffix == "en-au":
+                detected_language = detected_language or "en-AU"
+            # For other suffixes, keep detected_language
 
     language_code = language_code or detected_language
 
     try:
         client = genai.Client(api_key=api_key)
-
-        # Extract voice name (e.g., "kore" from "google-kore") and capitalize
-        voice_name_clean = voice_name.replace("google-", "").capitalize()
 
         prebuilt_voice_config = types.PrebuiltVoiceConfig(
             voice_name=voice_name_clean

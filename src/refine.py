@@ -97,6 +97,7 @@ _SUPPORTED_OUTPUT_LANGS = {
     "pt": "Portuguese",
     "ru": "Russian",
     "es": "Spanish",
+    "eo": "Esperanto",
 }
 _OUTPUT_LANG = os.environ.get("OUTPUT_LANG", "").strip().lower()
 if _OUTPUT_LANG == "auto":

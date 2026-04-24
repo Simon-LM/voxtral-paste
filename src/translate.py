@@ -52,6 +52,7 @@ _LANG_NAMES = {
     "ru": "Russian",
     "pl": "Polish",
     "sv": "Swedish",
+    "eo": "Esperanto",
 }
 
 _SYSTEM_PROMPT = (
