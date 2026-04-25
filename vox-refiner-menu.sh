@@ -79,6 +79,7 @@ _voice_picker() {
     local _provider_has_visible_groups _group_lang _selected_group_lang
     local _lang_filter="all" _lang_filter_label="All languages" _needs_lang_prompt=1
     local _hidden_mode=0 _public_lang_count=0 _last_tts_ms=""
+    local _provider_filter="all" _provider_filter_label="All providers"
     local _lang_choice _lang_index _lang_code _lang_label _lang_count
     local _lang_exists _lang_has_voices
     local -a _provider_prefixes _provider_titles _provider_api_envs _provider_keys
@@ -364,6 +365,9 @@ PY
         echo ""
         printf "  ${C_DIM}Current:${C_RESET} ${C_BGREEN}%s${C_RESET}\n" "$_cur_slug"
         printf "  ${C_DIM}Language:${C_RESET} ${C_BCYAN}%s${C_RESET}\n" "$_lang_filter_label"
+        if [ "$_hidden_mode" -eq 1 ]; then
+            printf "  ${C_DIM}Provider:${C_RESET} ${C_BCYAN}%s${C_RESET}\n" "$_provider_filter_label"
+        fi
         echo ""
         _sep
         echo ""
@@ -381,6 +385,14 @@ PY
             if [ "$_lang_filter" != "all" ] && [ "$_lang_filter" != "comparison" ] && [ "$_provider_key" = "comparison" ]; then
                 continue
             fi
+            # Provider filter: skip non-matching top-level providers
+            if [ "$_provider_filter" != "all" ]; then
+                case "$_provider_filter" in
+                    mistral)  [ "$_provider_key" != "mistral"    ] && continue ;;
+                    gradium)  [ "$_provider_key" != "gradium"    ] && continue ;;
+                    *)        [ "$_provider_key" != "comparison" ] && continue ;;
+                esac
+            fi
             _provider_has_visible_groups=0
             for _gi in "${!_group_ids[@]}"; do
                 [ "${_group_prefixes[$_gi]}" != "$_sel_prefix" ] && continue
@@ -388,8 +400,16 @@ PY
                     continue
                 fi
                 if [ "${_group_voice_counts[$_gi]}" -gt 0 ]; then
-                    _provider_has_visible_groups=1
-                    break
+                    if [ "$_provider_filter" != "all" ] && [ "$_sel_prefix" = "c" ]; then
+                        for _vj in "${!_voice_ids[@]}"; do
+                            [ "${_voice_prefixes[$_vj]}" != "c" ] && continue
+                            [ "${_voice_group_ids[$_vj]}" != "${_group_ids[$_gi]}" ] && continue
+                            _vid_matches_pf "${_voice_ids[$_vj]}" "$_provider_filter" && { _provider_has_visible_groups=1; break 2; }
+                        done
+                    else
+                        _provider_has_visible_groups=1
+                        break
+                    fi
                 fi
             done
             [ "$_provider_has_visible_groups" -eq 0 ] && continue
@@ -407,12 +427,25 @@ PY
                     continue
                 fi
                 [ "${_group_voice_counts[$_gi]}" -le 0 ] && continue
+                # Skip group if no voices match the provider filter
+                if [ "$_provider_filter" != "all" ] && [ "$_sel_prefix" = "c" ]; then
+                    _group_pf_match=0
+                    for _vk in "${!_voice_ids[@]}"; do
+                        [ "${_voice_prefixes[$_vk]}" != "c" ] && continue
+                        [ "${_voice_group_ids[$_vk]}" != "${_group_ids[$_gi]}" ] && continue
+                        _vid_matches_pf "${_voice_ids[$_vk]}" "$_provider_filter" && { _group_pf_match=1; break; }
+                    done
+                    [ "$_group_pf_match" -eq 0 ] && continue
+                fi
                 printf "  ${C_BCYAN}%s${C_RESET}\n" "${_group_titles[$_gi]}"
 
                 _group_has_notes=0
                 for _vi in "${!_voice_ids[@]}"; do
                     [ "${_voice_prefixes[$_vi]}" != "$_sel_prefix" ] && continue
                     [ "${_voice_group_ids[$_vi]}" != "${_group_ids[$_gi]}" ] && continue
+                    if [ "$_provider_filter" != "all" ] && [ "$_sel_prefix" = "c" ]; then
+                        _vid_matches_pf "${_voice_ids[$_vi]}" "$_provider_filter" || continue
+                    fi
                     if [ -n "${_voice_menu_notes[$_vi]}" ]; then
                         _group_has_notes=1
                         break
@@ -423,6 +456,9 @@ PY
                     for _vi in "${!_voice_ids[@]}"; do
                         [ "${_voice_prefixes[$_vi]}" != "$_sel_prefix" ] && continue
                         [ "${_voice_group_ids[$_vi]}" != "${_group_ids[$_gi]}" ] && continue
+                        if [ "$_provider_filter" != "all" ] && [ "$_sel_prefix" = "c" ]; then
+                            _vid_matches_pf "${_voice_ids[$_vi]}" "$_provider_filter" || continue
+                        fi
                         if [ -n "${_voice_menu_notes[$_vi]}" ]; then
                             printf "  ${C_BOLD}[%s%s]${C_RESET} %s ${C_DIM}- %s${C_RESET}\n" \
                                 "$_sel_prefix" "${_voice_numbers[$_vi]}" "${_voice_labels[$_vi]}" "${_voice_menu_notes[$_vi]}"
@@ -464,11 +500,19 @@ PY
                 printf "  ${C_DIM}Last preview:${C_RESET} ${C_CYAN}%s${C_RESET}   ${C_BOLD}[s]${C_RESET} Select it" "$_vpreview_slug"
             fi
             [ "$_vp_allow_disable" = "1" ] && printf "  ${C_BOLD}[d]${C_RESET} Disable"
-            printf "  ${C_BOLD}[l]${C_RESET} Language  ${C_BOLD}[m]${C_RESET} Menu settings\n"
+            if [ "$_hidden_mode" -eq 1 ]; then
+                printf "  ${C_BOLD}[l]${C_RESET} Language  ${C_BOLD}[p]${C_RESET} Provider  ${C_BOLD}[m]${C_RESET} Menu settings\n"
+            else
+                printf "  ${C_BOLD}[l]${C_RESET} Language  ${C_BOLD}[m]${C_RESET} Menu settings\n"
+            fi
         else
             printf "  ${C_DIM}Type provider+number to listen (%s)" "$_provider_hint"
             [ "$_vp_allow_disable" = "1" ] && printf "   ${C_BOLD}[d]${C_RESET} ${C_DIM}Disable"
-            printf "   ${C_BOLD}[l]${C_RESET} Language   ${C_BOLD}[m]${C_RESET} Menu settings\n"
+            if [ "$_hidden_mode" -eq 1 ]; then
+                printf "   ${C_BOLD}[l]${C_RESET} Language  ${C_BOLD}[p]${C_RESET} Provider   ${C_BOLD}[m]${C_RESET} Menu settings\n"
+            else
+                printf "   ${C_BOLD}[l]${C_RESET} Language   ${C_BOLD}[m]${C_RESET} Menu settings\n"
+            fi
         fi
         printf "  Choice: "
         read -r _vchoice
@@ -497,10 +541,54 @@ PY
                 # Toggle hidden comparison voices
                 if [ "$_hidden_mode" -eq 1 ]; then
                     _hidden_mode=0
+                    _provider_filter="all"
+                    _provider_filter_label="All providers"
                     _warn "Hidden comparison voices disabled."
                 else
                     _hidden_mode=1
                     _warn "Hidden comparison voices enabled — temporary access for testing."
+                fi
+                ;;
+            p|P)
+                if [ "$_hidden_mode" -eq 1 ]; then
+                    local _p_choice
+                    while true; do
+                        clear
+                        _header "$_vp_title - PROVIDER" "🔌"
+                        echo ""
+                        printf "  ${C_DIM}Filter voices by provider.${C_RESET}\n"
+                        echo ""
+                        _sep
+                        echo ""
+                        printf "  ${C_BOLD}[1]${C_RESET}  All providers\n"
+                        printf "  ${C_BOLD}[2]${C_RESET}  Mistral\n"
+                        printf "  ${C_BOLD}[3]${C_RESET}  Gradium\n"
+                        printf "  ${C_BOLD}[4]${C_RESET}  Google (Gemini TTS)\n"
+                        printf "  ${C_BOLD}[5]${C_RESET}  ElevenLabs\n"
+                        printf "  ${C_BOLD}[6]${C_RESET}  OpenAI (gpt-4o-mini-tts)\n"
+                        printf "  ${C_BOLD}[7]${C_RESET}  Amazon Neural (Polly)\n"
+                        printf "  ${C_BOLD}[8]${C_RESET}  Amazon Standard (Polly)\n"
+                        printf "  ${C_BOLD}[9]${C_RESET}  Deepgram (Aura 2)\n"
+                        printf "  ${C_BOLD}[10]${C_RESET} Grok (xAI)\n"
+                        echo ""
+                        printf "  ${C_BOLD}[m]${C_RESET}  Cancel\n"
+                        echo ""
+                        printf "  ${C_BGREEN}▸${C_RESET} "
+                        read -r _p_choice
+                        case "$_p_choice" in
+                            m|M) break ;;
+                            1)  _provider_filter="all";           _provider_filter_label="All providers";             break ;;
+                            2)  _provider_filter="mistral";       _provider_filter_label="Mistral";                   break ;;
+                            3)  _provider_filter="gradium";       _provider_filter_label="Gradium";                   break ;;
+                            4)  _provider_filter="google";        _provider_filter_label="Google (Gemini TTS)";       break ;;
+                            5)  _provider_filter="elevenlabs";    _provider_filter_label="ElevenLabs";                break ;;
+                            6)  _provider_filter="openai";        _provider_filter_label="OpenAI (gpt-4o-mini-tts)"; break ;;
+                            7)  _provider_filter="amazon-neural"; _provider_filter_label="Amazon Neural (Polly)";     break ;;
+                            8)  _provider_filter="amazon-std";    _provider_filter_label="Amazon Standard (Polly)";   break ;;
+                            9)  _provider_filter="deepgram";      _provider_filter_label="Deepgram (Aura 2)";         break ;;
+                            10) _provider_filter="grok";          _provider_filter_label="Grok (xAI)";                break ;;
+                        esac
+                    done
                 fi
                 ;;
             ""|m|M) break ;;
@@ -614,6 +702,24 @@ PY
                 ;;
         esac
     done
+}
+
+_vid_matches_pf() {
+    # Usage: _vid_matches_pf "<voice_id>" "<provider_filter>"
+    # Returns 0 (true) if the voice ID matches the provider filter.
+    local _vid="$1" _pf="$2"
+    case "$_pf" in
+        all|"")        return 0 ;;
+        google)        [[ "$_vid" == google-* ]]      && return 0 ;;
+        elevenlabs)    [[ "$_vid" == eleven-* ]]      && return 0 ;;
+        openai)        [[ "$_vid" == openai-* ]]      && return 0 ;;
+        amazon-neural) [[ "$_vid" == amazon-* ]] && [[ "$_vid" != amazon-std-* ]] && return 0 ;;
+        amazon-std)    [[ "$_vid" == amazon-std-* ]]  && return 0 ;;
+        deepgram)      [[ "$_vid" == deepgram-* ]]    && return 0 ;;
+        grok)          [[ "$_vid" == grok-* ]]        && return 0 ;;
+        mistral|gradium) return 0 ;;  # handled at provider level
+    esac
+    return 1
 }
 
 _mask_key() {

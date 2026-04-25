@@ -9,6 +9,21 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ---
 
+## [4.10.7] — 2026-04-25
+
+### Added
+
+- **`vox-refiner-menu.sh` — Provider filter in voice picker dev mode.**
+  In hidden comparison mode (`h`), a new `[p]` key opens a provider sub-menu
+  listing all 10 providers: Mistral, Gradium, Google, ElevenLabs, OpenAI,
+  Amazon Neural, Amazon Standard, Deepgram, Grok. Selecting one filters the
+  voice list to that provider only. The active filter is shown in the header
+  (`Provider: Grok (xAI)`). Resetting to `h=off` clears the filter.
+  New `_vid_matches_pf()` helper handles voice-ID-prefix matching for
+  comparison sub-providers. No changes outside `vox-refiner-menu.sh`.
+
+---
+
 ## [4.10.6] — 2026-04-25
 
 ### Added
