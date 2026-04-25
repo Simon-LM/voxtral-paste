@@ -1233,6 +1233,62 @@ def _synthesize_google_tts(text: str, output_path: str, voice_name: str, languag
         raise RuntimeError(f"Google TTS failed: {e}") from e
 
 
+def _synthesize_amazon_polly(text: str, output_path: str, voice_id: str, model: str) -> None:
+    """Call Amazon Polly TTS via Eden AI universal endpoint and write MP3 to output_path.
+
+    model: "audio/tts/amazon/neural" or "audio/tts/amazon/standard"
+    voice_id: "amazon-<VoiceName>" or "amazon-std-<VoiceName>" — prefix is stripped before the call.
+    Voice names must match Amazon Polly enum exactly — no accents ("Lea" not "Léa").
+    Eden AI responds with a CloudFront URL; the audio is downloaded in a second request.
+    """
+    api_key = os.environ.get("EDENAI_API_KEY")
+    if not api_key:
+        raise RuntimeError("EDENAI_API_KEY is not set. Check your .env file.")
+
+    if voice_id.startswith("amazon-std-"):
+        voice_name = voice_id.removeprefix("amazon-std-")
+    else:
+        voice_name = voice_id.removeprefix("amazon-")
+
+    response = requests.post(
+        "https://api.edenai.run/v3/universal-ai/",
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        },
+        json={
+            "model": model,
+            "input": {"text": text, "voice": voice_name},
+            "show_original_response": False,
+        },
+        timeout=60,
+    )
+    response.raise_for_status()
+    data = response.json()
+
+    if data.get("status") != "success":
+        error = data.get("error") or {}
+        raise RuntimeError(f"Amazon Polly TTS Eden AI ({model}) error: {error.get('message', str(data)[:300])}")
+
+    audio_url = (data.get("output") or {}).get("audio_resource_url")
+    if not audio_url:
+        raise RuntimeError(f"Amazon Polly TTS Eden AI: missing audio_resource_url in response: {str(data)[:300]}")
+
+    audio_response = requests.get(audio_url, timeout=30)
+    audio_response.raise_for_status()
+    Path(output_path).write_bytes(audio_response.content)
+
+
+def _synthesize_amazon_neural(text: str, output_path: str, voice_id: str) -> None:
+    """Call Amazon Neural (Polly) TTS via Eden AI. voice_id: "amazon-<VoiceName>"."""
+    _synthesize_amazon_polly(text, output_path, voice_id, "audio/tts/amazon/neural")
+
+
+def _synthesize_amazon_standard(text: str, output_path: str, voice_id: str) -> None:
+    """Call Amazon Standard (Polly) TTS via Eden AI. voice_id: "amazon-std-<VoiceName>"."""
+    _synthesize_amazon_polly(text, output_path, voice_id, "audio/tts/amazon/standard")
+
+
 def _synthesize_openai_tts(text: str, output_path: str, voice_id: str) -> None:
     """Call OpenAI gpt-4o-mini-tts via Eden AI universal endpoint and write MP3 to output_path.
 
@@ -1313,6 +1369,18 @@ def synthesize(
     if voice_id and voice_id.startswith("openai-"):
         print(f"\U0001f916 OpenAI TTS via Eden AI ({voice_id})...", file=sys.stderr)
         _synthesize_openai_tts(text, output_path, voice_id)
+        return
+
+    # Amazon Standard (Polly) voices via Eden AI (prefix "amazon-std-") — before neural check.
+    if voice_id and voice_id.startswith("amazon-std-"):
+        print(f"\U0001f50a Amazon Standard TTS via Eden AI ({voice_id})...", file=sys.stderr)
+        _synthesize_amazon_standard(text, output_path, voice_id)
+        return
+
+    # Amazon Neural (Polly) voices via Eden AI (prefix "amazon-") — route before Gradium.
+    if voice_id and voice_id.startswith("amazon-"):
+        print(f"\U0001f50a Amazon Neural TTS via Eden AI ({voice_id})...", file=sys.stderr)
+        _synthesize_amazon_neural(text, output_path, voice_id)
         return
 
     # Gradium voices (non-UUID IDs) use a separate API — route immediately.

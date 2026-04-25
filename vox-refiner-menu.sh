@@ -534,7 +534,7 @@ PY
                             _error "Google TTS comparison voice requires GOOGLE_TTS_API_KEY. Go to Settings → API Keys to configure it."
                             sleep 2
                             continue
-                        elif [[ "$_cv_id" == eleven-* || "$_cv_id" == openai-* ]] && [ -z "${EDENAI_API_KEY:-}" ]; then
+                        elif [[ "$_cv_id" == eleven-* || "$_cv_id" == openai-* || "$_cv_id" == amazon-* ]] && [ -z "${EDENAI_API_KEY:-}" ]; then
                             _error "This comparison voice requires EDENAI_API_KEY. Go to Settings → API Keys to configure it."
                             sleep 2
                             continue
@@ -568,7 +568,7 @@ PY
                     done
                     # For comparison voices, the required key depends on the voice provider,
                     # not the parent comparison provider (which defaults to GOOGLE_TTS_API_KEY).
-                    if [ "$_vpreview_provider_prefix" = "c" ] && [[ "$_vpreview_id" == eleven-* || "$_vpreview_id" == openai-* ]]; then
+                    if [ "$_vpreview_provider_prefix" = "c" ] && [[ "$_vpreview_id" == eleven-* || "$_vpreview_id" == openai-* || "$_vpreview_id" == amazon-* ]]; then
                         _provider_api_env="EDENAI_API_KEY"
                     fi
                     if [ -n "$_provider_api_env" ] && [ -z "${!_provider_api_env:-}" ]; then

@@ -9,6 +9,36 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ---
 
+## [4.10.3] — 2026-04-25
+
+### Added
+
+- **`src/voice_catalog.json` — Amazon Neural (Polly) voices via Eden AI (C1400–C1427).**
+  28 voices in 6 groups: 🇫🇷 French France (C1400, Lea/Remi), 🇨🇦 French Canada (C1402, Gabrielle/Liam),
+  🇧🇪 French Belgique (C1404, Isabelle), 🇺🇸 English US (C1405, 13 voices),
+  🇬🇧 English British (C1418, Amy/Emma/Brian/Arthur), 🌍 English Variants (C1422,
+  Olivia/Niamh/Aria/Jasmine/Ayanda/Kajal). Model: `audio/tts/amazon/neural` via Eden AI.
+  Voice IDs use the format `amazon-<PollyName>` (e.g. `amazon-Lea`).
+  Require `EDENAI_API_KEY`. Marked `"temporary": true` (comparison/hidden).
+- **`src/tts.py` — Amazon Neural routing via Eden AI.**
+  Added `_synthesize_amazon_neural()`: strips `amazon-` prefix to get the Polly voice name,
+  calls Eden AI with model `audio/tts/amazon/neural`, downloads audio from
+  `output.audio_resource_url`. Routing inserted after OpenAI, before Gradium.
+- **`vox-refiner-menu.sh` — API key guard extended to `amazon-*` voices.**
+  `amazon-*` comparison voices now require `EDENAI_API_KEY` (same as `eleven-*` and `openai-*`).
+- **`src/voice_catalog.json` — Amazon Standard (Polly) voices via Eden AI (C1450–C1469).**
+  20 voices in 5 groups: 🇫🇷 French France (C1450, Celine/Lea/Mathieu), 🇨🇦 French Canada (C1453, Chantal),
+  🇺🇸 English US (C1454, 8 voices), 🇬🇧 English British (C1462, Amy/Brian/Emma/Geraint),
+  🌍 English Variants (C1466, Nicole/Russell/AU + Aditi/Raveena/IN).
+  Voice IDs use the format `amazon-std-<PollyName>` (e.g. `amazon-std-Celine`).
+  Model: `audio/tts/amazon/standard` via Eden AI. Require `EDENAI_API_KEY`.
+- **`src/tts.py` — Amazon Standard routing and shared `_synthesize_amazon_polly()` helper.**
+  Refactored both Amazon variants to delegate to `_synthesize_amazon_polly(model=...)`.
+  Added `_synthesize_amazon_standard()` wrapper. Routing: `amazon-std-*` is checked before
+  `amazon-*` to prevent prefix collision.
+
+---
+
 ## [4.10.2] — 2026-04-24
 
 ### Added
