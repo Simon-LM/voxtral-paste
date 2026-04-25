@@ -78,7 +78,7 @@ _voice_picker() {
     local _provider_hint="" _vi _group_has_notes _row_text _rows_printed
     local _provider_has_visible_groups _group_lang _selected_group_lang
     local _lang_filter="all" _lang_filter_label="All languages" _needs_lang_prompt=1
-    local _hidden_mode=0 _public_lang_count=0
+    local _hidden_mode=0 _public_lang_count=0 _last_tts_ms=""
     local _lang_choice _lang_index _lang_code _lang_label _lang_count
     local _lang_exists _lang_has_voices
     local -a _provider_prefixes _provider_titles _provider_api_envs _provider_keys
@@ -458,7 +458,11 @@ PY
         [ "$_m_max" -gt 0 ] && _provider_hint="m1-m$_m_max"
         [ "$_g_max" -gt 0 ] && _provider_hint="${_provider_hint:+${_provider_hint}, }g1-g$_g_max"
         if [ -n "$_vpreview_id" ]; then
-            printf "  ${C_DIM}Last preview:${C_RESET} ${C_CYAN}%s${C_RESET}   ${C_BOLD}[s]${C_RESET} Select it" "$_vpreview_slug"
+            if [ "$_hidden_mode" -eq 1 ] && [ -n "$_last_tts_ms" ]; then
+                printf "  ${C_DIM}Last preview:${C_RESET} ${C_CYAN}%s${C_RESET}  ${C_DIM}⏱ %s ms${C_RESET}   ${C_BOLD}[s]${C_RESET} Select it" "$_vpreview_slug" "$_last_tts_ms"
+            else
+                printf "  ${C_DIM}Last preview:${C_RESET} ${C_CYAN}%s${C_RESET}   ${C_BOLD}[s]${C_RESET} Select it" "$_vpreview_slug"
+            fi
             [ "$_vp_allow_disable" = "1" ] && printf "  ${C_BOLD}[d]${C_RESET} Disable"
             printf "  ${C_BOLD}[l]${C_RESET} Language  ${C_BOLD}[m]${C_RESET} Menu settings\n"
         else
@@ -587,9 +591,11 @@ PY
                         sleep 2
                     else
                         _process "Generating preview for $_vpreview_slug..."
+                        _tts_t0=$(date +%s%3N)
                         if printf '%s' "$_vsample" | \
                             TTS_VOICE_ID="$_vpreview_id" \
                             "$VENV_PYTHON" -m src.tts "$_tts_tmp" 2>/dev/null; then
+                            _last_tts_ms=$(( $(date +%s%3N) - _tts_t0 ))
                             TTS_PLAYER="${TTS_PLAYER:-mpv --no-video}"
                             $TTS_PLAYER "$_tts_tmp" 2>/dev/null
                             rm -f "$_tts_tmp"

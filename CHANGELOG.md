@@ -9,6 +9,19 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ---
 
+## [4.10.6] — 2026-04-25
+
+### Added
+
+- **`vox-refiner-menu.sh` — TTS latency display in voice picker dev mode.**
+  When hidden comparison voices are active (`h` toggle), the "Last preview" line
+  shows the synthesis time in milliseconds: `Last preview: grok-ara-fr  ⏱ 1234 ms`.
+  Timing is measured in Bash with `date +%s%3N` around the Python subprocess call
+  and stored in `_last_tts_ms` — displayed on every menu redraw until the next preview.
+  No changes to `tts.py`.
+
+---
+
 ## [4.10.5] — 2026-04-25
 
 ### Added
