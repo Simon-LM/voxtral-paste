@@ -13,6 +13,18 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ---
 
+## [4.11.2] — 2026-04-26
+
+### Fixed
+
+- **`VOX_WEB_BROWSER` browser family aliases (`src/web_display.py`).**
+  The variable now accepts short family names (`brave`, `chromium`, `chrome`, `edge`)
+  in addition to exact binary names and Flatpak app-ids. `brave` resolves to
+  `brave-browser` → `brave` → `com.brave.Browser` (first installed wins), solving
+  the mismatch between the apt binary name (`brave-browser`) and the intuitive alias.
+
+---
+
 ## [4.11.1] — 2026-04-25
 
 ### Changed

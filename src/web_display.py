@@ -497,6 +497,15 @@ _BROWSER_TABLE: list[tuple[str, str, str]] = [
     ("flatpak:com.microsoft.Edge",    "com.microsoft.Edge",            "edge-flatpak"),
 ]
 
+# Short aliases for VOX_WEB_BROWSER: maps a friendly name to the ordered list of
+# keys to try in _BROWSER_TABLE. This lets users write "brave" instead of "brave-browser".
+_BROWSER_ALIASES: dict[str, list[str]] = {
+    "chromium": ["chromium-browser", "chromium", "flatpak:org.chromium.Chromium"],
+    "brave":    ["brave-browser",    "brave",    "flatpak:com.brave.Browser"],
+    "chrome":   ["google-chrome",               "flatpak:com.google.Chrome"],
+    "edge":     ["microsoft-edge",              "flatpak:com.microsoft.Edge"],
+}
+
 _INSTALL_HINT = (
     "Install a Chromium-based browser to use VOX_WEB_DISPLAY: "
     "chromium, brave, google-chrome, or microsoft-edge "
@@ -549,6 +558,14 @@ def _launch_browser(url: str, size: str, pos: str) -> None:
                 )
             match = next((argv for key, argv in launchers if key == override), None)
             candidates.append(match or [override, url])
+        elif override in _BROWSER_ALIASES:
+            # Short alias (e.g. "brave" → tries brave-browser, brave, then Flatpak)
+            keys = _BROWSER_ALIASES[override]
+            match = next((argv for key, argv in launchers if key in keys), None)
+            if match:
+                candidates.append(match)
+            else:
+                print(f"⚠️  VOX_WEB_BROWSER='{override}' — no installed browser found for this family.", file=sys.stderr)
         else:
             print(f"⚠️  VOX_WEB_BROWSER='{override}' not found — falling back.", file=sys.stderr)
 
