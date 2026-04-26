@@ -14,8 +14,11 @@ Endpoints:
   POST /push     → broadcast event to all SSE clients (bash → server)
   POST /shutdown → graceful exit
 
-Browser priority: VOX_WEB_BROWSER override → qutebrowser → falkon → epiphany
-→ midori → chromium-app → google-chrome-app → xdg-open.
+Only Chromium-based browsers are supported (true --app= mode, no tab bar):
+chromium → chromium (Flatpak) → brave → brave (Flatpak) → google-chrome →
+google-chrome (Flatpak) → microsoft-edge → microsoft-edge (Flatpak).
+Snap-confined binaries are skipped automatically (AppArmor blocks --user-data-dir).
+Override via VOX_WEB_BROWSER (binary name or Flatpak app-id).
 """
 
 from __future__ import annotations
@@ -399,10 +402,6 @@ class _Handler(BaseHTTPRequestHandler):
 
 # ── Browser launch ───────────────────────────────────────────────────────────
 
-def _qt_geometry(w: str, h: str, x: str, y: str) -> str:
-    return f"{w}x{h}+{x}+{y}"
-
-
 def _is_snap_binary(binary: str) -> bool:
     """Return True if the binary is provided by Snap.
 
@@ -422,11 +421,10 @@ def _is_snap_binary(binary: str) -> bool:
     return real in ("/usr/bin/snap", "/snap/bin/snap") or "/snap/" in real
 
 
-def _vox_profile_dir(name: str = "web") -> str:
-    """Return a stable, isolated profile dir for the given browser family.
+def _vox_profile_dir(name: str) -> str:
+    """Return a stable, isolated Chromium profile dir for the given browser family.
 
-    Each browser family gets its own dir — chromium, firefox, and librewolf
-    don't share profile formats. Profiles are cached state; safe to wipe.
+    Each family gets its own dir so profile formats never collide. Safe to wipe.
     """
     base = os.environ.get("XDG_CACHE_HOME") or os.path.expanduser("~/.cache")
     path = os.path.join(base, "vox-refiner", f"{name}-profile")
@@ -438,16 +436,24 @@ def _vox_profile_dir(name: str = "web") -> str:
     return path
 
 
-def _chromium_app_args(binary: str, url: str, w: str, h: str, x: str, y: str, profile_name: str) -> list[str]:
-    """Build chromium/brave/chrome arg list for app mode with isolated profile.
+def _flatpak_app_installed(app_id: str) -> bool:
+    """Return True if the Flatpak app is installed.
 
-    profile_name selects the per-family cache dir (chromium / brave / chrome)
-    so switching between binaries doesn't cause profile-format conflicts.
+    Checks standard Flatpak directories directly (no subprocess) — instantaneous.
     """
+    xdg_data = os.environ.get("XDG_DATA_HOME") or os.path.expanduser("~/.local/share")
+    return any(os.path.isdir(p) for p in [
+        os.path.join(xdg_data, "flatpak", "app", app_id),   # user install
+        os.path.join("/var/lib/flatpak", "app", app_id),      # system install
+    ])
+
+
+def _app_args(binary: str, url: str, w: str, h: str, x: str, y: str, profile: str) -> list[str]:
+    """Chromium --app= mode with isolated profile, controlled window size/position."""
     return [
         binary,
         f"--app={url}",
-        f"--user-data-dir={_vox_profile_dir(profile_name)}",
+        f"--user-data-dir={_vox_profile_dir(profile)}",
         f"--window-size={w},{h}",
         f"--window-position={x},{y}",
         "--no-first-run",
@@ -455,49 +461,64 @@ def _chromium_app_args(binary: str, url: str, w: str, h: str, x: str, y: str, pr
     ]
 
 
-def _firefox_args(binary: str, url: str, profile_name: str) -> list[str]:
-    """Build firefox/librewolf args for isolated profile + new window.
-
-    --no-remote ensures the launch does NOT connect to an existing Firefox
-    instance (i.e. user's main browsing session). Combined with --profile,
-    this spawns a fully isolated process with its own state.
-
-    Firefox has no native --app/SSB mode, so the window has its usual chrome
-    (URL bar, tab strip). Window size cannot be controlled via CLI — accept
-    the default. wmctrl could resize post-launch (Phase 2 follow-up).
-    """
+def _flatpak_app_args(app_id: str, url: str, w: str, h: str, x: str, y: str, profile: str) -> list[str]:
+    """Flatpak --app= mode. Profile in ~/.var/app/<app-id>/data/ — always sandbox-writable."""
+    base = os.path.expanduser(f"~/.var/app/{app_id}/data/vox-refiner")
+    try:
+        os.makedirs(base, exist_ok=True)
+    except OSError:
+        base = f"/tmp/vox-refiner-{profile}"
+        os.makedirs(base, exist_ok=True)
     return [
-        binary,
-        "--no-remote",
-        "--profile", _vox_profile_dir(profile_name),
-        "--new-window", url,
+        "flatpak", "run", app_id,
+        f"--app={url}",
+        f"--user-data-dir={base}",
+        f"--window-size={w},{h}",
+        f"--window-position={x},{y}",
+        "--no-first-run",
+        "--no-default-browser-check",
     ]
+
+
+# All supported browsers support Chromium --app= mode (true app window, no tab bar).
+# Each entry: (key, argv). Keys starting with "flatpak:" use _flatpak_app_installed()
+# for availability; others use shutil.which(). Snap binaries are skipped automatically.
+_BROWSER_TABLE: list[tuple[str, str, str]] = [
+    # (key,                             binary-or-app-id,       profile-name)
+    ("chromium-browser",              "chromium-browser",              "chromium"),
+    ("chromium",                      "chromium",                      "chromium"),
+    ("flatpak:org.chromium.Chromium", "org.chromium.Chromium",         "chromium-flatpak"),
+    ("brave-browser",                 "brave-browser",                 "brave"),
+    ("brave",                         "brave",                         "brave"),
+    ("flatpak:com.brave.Browser",     "com.brave.Browser",             "brave-flatpak"),
+    ("google-chrome",                 "google-chrome",                 "chrome"),
+    ("flatpak:com.google.Chrome",     "com.google.Chrome",             "chrome-flatpak"),
+    ("microsoft-edge",                "microsoft-edge",                "edge"),
+    ("flatpak:com.microsoft.Edge",    "com.microsoft.Edge",            "edge-flatpak"),
+]
+
+_INSTALL_HINT = (
+    "Install a Chromium-based browser to use VOX_WEB_DISPLAY: "
+    "chromium, brave, google-chrome, or microsoft-edge "
+    "(apt/deb or Flatpak — not Snap)."
+)
 
 
 def _build_launchers(url: str, w: str, h: str, x: str, y: str) -> list[tuple[str, list[str]]]:
-    """Return the launcher priority list: (binary, argv) ordered from preferred to fallback.
-
-    Primary: chromium-based browsers with --user-data-dir for an isolated profile —
-    modern HTML/CSS rendering without polluting the user's main session.
-    Fallback: lightweight browsers (qutebrowser, falkon, epiphany, midori).
-    """
-    geom = _qt_geometry(w, h, x, y)
-    return [
-        # Primary: chromium-based with isolated profile (best rendering, no tab pollution)
-        ("chromium-browser", _chromium_app_args("chromium-browser", url, w, h, x, y, "chromium")),
-        ("chromium",         _chromium_app_args("chromium",         url, w, h, x, y, "chromium")),
-        ("brave-browser",    _chromium_app_args("brave-browser",    url, w, h, x, y, "brave")),
-        ("brave",            _chromium_app_args("brave",            url, w, h, x, y, "brave")),
-        ("google-chrome",    _chromium_app_args("google-chrome",    url, w, h, x, y, "chrome")),
-        # Firefox family: isolated profile via --profile + --no-remote
-        ("firefox",          _firefox_args("firefox",   url, "firefox")),
-        ("librewolf",        _firefox_args("librewolf", url, "librewolf")),
-        # Fallback: lightweight browsers (smaller binary, may have rendering quirks)
-        ("qutebrowser",      ["qutebrowser", "--target", "window", url]),
-        ("falkon",           ["falkon", f"--geometry={geom}", url]),
-        ("epiphany",         ["epiphany", "--new-window", url]),
-        ("midori",           ["midori", url]),
-    ]
+    """Resolve _BROWSER_TABLE to (key, argv) pairs for available, non-snap browsers."""
+    result = []
+    for key, target, profile in _BROWSER_TABLE:
+        if key.startswith("flatpak:"):
+            if _flatpak_app_installed(target):
+                result.append((key, _flatpak_app_args(target, url, w, h, x, y, profile)))
+        else:
+            if not shutil.which(target):
+                continue
+            if _is_snap_binary(target):
+                print(f"ℹ  skipping {target} (Snap — incompatible with --user-data-dir)", file=sys.stderr)
+                continue
+            result.append((key, _app_args(target, url, w, h, x, y, profile)))
+    return result
 
 
 def _launch_browser(url: str, size: str, pos: str) -> None:
@@ -508,47 +529,34 @@ def _launch_browser(url: str, size: str, pos: str) -> None:
         w, h, x, y = "1100", "800", "100", "100"
 
     override = os.environ.get("VOX_WEB_BROWSER", "").strip()
+    launchers = _build_launchers(url, w, h, x, y)
     candidates: list[list[str]] = []
 
     if override:
-        if shutil.which(override):
+        is_flatpak_id = "." in override and os.sep not in override and not shutil.which(override)
+        if is_flatpak_id:
+            if _flatpak_app_installed(override):
+                match = next((argv for key, argv in launchers if key == f"flatpak:{override}"), None)
+                candidates.append(match or ["flatpak", "run", override, url])
+            else:
+                print(f"⚠️  VOX_WEB_BROWSER='{override}' — Flatpak app not installed.", file=sys.stderr)
+        elif shutil.which(override):
             if _is_snap_binary(override):
                 print(
-                    f"⚠️  VOX_WEB_BROWSER='{override}' is a Snap package — its AppArmor "
-                    "profile blocks custom --user-data-dir; expect launch failure. "
-                    "Install a non-snap version (apt/deb) for reliable isolation.",
+                    f"⚠️  VOX_WEB_BROWSER='{override}' is a Snap package — AppArmor blocks "
+                    "--user-data-dir. Install a deb/Flatpak version instead.",
                     file=sys.stderr,
                 )
-            # If the override matches a known launcher, use its built args
-            for binary, argv in _build_launchers(url, w, h, x, y):
-                if binary == override:
-                    candidates.append(argv)
-                    break
-            else:
-                candidates.append([override, url])
+            match = next((argv for key, argv in launchers if key == override), None)
+            candidates.append(match or [override, url])
         else:
-            print(f"⚠️  VOX_WEB_BROWSER='{override}' not found in PATH — falling back.", file=sys.stderr)
+            print(f"⚠️  VOX_WEB_BROWSER='{override}' not found — falling back.", file=sys.stderr)
 
     if not candidates:
-        # No override (or override missing): build the full fallback chain so a
-        # crashed primary browser falls through to the next installed one.
-        # Skip Snap-confined chromium/brave — their AppArmor profile rejects
-        # custom --user-data-dir paths. User can still force them via override.
-        for binary, argv in _build_launchers(url, w, h, x, y):
-            if not shutil.which(binary):
-                continue
-            if _is_snap_binary(binary):
-                print(
-                    f"ℹ  skipping {binary} (Snap-confined — incompatible with isolated profile)",
-                    file=sys.stderr,
-                )
-                continue
-            candidates.append(argv)
-        if shutil.which("xdg-open"):
-            candidates.append(["xdg-open", url])
+        candidates = [argv for _, argv in launchers]
 
     if not candidates:
-        print("⚠️  No browser found — install chromium/chrome/brave/firefox/qutebrowser/falkon/epiphany/midori, or xdg-open.", file=sys.stderr)
+        print(f"⚠️  {_INSTALL_HINT}", file=sys.stderr)
         return
 
     import time

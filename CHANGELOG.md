@@ -13,6 +13,35 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ---
 
+## [4.11.1] — 2026-04-25
+
+### Changed
+
+- **Browser support limited to Chromium-based browsers only (`src/web_display.py`).**
+  Firefox, LibreWolf, qutebrowser, falkon, epiphany, midori, and xdg-open have been
+  removed. Only browsers that support true `--app=` mode are kept: chromium, brave,
+  google-chrome, and microsoft-edge (native deb/rpm + Flatpak variants for each).
+  This guarantees a consistent app-window experience (no tab bar, no URL bar, precise
+  window size and position) across all installations.
+  If none of the supported browsers is available, a clear install hint is printed.
+
+### Fixed
+
+- **Flatpak browser support (`src/web_display.py`).**
+  Auto-detection now includes Flatpak variants for all four families
+  (`org.chromium.Chromium`, `com.brave.Browser`, `com.google.Chrome`,
+  `com.microsoft.Edge`), interleaved after their native counterpart so Flatpak
+  Chromium is preferred over google-chrome deb.
+  Profile directories for Flatpak browsers are placed in
+  `~/.var/app/<app-id>/data/vox-refiner` — always writable from the sandbox
+  regardless of manifest `--filesystem` grants.
+  `VOX_WEB_BROWSER` now also accepts a Flatpak app-id directly
+  (e.g. `VOX_WEB_BROWSER=org.chromium.Chromium`).
+  Flatpak availability is checked via `os.path.isdir` on standard install paths
+  (instantaneous, no subprocess).
+
+---
+
 ## [4.11.0] — 2026-04-25
 
 ### Added
