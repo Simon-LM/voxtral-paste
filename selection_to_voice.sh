@@ -12,6 +12,8 @@ VENV_PYTHON="$SCRIPT_DIR/.venv/bin/python"
 source "$SCRIPT_DIR/src/ui.sh"
 # shellcheck disable=SC1091
 source "$SCRIPT_DIR/src/save_audio.sh"
+# shellcheck disable=SC1091
+source "$SCRIPT_DIR/src/web_display.sh"
 
 if [ ! -x "$VENV_PYTHON" ]; then
     echo "❌ Missing .venv Python interpreter: $VENV_PYTHON"
@@ -219,6 +221,11 @@ if [ "${#selected_text}" -gt "$TTS_CHUNK_THRESHOLD" ]; then
         rm -f "$_TTS_FIFO"
     }
     trap '_tts_stop' INT TERM
+    # Web display lifecycle: ensure server dies on any script exit
+    trap '_web_stop' EXIT
+
+    _web_start voice
+    _web_push_init voice "$selected_text"
 
     # Python prints chunk file paths (or CHUNK_FAILED:<idx>) to the FIFO.
     # Retries are handled in Python to preserve per-chunk voice selection
@@ -290,6 +297,7 @@ if [ "${#selected_text}" -gt "$TTS_CHUNK_THRESHOLD" ]; then
         _normalize_chunk "$chunk_file" "${chunk_file%.mp3}_norm.mp3"
         # Use realpath for ffmpeg concat compatibility
         printf 'file %s\n' "$(realpath "$chunk_file")" >> "$CONCAT_LIST"
+        [ -n "$_chunk_idx" ] && _web_send_chunk "$_chunk_idx" "$CHUNKS_DIR"
         _play_audio "$chunk_file"
         [ -n "$_chunk_idx" ] && _PROCESSED_CHUNKS[$_chunk_idx]=1
         [ "$_TTS_STOPPED" = "1" ] && break
@@ -297,6 +305,11 @@ if [ "${#selected_text}" -gt "$TTS_CHUNK_THRESHOLD" ]; then
 
     wait "$_TTS_PID" 2>/dev/null
     rm -f "$_TTS_FIFO"
+    if [ "$_PIPELINE_ERROR" = "1" ]; then
+        _web_push_error "Lecture interrompue : passage manquant"
+    else
+        _web_push_done
+    fi
     trap - INT TERM
 
     if [ "$_PIPELINE_ERROR" = "1" ]; then

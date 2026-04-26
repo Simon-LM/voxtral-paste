@@ -13,6 +13,8 @@ source "$SCRIPT_DIR/src/ui.sh"
 # shellcheck disable=SC1091
 source "$SCRIPT_DIR/src/save_audio.sh"
 # shellcheck disable=SC1091
+source "$SCRIPT_DIR/src/web_display.sh"
+# shellcheck disable=SC1091
 source "$SCRIPT_DIR/src/text_flows.sh"
 
 if [ ! -x "$VENV_PYTHON" ]; then
@@ -126,8 +128,15 @@ echo ""
 printf "${C_BG_BLUE} %s ${C_RESET}\n" "$summary_text"
 echo ""
 
+# Open the parallel web display BEFORE TTS so the full summary is visible
+# while audio chunks are still being generated (read-ahead UX).
+trap '_web_stop' EXIT
+_web_start insight
+_web_push_init insight "$summary_text"
+
 _process "Reading summary..."
 _tts_speak "$summary_text" "$SUMMARY_AUDIO"
+_web_push_done
 
 # ─── Main menu ────────────────────────────────────────────────────────────────
 

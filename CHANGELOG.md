@@ -9,6 +9,93 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ---
 
+## [Unreleased]
+
+---
+
+## [4.11.0] — 2026-04-25
+
+### Added
+
+- **Synchronized browser display for TTS playback (Phase 1).**
+  New opt-in feature that opens a parallel browser window showing the spoken text
+  in real time, synchronized with audio chunks. Phase 1 displays the exact
+  transcribed text with the current chunk shown big and centered. Activated via
+  `VOX_WEB_DISPLAY=1` in `.env`.
+- **`src/web_display.py` (NEW) — local HTTP+SSE server.**
+  Stdlib-only `ThreadingHTTPServer` that serves an embedded HTML page with
+  `EventSource`-based SSE updates. Endpoints: `GET /` (HTML), `GET /events`
+  (SSE stream with replay-on-connect), `POST /push` (broadcast event),
+  `POST /shutdown` (graceful exit). Picks a free port automatically and writes
+  it to `--port-file` for the bash caller. Runs as `python -m src.web_display`.
+- **Browser detection with per-family isolated profiles.**
+  All browsers launch with a dedicated, persistent cache profile so the user's
+  main browsing session (tabs, extensions, cookies, history) is **never**
+  touched. Each browser family gets its own profile dir under
+  `~/.cache/vox-refiner/<family>-profile`.
+  Priority order:
+  1. **Chromium-based** in `--app=` mode with `--user-data-dir`:
+     `chromium-browser` (chromium-profile), `chromium` (chromium-profile),
+     `brave-browser` (brave-profile), `brave` (brave-profile),
+     `google-chrome` (chrome-profile). Window size & position controlled via
+     `--window-size`/`--window-position`.
+  2. **Firefox family** with `--no-remote --profile <path> --new-window`:
+     `firefox` (firefox-profile), `librewolf` (librewolf-profile). The
+     `--no-remote` flag prevents connecting to an existing Firefox instance
+     so a fully isolated process is spawned. No native --app mode → window
+     has its usual chrome (URL bar, tabs); CLI window-size unsupported.
+  3. **Lightweight fallbacks**: `qutebrowser`, `falkon` (`--geometry=WxH+X+Y`),
+     `epiphany --new-window`, `midori`.
+  4. **Last resort**: `xdg-open` (system default browser).
+     Override via `VOX_WEB_BROWSER` env var. Window size: `VOX_WEB_SIZE="1100x800"`,
+     position: `VOX_WEB_POS="100x100"` (chromium-only).
+- **Snap-confined browsers auto-skipped.**
+  Snap-installed `chromium`, `brave`, `midori`, etc. enforce an AppArmor
+  policy that rejects custom `--user-data-dir` paths (`SingletonLock:
+Permission denied`). The auto-detection chain skips them with an `ℹ`
+  notice and falls through to a non-snap binary (e.g. `google-chrome` from
+  `/opt/google/chrome`, or `firefox`). When a snap binary is forced via
+  `VOX_WEB_BROWSER`, a warning is printed before attempting the launch.
+- **Crash-aware fallback chain.**
+  Each candidate browser is checked 400 ms after `Popen`; if it has exited,
+  its stderr is captured and the next candidate is tried. Previously a single
+  failed launcher resulted in no browser opening.
+- **Browser launcher diagnostics.**
+  `_web_start` in `src/web_display.sh` now routes Python stderr to the saved
+  terminal FD 3 (set by flow scripts via `exec 3>&2`). Browser launch
+  diagnostics, snap skips, and crash messages are visible in the terminal
+  when `VOX_WEB_DISPLAY=1`.
+- **`src/web_display.sh` (NEW) — bash helper.**
+  Sourced by flow scripts. Exposes `_web_start`, `_web_push_init`,
+  `_web_send_chunk`, `_web_push_done`, `_web_push_error`, `_web_stop`. All
+  helpers no-op when `VOX_WEB_DISPLAY != 1`. Backgrounded `curl` POSTs keep the
+  audio playback path latency-free. Reads `chunk_NNN.txt` files written by
+  `tts.py`'s chunked mode.
+- **`selection_to_voice.sh` integration.** Boots web display before TTS,
+  pushes a `chunk` event before each `_play_audio` call, fires `done` (or
+  `error`) at end. EXIT trap kills the server cleanly.
+- **`src/text_flows.sh _tts_speak()` integration.** Pushes `chunk` events
+  during the playback loop using `declare -F` guard so non-display callers are
+  unaffected. `_show_and_speak` re-inits the display with each new content
+  block (search result, fact-check result, web/X details).
+- **`selection_to_insight.sh` integration.** Opens the web display
+  immediately after the summary is generated and pushes `init` with the full
+  summary text — the user sees the full summary before audio starts (read-ahead
+  UX). Chunks are pushed as audio plays. EXIT trap kills the server.
+
+### Notes
+
+- **Phase 2** (later): keyword extraction mode + giant-font display for
+  visually impaired users. Forward-compatible: protocol already supports adding
+  `keywords` field to `chunk` payloads.
+- **Phase 3** (later): flows [7] Selection to Search, [8] Fact-check,
+  [9] Screen to Text.
+- **Single-file mode** (texts under `TTS_CHUNK_THRESHOLD=800` chars in
+  `selection_to_voice.sh`): no web display in Phase 1, since there are no
+  chunks to sync. Long texts (chunked mode) get the full feature.
+
+---
+
 ## [4.10.7] — 2026-04-25
 
 ### Added
@@ -136,9 +223,9 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   - **Multilingual V2** (C1000–C1050): `eleven_multilingual_v2`
   - **Eleven V3** (C1100–C1150): `eleven_v3`
   - **Flash V2.5** (C1200–C1250): `eleven_flash_v2_5`
-  Voice IDs use the format `eleven-<model_key>-<elevenlabs_voice_id>`
-  (e.g. `eleven-v3-6FXyooAOTqUK8m2HWm32`). All groups require `EDENAI_API_KEY`,
-  marked `"temporary": true` (comparison/hidden).
+    Voice IDs use the format `eleven-<model_key>-<elevenlabs_voice_id>`
+    (e.g. `eleven-v3-6FXyooAOTqUK8m2HWm32`). All groups require `EDENAI_API_KEY`,
+    marked `"temporary": true` (comparison/hidden).
 - **`src/tts.py` — ElevenLabs routing via Eden AI.**
   Added `_ELEVEN_MODELS` dict and `_synthesize_elevenlabs_eden()`: parses model key
   (`v2`/`v3`/`flash`) from the voice ID prefix, calls Eden AI universal endpoint

@@ -159,6 +159,17 @@ _tts_speak() {
         rm -f "$norm"
 
         printf 'file %s\n' "$(realpath "$chunk_file")" >> "$concat_list"
+
+        # Web display sync (no-op if web_display.sh not sourced or VOX_WEB_DISPLAY unset).
+        if declare -F _web_send_chunk >/dev/null 2>&1; then
+            local _chunk_base _chunk_idx=""
+            _chunk_base="$(basename -- "$chunk_file")"
+            if [[ "$_chunk_base" =~ ^chunk_([0-9]{3}) ]]; then
+                _chunk_idx=$((10#${BASH_REMATCH[1]}))
+                _web_send_chunk "$_chunk_idx" "$chunks_dir"
+            fi
+        fi
+
         _play_audio "$chunk_file"
     done
 
@@ -180,7 +191,14 @@ _show_and_speak() {
     printf "${C_BG_BLUE} %s ${C_RESET}\n" "$result_text"
     echo ""
     _process "Reading aloud..."
+    # Refresh web display with this section's content (no-op when not active).
+    if declare -F _web_push_init >/dev/null 2>&1; then
+        _web_push_init insight "$result_text"
+    fi
     _tts_speak "$result_text" "$audio_file"
+    if declare -F _web_push_done >/dev/null 2>&1; then
+        _web_push_done
+    fi
 }
 
 # ─── Optional summary generation ─────────────────────────────────────────────
